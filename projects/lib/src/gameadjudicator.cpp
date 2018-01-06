@@ -88,7 +88,8 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 		if (board->plyCount() / 2 >= m_drawMoveNum
 		&&  m_drawScoreCount >= m_drawMoveCount * 2)
 		{
-			m_result = Chess::Result(Chess::Result::Adjudication, Chess::Side::NoSide);
+			m_result = Chess::Result(Chess::Result::Adjudication,
+						Chess::Side::NoSide, "TCEC draw rule");
 			return;
 		}
 	}
@@ -104,7 +105,7 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 
 		if (count >= m_resignMoveCount)
 			m_result = Chess::Result(Chess::Result::Adjudication,
-						 side.opposite());
+						 side.opposite(), "TCEC win rule");
 	}
 }
 

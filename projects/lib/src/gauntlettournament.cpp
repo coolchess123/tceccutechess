@@ -34,6 +34,7 @@ QString GauntletTournament::type() const
 
 QList< QPair<QString, QString> > GauntletTournament::getPairings()
 {
+	// TODO: implement for TCEC
 	QList< QPair<QString, QString> > pList;
 	return pList;
 }
