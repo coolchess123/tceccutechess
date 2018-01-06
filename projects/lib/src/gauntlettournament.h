@@ -36,6 +36,7 @@ class LIB_EXPORT GauntletTournament : public Tournament
 					    QObject *parent = nullptr);
 		// Inherited from Tournament
 		virtual QString type() const;
+		virtual QList< QPair<QString, QString> > getPairings();
 
 	protected:
 		// Inherited from Tournament

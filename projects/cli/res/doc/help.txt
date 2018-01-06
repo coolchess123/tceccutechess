@@ -165,3 +165,9 @@ Engine options:
 			pondering is disabled.
   option.OPTION=VALUE	Set custom option OPTION to value VALUE
 
+TCEC options:
+
+  livepgnout FILE [min]	Send the live output pgn to FILE. Use the 'min'
+			argument to save in a minimal/compact PGN format.
+  tournamentfile FILE	Start or resume the tournament specified in FILE
+  resume		Resume the tournament instead of restarting it

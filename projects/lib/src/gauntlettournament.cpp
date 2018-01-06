@@ -32,6 +32,12 @@ QString GauntletTournament::type() const
 	return "gauntlet";
 }
 
+QList< QPair<QString, QString> > GauntletTournament::getPairings()
+{
+	QList< QPair<QString, QString> > pList;
+	return pList;
+}
+
 void GauntletTournament::onGameAboutToStart(ChessGame* game,
 					    const PlayerBuilder* white,
 					    const PlayerBuilder* black)

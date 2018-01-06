@@ -35,3 +35,13 @@ void PlayerBuilder::setName(const QString& name)
 {
 	m_name = name;
 }
+
+int PlayerBuilder::rating() const
+{
+	return m_rating;
+}
+
+void PlayerBuilder::setRating(const int rating)
+{
+	m_rating = rating;
+}

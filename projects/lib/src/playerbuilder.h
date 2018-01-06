@@ -51,6 +51,10 @@ class LIB_EXPORT PlayerBuilder
 		QString name() const;
 		/*! Sets the player's name to \a name. */
 		void setName(const QString& name);
+		/*! Returns the player's rating (or 0 if no rating is available). */
+		int rating() const;
+		/*! Sets the player's rating to \a rating. */
+		void setRating(const int rating);
 		/*!
 		 * Creates a new player and sets its parent to \a parent.
 		 *
@@ -68,6 +72,7 @@ class LIB_EXPORT PlayerBuilder
 
 	private:
 		QString m_name;
+		int m_rating;
 };
 
 #endif // PLAYERBUILDER_H

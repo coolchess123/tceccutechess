@@ -62,6 +62,8 @@ class LIB_EXPORT Tournament : public QObject
 
 		/*! Returns the tournament type (eg. "round-robin" or "gauntlet"). */
 		virtual QString type() const = 0;
+		/*! Returns a list of all pairings (by player name) for this tournament. */
+		virtual QList< QPair<QString, QString> > getPairings() = 0;
 		/*! Returns the GameManager that manages the tournament's games. */
 		GameManager* gameManager() const;
 		/*! Returns true if the tournament is finished; otherwise returns false. */
@@ -129,6 +131,13 @@ class LIB_EXPORT Tournament : public QObject
 		 *
 		 * \a counter must be at least 1.
 		 */
+		/*! Sets the tournament'S eevnt date to \a eventDate. */
+		void setEventDate(const QString& eventDate);
+		/*!
+			 * Sets the game count per encounter to \a counter.
+			 *
+			 * \a counter must be at least 1.
+			 */
 		void setGamesPerEncounter(int count);
 		/*!
 		 * Returns true (default) if the tournament supports
@@ -195,6 +204,16 @@ class LIB_EXPORT Tournament : public QObject
 		 */
 		void setEpdOutput(const QString& fileName);
 
+ 		/*!
+ 		 * Sets the live PGN output file for the games to \a fileName.
+ 		 *
+ 		 * The games are saved to the file in mode \a mode.
+ 		 * If no live PGN output file is set (default) then cutechess will
+		 * not generate a live PGN.
+ 		 */
+		void setLivePgnOutput(const QString& fileName,
+				  PgnGame::PgnMode mode = PgnGame::Verbose);
+
 		/*!
 		 * Sets the number of opening repetitions to \a count.
 		 *
@@ -221,6 +240,15 @@ class LIB_EXPORT Tournament : public QObject
 		 * the tournament.
 		 */
 		void setSeedCount(int seedCount);
+		/*!
+		 * Sets the tournament mode to \a resume.
+		 *
+		 * If \a resume is true and the \a tournamentfile option is enabled,
+		 * cutechess will attempt to resume the tournament after an interruption.
+		 * Play will resume after the last completed game. Openings, including
+		 * repeated and randomly chosen openings, will resume as well.
+		 */
+		void setResume(int nextGameNumber);
 		/*!
 		 * Adds player \a builder to the tournament.
 		 *
@@ -451,6 +479,10 @@ class LIB_EXPORT Tournament : public QObject
 		QMap<int, PgnGame> m_pgnGames;
 		QMap<ChessGame*, GameData*> m_gameData;
 		QVector<Chess::Move> m_openingMoves;
+		QString m_livePgnout;
+		PgnGame::PgnMode m_livePgnOutMode;
+		QString m_eventDate;
+		int m_resumeGameNumber;
 };
 
 #endif // TOURNAMENT_H

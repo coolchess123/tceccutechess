@@ -130,12 +130,16 @@ void ChessEngine::applyConfiguration(const EngineConfiguration& configuration)
 	for (const QString& str : initStrings)
 		write(str);
 
+	m_configurationString = QString();
 	const auto options = configuration.options();
 	for (const auto option : options)
 	{
-		if (option->isEditable())
+		if (option->isEditable()) {
 			setOption(option->name(), option->value());
+			m_configurationString += option->name() + "=" + option->value().toString() + "; ";
+		}
 	}
+	m_configurationString = m_configurationString.trimmed();
 
 	m_whiteEvalPov = configuration.whiteEvalPov();
 	m_pondering = configuration.pondering();
@@ -509,4 +513,9 @@ void ChessEngine::quit()
 	connect(m_ioDevice, SIGNAL(readChannelFinished()), this, SLOT(onQuitTimeout()));
 	sendQuit();
 	m_quitTimer->start();
+}
+
+QString ChessEngine::configurationString() const
+{
+	return m_configurationString;
 }

@@ -290,3 +290,10 @@ QString KnockoutTournament::results() const
 
 	return lines.join('\n');
 }
+
+QList< QPair<QString, QString> > KnockoutTournament::getPairings()
+{
+	// TODO: Implement knockout for TCEC
+	QList< QPair<QString, QString> > pList;
+	return pList;
+}

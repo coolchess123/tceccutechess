@@ -40,6 +40,7 @@ class LIB_EXPORT KnockoutTournament : public Tournament
 		virtual QString type() const;
 		virtual bool canSetRoundMultiplier() const;
 		virtual QString results() const;
+		virtual QList< QPair<QString, QString> > getPairings();
 
 	protected:
 		// Inherited from Tournament

@@ -21,6 +21,8 @@
 #include "board/board.h"
 #include "chessplayer.h"
 #include "openingbook.h"
+#include "chessengine.h"
+#include "engineoption.h"
 
 namespace {
 
@@ -63,7 +65,8 @@ ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
 	  m_pgnInitialized(false),
 	  m_bookOwnership(false),
 	  m_boardShouldBeFlipped(false),
-	  m_pgn(pgn)
+	  m_pgn(pgn),
+	  m_elapsed(0)
 {
 	Q_ASSERT(pgn != nullptr);
 
@@ -156,11 +159,30 @@ ChessPlayer* ChessGame::playerToWait() const
 		return nullptr;
 	return m_player[m_board->sideToMove().opposite()];
 }
+void ChessGame::startGameTimer()
+{
+	m_gameTimer.start();
+}
+
+int ChessGame::stopGameTimer()
+{
+	return m_paused ? m_elapsed : m_elapsed + m_gameTimer.elapsed();
+}
+
+QString ChessGame::gameDuration() const
+{
+	return m_gameDuration;
+}
 
 void ChessGame::stop(bool emitMoveChanged)
 {
 	if (m_finished)
 		return;
+
+	int secs = stopGameTimer() / 1000;
+	int mins = (secs / 60) % 60;
+	int hours = (secs / 3600);
+	secs = secs % 60;
 
 	m_finished = true;
 	emit humanEnabled(false);
@@ -177,6 +199,13 @@ void ChessGame::stop(bool emitMoveChanged)
 	int plies = moves.size();
 
 	m_pgn->setTag("PlyCount", QString::number(plies));
+
+	m_gameDuration = QString("%1:%2:%3")
+		.arg(hours, 2, 10, QChar('0'))
+		.arg(mins, 2, 10, QChar('0'))
+		.arg(secs, 2, 10, QChar('0'));
+	m_pgn->setTag("GameDuration", m_gameDuration);
+
 	m_pgn->setResult(m_result);
 	m_pgn->setResultDescription(m_result.description());
 
@@ -628,7 +657,10 @@ void ChessGame::start()
 
 void ChessGame::pause()
 {
+	if (m_paused)
+		return;
 	m_paused = true;
+	m_elapsed += m_gameTimer.elapsed();
 }
 
 void ChessGame::resume()
@@ -636,6 +668,7 @@ void ChessGame::resume()
 	if (!m_paused)
 		return;
 	m_paused = false;
+	m_gameTimer.start();
 
 	QMetaObject::invokeMethod(this, "startTurn", Qt::QueuedConnection);
 }
@@ -660,6 +693,25 @@ void ChessGame::initializePgn()
 		m_pgn->setTag("WhiteTimeControl", m_timeControl[Chess::Side::White].toString());
 		m_pgn->setTag("BlackTimeControl", m_timeControl[Chess::Side::Black].toString());
 	}
+
+	// this is a hack, but it works
+	QString engineOptions;
+	if (!m_player[Chess::Side::White]->isHuman()) {
+		ChessEngine *engine = dynamic_cast<ChessEngine *>(m_player[Chess::Side::White]);
+		if (engine) {
+			engineOptions += QString("WhiteEngineOptions: %1").arg(engine->configurationString());
+		}
+	}
+
+	if (!m_player[Chess::Side::Black]->isHuman()) {
+		ChessEngine *engine = dynamic_cast<ChessEngine *>(m_player[Chess::Side::Black]);
+		if (engine) {
+			if (!engineOptions.isEmpty()) engineOptions += ", ";
+			engineOptions += QString("BlackEngineOptions: %1").arg(engine->configurationString());
+		}
+	}
+//	m_pgn->setGameComment(engineOptions);
+	m_pgn->setResultDescription(engineOptions);
 }
 
 void ChessGame::startGame()
@@ -692,6 +744,10 @@ void ChessGame::startGame()
 
 	resetBoard();
 	initializePgn();
+
+	startGameTimer();
+	m_gameDuration = "";
+
 	emit started(this);
 	emit fenChanged(m_board->startingFenString());
 

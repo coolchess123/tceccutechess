@@ -187,6 +187,11 @@ void Tournament::setVariant(const QString& variant)
 	m_variant = variant;
 }
 
+void Tournament::setEventDate(const QString& eventDate)
+{
+	m_eventDate = eventDate;
+}
+
 void Tournament::setCurrentRound(int round)
 {
 	Q_ASSERT(round >= 1);
@@ -267,6 +272,12 @@ void Tournament::setEpdOutput(const QString& fileName)
 	}
 }
 
+void Tournament::setLivePgnOutput(const QString& fileName, PgnGame::PgnMode mode)
+{
+	m_livePgnout = fileName;
+	m_livePgnOutMode = mode;
+}
+
 void Tournament::setOpeningRepetitions(int count)
 {
 	m_openingRepetitions = count;
@@ -280,6 +291,12 @@ void Tournament::setSwapSides(bool enabled)
 void Tournament::setOpeningBookOwnership(bool enabled)
 {
 	m_bookOwnership = enabled;
+}
+
+void Tournament::setResume(int nextGameNumber)
+{
+	Q_ASSERT(nextGameNumber >= 0);
+	m_resumeGameNumber = nextGameNumber;
 }
 
 void Tournament::addPlayer(PlayerBuilder* builder,
