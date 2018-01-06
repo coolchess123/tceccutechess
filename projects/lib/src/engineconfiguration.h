@@ -101,6 +101,12 @@ class LIB_EXPORT EngineConfiguration
 		 * \sa protocol()
 		 */
 		void setProtocol(const QString& protocol);
+		/*!
+		 * Sets the engine's rating.
+		 *
+		 * \sa name()
+		 */
+		void setRating(const int rating);
 
 		/*!
 		 * Returns the engine's name.
@@ -133,6 +139,12 @@ class LIB_EXPORT EngineConfiguration
 		 * \sa setProtocol()
 		 */
 		QString protocol() const;
+		/*!
+		 * Returns the engine's rating.
+		 *
+		 * \sa setName()
+		 */
+		int rating() const;
 
 		/*! Returns the command line arguments sent to the engine. */
 		QStringList arguments() const;
@@ -225,6 +237,7 @@ class LIB_EXPORT EngineConfiguration
 		bool m_pondering;
 		bool m_validateClaims;
 		RestartMode m_restartMode;
+		int m_rating;
 };
 
 #endif // ENGINE_CONFIGURATION_H

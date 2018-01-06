@@ -94,6 +94,9 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 				addOption(option);
 		}
 	}
+
+	if (map.contains("rating"))
+		setRating(map["rating"].toInt());
 }
 
 EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
@@ -211,6 +214,11 @@ void EngineConfiguration::setStderrFile(const QString& fileName)
 	m_stderrFile = fileName;
 }
 
+void EngineConfiguration::setRating(const int rating)
+{
+	m_rating = rating > 0 ? rating : 0;
+}
+
 QString EngineConfiguration::name() const
 {
 	return m_name;
@@ -234,6 +242,11 @@ QString EngineConfiguration::stderrFile() const
 QString EngineConfiguration::protocol() const
 {
 	return m_protocol;
+}
+
+int EngineConfiguration::rating() const
+{
+	return m_rating;
 }
 
 QStringList EngineConfiguration::arguments() const
