@@ -403,6 +403,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	}
 
 	EngineMatch* match = new EngineMatch(tournament, parent);
+	if (!tournamentFile.isEmpty()) match->setTournamentFile(tournamentFile);
 
 	QList<EngineData> engines;
 	QStringList eachOptions;
@@ -485,7 +486,8 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 				SyzygyTablebase::setPieces(value);
 		}
 		if (tMap.contains("tbIgnore50"))
-			SyzygyTablebase::setNoRule50();
+			if (tMap["tbIgnore50"].toBool())
+				SyzygyTablebase::setNoRule50();
 
 		if (tMap.contains("openings")) {
 			openingsOption.name = "-openings";
@@ -609,8 +611,13 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 				int score = params["score"].toInt(&scoreOk);
 
 				ok = (countOk && scoreOk);
-				if (ok)
+				if (ok) {
 					adjudicator.setResignThreshold(moveCount, -score);
+					QVariantMap rMap;
+					rMap.insert("movecount", moveCount);
+					rMap.insert("score", score);
+					tMap.insert("resignAdjudication", rMap);
+				}
 			}
 			// Syzygy tablebase adjudication
 			else if (name == "-tb")
@@ -637,8 +644,10 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 			// Syzygy ignore 50-move-rule
 			else if (name == "-tbignore50")
 			{
-				SyzygyTablebase::setNoRule50();
-				tMap.insert("tbIgnore50", true);
+				bool flag = value.toBool();
+				if (flag)
+					SyzygyTablebase::setNoRule50();
+				tMap.insert("tbIgnore50", flag);
 			}
 			// Event name
 			else if (name == "-event")

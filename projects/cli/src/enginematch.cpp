@@ -110,14 +110,6 @@ void EngineMatch::setTournamentFile(QString& tournamentFile)
 	m_tournamentFile = tournamentFile;
 }
 
-
-
-
-
-
-
-
-
 void EngineMatch::generateSchedule(QVariantList& pList)
 {
 	QVariantMap pMap;
@@ -257,14 +249,6 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 		}
 	}
 }
-
-
-
-
-
-
-
-
 
 struct CrossTableData
 {
@@ -514,6 +498,58 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 	       m_tournament->finalGameCount(),
 	       qPrintable(game->player(Chess::Side::White)->name()),
 	       qPrintable(game->player(Chess::Side::Black)->name()));
+
+	if (!m_tournamentFile.isEmpty()) {
+		QVariantMap tfMap;
+		if (QFile::exists(m_tournamentFile)) {
+			QFile input(m_tournamentFile);
+			if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
+				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				return;
+			}
+
+			QTextStream stream(&input);
+			JsonParser jsonParser(stream);
+			tfMap = jsonParser.parse().toMap();
+		}
+
+		QVariantList pList;
+		if (!tfMap.isEmpty()) {
+			if (tfMap.contains("matchProgress")) {
+				pList = tfMap["matchProgress"].toList();
+				int length = pList.length();
+				if (length >= number) {
+					qWarning("game %d already exists, deleting", number);
+					while(length-- >= number) {
+						pList.removeLast();
+					}
+				}
+			}
+		}
+
+		QVariantMap pMap;
+		pMap.insert("index", number);
+		pMap.insert("white", game->player(Chess::Side::White)->name());
+		pMap.insert("black", game->player(Chess::Side::Black)->name());
+		QDateTime qdt = QDateTime::currentDateTime();
+		pMap.insert("startTime", qdt.toString("HH:mm:ss' on 'yyyy.MM.dd"));
+		pMap.insert("result", "*");
+		pMap.insert("terminationDetails", "in progress");
+		pList.append(pMap);
+		tfMap.insert("matchProgress", pList);
+		{
+			QFile output(m_tournamentFile);
+			if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+			} else {
+				QTextStream out(&output);
+				JsonSerializer serializer(tfMap);
+				serializer.serialize(out);
+			}
+		}
+		generateSchedule(pList);
+		generateCrossTable(pList);
+	}
 }
 
 void EngineMatch::onGameFinished(ChessGame* game, int number)
@@ -531,90 +567,96 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 		QVariantMap tfMap;
 
 		if (QFile::exists(m_tournamentFile)) {
-		QFile input(m_tournamentFile);
-		if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
-			qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
-		} else {
-			QTextStream stream(&input);
-			JsonParser jsonParser(stream);
-			tfMap = jsonParser.parse().toMap();
-		}
-
-		QVariantMap pMap;
-		QVariantList pList;
-
-		if (!tfMap.isEmpty()) {
-			if (tfMap.contains("matchProgress")) {
-				pList = tfMap["matchProgress"].toList();
-				int length = pList.length();
-				if (length < number) {
-					qWarning("game %d doesn't exist", number);
-				} else
-					pMap = pList.at(number-1).toMap();
-			}
-		}
-
-		if (!pMap.isEmpty()) {
-			pMap.insert("result", result.toShortString());
-			pMap.insert("terminationDetails", result.shortDescription());
-			PgnGame *pgn = game->pgn();
-			if (pgn) {
-				// const EcoInfo eco = pgn->eco();
-				QString val;
-				val = pgn->tagValue("ECO");
-				if (!val.isEmpty()) pMap.insert("ECO", val);
-				val = pgn->tagValue("Opening");
-				if (!val.isEmpty()) pMap.insert("opening", val);
-				val = pgn->tagValue("Variation");
-				if (!val.isEmpty()) pMap.insert("variation", val);
-				// TODO: after TCEC is over, change this to moveCount, since that's what it is
-				pMap.insert("plyCount", qRound(game->moves().size() / 2.));
-			}
-			pMap.insert("finalFen", game->board()->fenString());
-
-			MoveEvaluation eval;
-			QString sScore;
-			Chess::Side sides[] = { Chess::Side::White, Chess::Side::Black, Chess::Side::NoSide };
-
-			for (int i = 0; sides[i] != Chess::Side::NoSide; i++) {
-				Chess::Side side = sides[i];
-				eval = game->player(side)->evaluation();
-				int score = eval.score();
-				int absScore = qAbs(score);
-
-				// Detect mate-in-n scores
-				if (absScore > 9900
-				&&	(absScore = 1000 - (absScore % 1000)) < 100)
-				{
-					if (score < 0)
-						sScore = "-";
-					sScore += "M" + QString::number(absScore);
-				}
-				else
-					sScore = QString::number(double(score) / 100.0, 'f', 2);
-
-				if (side == Chess::Side::White)
-					pMap.insert("whiteEval", sScore);
-				else
-					pMap.insert("blackEval", sScore);
-			}
-
-			pMap.insert("gameDuration", game->gameDuration());
-			pList.replace(number-1, pMap);
-			tfMap.insert("matchProgress", pList);
-
-			QFile output(m_tournamentFile);
-			if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QFile input(m_tournamentFile);
+			if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
 				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
 			} else {
-				QTextStream out(&output);
-				JsonSerializer serializer(tfMap);
-				serializer.serialize(out);
+				QTextStream stream(&input);
+				JsonParser jsonParser(stream);
+				tfMap = jsonParser.parse().toMap();
 			}
-			generateSchedule(pList);
-			generateCrossTable(pList);
+
+			QVariantMap pMap;
+			QVariantList pList;
+
+			if (!tfMap.isEmpty()) {
+				if (tfMap.contains("matchProgress")) {
+					pList = tfMap["matchProgress"].toList();
+					int length = pList.length();
+					if (length < number) {
+						qWarning("game %d doesn't exist", number);
+					} else
+						pMap = pList.at(number-1).toMap();
+				}
+			}
+
+			if (!pMap.isEmpty()) {
+				pMap.insert("result", result.toShortString());
+				pMap.insert("terminationDetails", result.shortDescription());
+				PgnGame *pgn = game->pgn();
+				if (pgn) {
+#if 0
+					// const EcoInfo eco = pgn->eco();
+					QString val;
+					val = pgn->tagValue("ECO");
+					if (!val.isEmpty()) pMap.insert("ECO", val);
+					val = pgn->tagValue("Opening");
+					if (!val.isEmpty()) pMap.insert("opening", val);
+					val = pgn->tagValue("Variation");
+					if (!val.isEmpty()) pMap.insert("variation", val);
+#else
+					// Every tag you request from the PgnGame produces a
+					// crash, even the default ones.
+					QString test = pgn->variant(); // <= CRASH???!?!!
+#endif
+					// TODO: after TCEC is over, change this to moveCount, since that's what it is
+					pMap.insert("plyCount", qRound(game->moves().size() / 2.));
+				}
+				pMap.insert("finalFen", game->board()->fenString());
+
+				MoveEvaluation eval;
+				QString sScore;
+				const Chess::Side sides[] = { Chess::Side::White, Chess::Side::Black, Chess::Side::NoSide };
+
+				for (int i = 0; sides[i] != Chess::Side::NoSide; i++) {
+					Chess::Side side = sides[i];
+					eval = game->player(side)->evaluation();
+					int score = eval.score();
+					int absScore = qAbs(score);
+
+					// Detect mate-in-n scores
+					if (absScore > 9900
+					&&	(absScore = 1000 - (absScore % 1000)) < 100)
+					{
+						sScore = score < 0 ? "-" : "";
+						sScore += "M" + QString::number(absScore);
+					}
+					else
+						sScore = QString::number(double(score) / 100.0, 'f', 2);
+
+					if (side == Chess::Side::White)
+						pMap.insert("whiteEval", sScore);
+					else
+						pMap.insert("blackEval", sScore);
+				}
+
+				pMap.insert("gameDuration", game->gameDuration());
+				pList.replace(number-1, pMap);
+				tfMap.insert("matchProgress", pList);
+
+				QFile output(m_tournamentFile);
+				if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+					qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				} else {
+					QTextStream out(&output);
+					JsonSerializer serializer(tfMap);
+					serializer.serialize(out);
+				}
+				generateSchedule(pList);
+				generateCrossTable(pList);
+			}
 		}
-	}} // WTF!
+	}
 
 	if (m_tournament->playerCount() == 2)
 	{
