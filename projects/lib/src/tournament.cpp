@@ -274,7 +274,7 @@ void Tournament::setEpdOutput(const QString& fileName)
 
 void Tournament::setLivePgnOutput(const QString& fileName, PgnGame::PgnMode mode)
 {
-	m_livePgnout = fileName;
+	m_livePgnOut = fileName;
 	m_livePgnOutMode = mode;
 }
 
@@ -364,6 +364,8 @@ void Tournament::startGame(TournamentPair* pair)
 		this, SLOT(onGameStarted(ChessGame*)));
 	connect(game, SIGNAL(finished(ChessGame*)),
 		this, SLOT(onGameFinished(ChessGame*)));
+	connect(game, SIGNAL(pgnMove()),
+		this, SLOT(onPgnMove()));
 
 	game->setTimeControl(white.timeControl(), Chess::Side::White);
 	game->setTimeControl(black.timeControl(), Chess::Side::Black);
@@ -569,6 +571,19 @@ void Tournament::onGameStarted(ChessGame* game)
 	m_players[iBlack].setName(game->player(Chess::Side::Black)->name());
 
 	emit gameStarted(game, data->number, iWhite, iBlack);
+}
+
+void Tournament::onPgnMove()
+{
+	if (m_livePgnOut.isEmpty()) return;
+
+	ChessGame* sender = qobject_cast<ChessGame*>(QObject::sender());
+	Q_ASSERT(sender != 0);
+
+	PgnGame* pgn(sender->pgn());
+
+	QFile::resize(m_livePgnOut, 0);
+	pgn->write(m_livePgnOut, m_livePgnOutMode);
 }
 
 void Tournament::onGameFinished(ChessGame* game)

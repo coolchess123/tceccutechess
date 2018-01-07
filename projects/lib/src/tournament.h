@@ -422,6 +422,7 @@ class LIB_EXPORT Tournament : public QObject
 		void onGameFinished(ChessGame* game);
 		void onGameDestroyed(ChessGame* game);
 		void onGameStartFailed(ChessGame* game);
+		void onPgnMove();
 
 	private:
 		struct GameData
@@ -479,7 +480,7 @@ class LIB_EXPORT Tournament : public QObject
 		QMap<int, PgnGame> m_pgnGames;
 		QMap<ChessGame*, GameData*> m_gameData;
 		QVector<Chess::Move> m_openingMoves;
-		QString m_livePgnout;
+		QString m_livePgnOut;
 		PgnGame::PgnMode m_livePgnOutMode;
 		QString m_eventDate;
 		int m_resumeGameNumber;

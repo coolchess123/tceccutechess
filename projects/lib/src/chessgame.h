@@ -105,6 +105,7 @@ class LIB_EXPORT ChessGame : public QObject
 			      Chess::Result result = Chess::Result());
 		void startFailed(ChessGame* game = nullptr);
 		void playersReady();
+		void pgnMove();
 
 	private slots:
 		void startGame();

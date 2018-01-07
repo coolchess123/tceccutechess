@@ -450,6 +450,14 @@ void PgnGame::setPlayerName(Chess::Side side, const QString& name)
 		setTag("Black", name);
 }
 
+void PgnGame::setPlayerRating(Chess::Side side, const int rating)
+{
+	if (side == Chess::Side::White && rating) // remove "&& rating" if "-" is desired
+		setTag("WhiteElo", rating ? QString::number(rating) : "-");
+	else if (side == Chess::Side::Black && rating)
+		setTag("BlackElo", rating ? QString::number(rating) : "-");
+}
+
 void PgnGame::setResult(const Chess::Result& result)
 {
 	setTag("Result", result.toShortString());

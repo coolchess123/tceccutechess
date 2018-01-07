@@ -208,6 +208,7 @@ void ChessGame::stop(bool emitMoveChanged)
 
 	m_pgn->setResult(m_result);
 	m_pgn->setResultDescription(m_result.description());
+	m_pgn->setTag("TerminationDetails", m_result.shortDescription());
 
 	if (emitMoveChanged && plies > 1)
 	{
@@ -254,6 +255,8 @@ void ChessGame::addPgnMove(const Chess::Move& move, const QString& comment)
 	md.comment = comment;
 
 	m_pgn->addMove(md);
+
+	emit pgnMove();
 }
 
 void ChessGame::emitLastMove()
@@ -684,6 +687,8 @@ void ChessGame::initializePgn()
 	m_pgn->setDate(QDate::currentDate());
 	m_pgn->setPlayerName(Chess::Side::White, m_player[Chess::Side::White]->name());
 	m_pgn->setPlayerName(Chess::Side::Black, m_player[Chess::Side::Black]->name());
+	m_pgn->setPlayerRating(Chess::Side::White, m_player[Chess::Side::White]->rating());
+	m_pgn->setPlayerRating(Chess::Side::Black, m_player[Chess::Side::Black]->rating());
 	m_pgn->setResult(m_result);
 
 	if (m_timeControl[Chess::Side::White] == m_timeControl[Chess::Side::Black])

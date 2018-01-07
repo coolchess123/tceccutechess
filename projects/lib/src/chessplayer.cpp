@@ -27,7 +27,8 @@ ChessPlayer::ChessPlayer(QObject* parent)
 	  m_claimedResult(false),
 	  m_validateClaims(true),
 	  m_board(nullptr),
-	  m_opponent(nullptr)
+	  m_opponent(nullptr),
+	  m_rating(0)
 {
 	m_timer->setSingleShot(true);
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
@@ -191,6 +192,17 @@ void ChessPlayer::setName(const QString& name)
 {
 	m_name = name;
 	emit nameChanged(m_name);
+}
+
+int ChessPlayer::rating() const
+{
+	return m_rating;
+}
+
+void ChessPlayer::setRating(const int rating)
+{
+	m_rating = rating;
+	//emit nameChanged(m_name);
 }
 
 bool ChessPlayer::canPlayAfterTimeout() const

@@ -118,6 +118,12 @@ class LIB_EXPORT ChessPlayer : public QObject
 		/*! Sets the player's name. */
 		void setName(const QString& name);
 
+		/*! Returns the player's rating. */
+		int rating() const;
+
+		/*! Sets the player's rating. */
+		void setRating(const int rating);
+
 		/*! Returns true if the player can play \a variant. */
 		virtual bool supportsVariant(const QString& variant) const = 0;
 
@@ -293,6 +299,7 @@ class LIB_EXPORT ChessPlayer : public QObject
 		Chess::Side m_side;
 		Chess::Board* m_board;
 		ChessPlayer* m_opponent;
+		int m_rating;
 };
 
 #endif // CHESSPLAYER_H

@@ -168,6 +168,8 @@ class LIB_EXPORT PgnGame
 		void setRound(int round);
 		/*! Sets the player's name who plays \a side. */
 		void setPlayerName(Chess::Side side, const QString& name);
+		/*! Sets the player's rating who plays \a side. */
+		void setPlayerRating(Chess::Side side, const int rating);
 		/*! Sets the result of the game. */
 		void setResult(const Chess::Result& result);
 		/*! Sets the chess variant of the game. */
