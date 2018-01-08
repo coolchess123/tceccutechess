@@ -406,7 +406,8 @@ void Tournament::startGame(TournamentPair* pair)
 
 	game->pgn()->setEvent(m_name);
 	game->pgn()->setSite(m_site);
-	game->pgn()->setRound(m_round);
+	int gameNo = m_nextGameNumber + 1 - (m_round - 1) * m_gamesPerEncounter;
+	game->pgn()->setRound(m_round, gameNo);
 
 	if (m_finishedGameCount > 0)
 		game->setStartDelay(m_startDelay);

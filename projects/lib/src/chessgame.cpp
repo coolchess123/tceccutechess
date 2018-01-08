@@ -18,21 +18,126 @@
 #include "chessgame.h"
 #include <QThread>
 #include <QTimer>
+#include <QtMath>
 #include "board/board.h"
+#include "board/westernboard.h"
 #include "chessplayer.h"
 #include "openingbook.h"
 #include "chessengine.h"
 #include "engineoption.h"
 
-namespace {
-
-QString evalString(const MoveEvaluation& eval)
+QString ChessGame::evalString(const MoveEvaluation& eval)
 {
 	if (eval.isBookEval())
 		return "book";
 	if (eval.isEmpty())
 		return QString();
 
+#if 1
+	QString str;
+	// score
+	// str += " ev=";
+	QString sScore;
+	if (eval.depth() > 0)
+	{
+		int score = eval.score();
+		int absScore = qAbs(score);
+
+		// Detect mate-in-n scores
+		if (absScore > 9900
+		&&  (absScore = 1000 - (absScore % 1000)) < 100)
+		{
+			if (score < 0)
+				sScore = "-";
+			sScore += "M" + QString::number(absScore);
+		}
+		else
+			sScore = QString::number(double(score) / 100.0, 'f', 2);
+
+		// str += sScore + ",";
+	} else {
+		sScore = "0.00";
+		// str += sScore + ",";
+	}
+
+	str += "d=";
+	if (eval.depth() > 0) {
+		str += QString::number(eval.depth());
+	} else {
+		str += "1";
+	}
+
+	// ponder move 'pd' algebraic move
+	QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
+	QStringList sanList = sanPv.split(' ');
+	if (sanList.length() > 1) {
+		str+= ", pd=" + sanList[1];
+	}
+
+	// move time 'mt' "hh:mm:ss"
+	int t = eval.time(); // milliseconds
+	str += ", mt=";
+	if (t == 0)
+		str += "00:00:00";
+	else {
+		int total = qFloor(t / 1000.);
+		int hours = qFloor(total / 3600.) % 24; // should be ok, right?
+		int minutes = (total / 60) % 60;
+		int seconds = total % 60;
+		str +=	QString::number(hours).rightJustified(2, '0') + ":" +
+				QString::number(minutes).rightJustified(2, '0') + ":" +
+				QString::number(seconds).rightJustified(2, '0');
+	}
+
+	// time left 'tl' "hh:mm:ss"
+	ChessPlayer *player = m_player[m_board->sideToMove()];
+	Q_ASSERT(player != 0);
+
+	int tl = player->timeControl()->timeLeft(); // milliseconds
+	str += ", tl=";
+	if (tl == 0)
+		str += "00:00:00";
+	else {
+		int total = qFloor(tl / 1000.);
+		int hours = qFloor(total / 3600.) % 24; // should be ok, right?
+		int minutes = (total / 60) % 60;
+		int seconds = total % 60;
+		str +=	QString::number(hours).rightJustified(2, '0') + ":" +
+				QString::number(minutes).rightJustified(2, '0') + ":" +
+				QString::number(seconds).rightJustified(2, '0');
+	}
+
+	// speed 's' "%d kN/s"
+	int nps = eval.nps();
+	str += ", s=" + QString::number(qFloor(nps / 1000)) + " kN/s";
+
+	// nodes 'n' "%d"
+	str += ", n=" + QString::number(eval.nodeCount());
+
+	// pv 'pv' algebraic string
+	str += ", pv=" + m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
+
+	// tbhits 'tb'
+	str += ", tb=" + QString::number(eval.tbHits());
+
+	// 50-move clock 'R50'
+	Chess::WesternBoard *wboard = dynamic_cast<Chess::WesternBoard *>(m_board);
+	if (wboard) {
+		str += ", R50=" + QString::number(qFloor(((100 - wboard->reversibleMoveCount()) / 2.) + 0.5));
+	}
+
+	// eval from white's perspective 'wv'
+	Chess::Side side = m_board->sideToMove();
+	str += ", wv=";
+	if (side == Chess::Side::Black && sScore != "0.00") {
+		if (sScore[0] == '-')
+			str += sScore.right(sScore.length() - 1);
+		else
+			str += "-" + sScore;
+	} else {
+		str += sScore;
+	}
+#else
 	QString str = eval.scoreText();
 	if (eval.depth() > 0)
 		str += "/" + QString::number(eval.depth()) + " ";
@@ -49,11 +154,9 @@ QString evalString(const MoveEvaluation& eval)
 	else if (t < 10000)
 		precision = 1;
 	str += QString::number(double(t / 1000.0), 'f', precision) + 's';
-
+#endif
 	return str;
 }
-
-} // anonymous namespace
 
 ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
 	: QObject(parent),

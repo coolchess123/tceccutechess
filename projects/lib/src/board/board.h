@@ -242,6 +242,7 @@ class LIB_EXPORT Board
 		 * \sa moveFromString()
 		 */
 		QString moveString(const Move& move, MoveNotation notation);
+		QString sanStringForPv(const QString& pv, MoveNotation notation);
 		/*!
 		 * Converts a move string into a Move.
 		 *

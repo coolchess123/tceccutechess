@@ -167,7 +167,8 @@ Engine options:
 
 TCEC options:
 
-  livepgnout FILE [min]	Send the live output pgn to FILE. Use the 'min'
+  -livepgnout FILE [min]
+  			Send the live output pgn to FILE. Use the 'min'
 			argument to save in a minimal/compact PGN format.
-  tournamentfile FILE	Set the FILE to save tournament resumption data
-  resume		Resume the tournament saved in 'tournamentfile'
+  -tournamentfile FILE	Set the FILE where to save tournament resumption data
+  -resume		Resume the tournament saved in 'tournamentfile'

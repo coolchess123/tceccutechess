@@ -165,7 +165,7 @@ class LIB_EXPORT PgnGame
 		/*! Sets the starting date of the game. */
 		void setDate(const QDate& date);
 		/*! Sets the playing round ordinal of the game. */
-		void setRound(int round);
+		void setRound(int round, int game);
 		/*! Sets the player's name who plays \a side. */
 		void setPlayerName(Chess::Side side, const QString& name);
 		/*! Sets the player's rating who plays \a side. */

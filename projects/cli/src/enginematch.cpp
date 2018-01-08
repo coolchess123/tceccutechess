@@ -605,9 +605,10 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					val = pgn->tagValue("Variation");
 					if (!val.isEmpty()) pMap.insert("variation", val);
 #else
-					// Every tag you request from the PgnGame produces a
-					// crash, even the default ones.
-					//QString test = pgn->variant(); // <= CRASH???!?!!
+					QString val("?");
+					pMap.insert("ECO", val);
+					pMap.insert("opening", val);
+					pMap.insert("variation", val);
 #endif
 					// TODO: after TCEC is over, change this to moveCount, since that's what it is
 					pMap.insert("plyCount", qRound(game->moves().size() / 2.));
@@ -626,7 +627,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 
 					// Detect mate-in-n scores
 					if (absScore > 9900
-					&&	(absScore = 1000 - (absScore % 1000)) < 100)
+						&& (absScore = 1000 - (absScore % 1000)) < 100)
 					{
 						sScore = score < 0 ? "-" : "";
 						sScore += "M" + QString::number(absScore);

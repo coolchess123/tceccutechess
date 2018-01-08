@@ -290,7 +290,7 @@ bool PgnGame::write(QTextStream& out, PgnMode mode) const
 	int movenum = 0;
 	int side = m_startingSide;
 
-	if (m_moves.isEmpty() && !m_initialComment.isEmpty())
+	if (!m_initialComment.isEmpty())
 		out << "\n" << "{" << m_initialComment << "}";
 
 	for (int i = 0; i < m_moves.size(); i++)
@@ -437,9 +437,9 @@ void PgnGame::setDate(const QDate& date)
 	setTag("Date", date.toString("yyyy.MM.dd"));
 }
 
-void PgnGame::setRound(int round)
+void PgnGame::setRound(int round, int game)
 {
-	setTag("Round", QString::number(round));
+	setTag("Round", QString::number(round) + "." + QString::number(game));
 }
 
 void PgnGame::setPlayerName(Chess::Side side, const QString& name)

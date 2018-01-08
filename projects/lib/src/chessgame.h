@@ -126,6 +126,8 @@ class LIB_EXPORT ChessGame : public QObject
 		void startGameTimer();
 		int stopGameTimer();
 		
+		QString evalString(const MoveEvaluation& eval);
+
 		Chess::Board* m_board;
 		ChessPlayer* m_player[2];
 		TimeControl m_timeControl[2];
