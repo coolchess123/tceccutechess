@@ -145,6 +145,9 @@ void ChessEngine::applyConfiguration(const EngineConfiguration& configuration)
 	m_pondering = configuration.pondering();
 	m_restartMode = configuration.restartMode();
 	setClaimsValidated(configuration.areClaimsValidated());
+
+	if (configuration.rating())
+		setRating(configuration.rating());
 }
 
 void ChessEngine::addOption(EngineOption* option)

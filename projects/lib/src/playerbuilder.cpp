@@ -18,7 +18,8 @@
 #include "playerbuilder.h"
 
 PlayerBuilder::PlayerBuilder(const QString& name)
-	: m_name(name)
+	: m_name(name),
+	  m_rating(0)
 {
 }
 

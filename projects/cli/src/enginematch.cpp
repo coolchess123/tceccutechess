@@ -607,7 +607,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 #else
 					// Every tag you request from the PgnGame produces a
 					// crash, even the default ones.
-					QString test = pgn->variant(); // <= CRASH???!?!!
+					//QString test = pgn->variant(); // <= CRASH???!?!!
 #endif
 					// TODO: after TCEC is over, change this to moveCount, since that's what it is
 					pMap.insert("plyCount", qRound(game->moves().size() / 2.));

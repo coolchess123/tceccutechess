@@ -26,7 +26,8 @@ EngineConfiguration::EngineConfiguration()
 	  m_whiteEvalPov(false),
 	  m_pondering(false),
 	  m_validateClaims(true),
-	  m_restartMode(RestartAuto)
+	  m_restartMode(RestartAuto),
+	  m_rating(0)
 {
 }
 
@@ -40,7 +41,8 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_whiteEvalPov(false),
 	  m_pondering(false),
 	  m_validateClaims(true),
-	  m_restartMode(RestartAuto)
+	  m_restartMode(RestartAuto),
+	  m_rating(0)
 {
 }
 
@@ -49,7 +51,8 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_whiteEvalPov(false),
 	  m_pondering(false),
 	  m_validateClaims(true),
-	  m_restartMode(RestartAuto)
+	  m_restartMode(RestartAuto),
+	  m_rating(0)
 {
 	const QVariantMap map = variant.toMap();
 
@@ -111,7 +114,8 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_whiteEvalPov(other.m_whiteEvalPov),
 	  m_pondering(other.m_pondering),
 	  m_validateClaims(other.m_validateClaims),
-	  m_restartMode(other.m_restartMode)
+	  m_restartMode(other.m_restartMode),
+	  m_rating(other.m_rating)
 {
 	const auto options = other.options();
 	for (const EngineOption* option : options)
@@ -120,6 +124,7 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 
 EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 {
+	// GV: Can this even happen? Leave it in anyway?
 	if (this == &other)
 		return *this;
 
@@ -137,6 +142,7 @@ EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 	m_validateClaims = other.m_validateClaims;
 	m_restartMode = other.m_restartMode;
 	m_options = other.m_options;
+	m_rating = other.m_rating;
 
 	// other's destructor will cause a mess if its m_options isn't cleared
 	other.m_options.clear();
@@ -185,6 +191,9 @@ QVariant EngineConfiguration::toVariant() const
 
 		map.insert("options", optionsList);
 	}
+
+	if (m_rating)
+		map.insert("rating", m_rating);
 
 	return map;
 }
@@ -391,6 +400,7 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 		m_pondering = other.m_pondering;
 		m_validateClaims = other.m_validateClaims;
 		m_restartMode = other.m_restartMode;
+		m_rating = other.m_rating;
 
 		qDeleteAll(m_options);
 		m_options.clear();

@@ -892,6 +892,11 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 			break;
 		}
 
+		if (engine.config.rating() <= 0)
+		{
+			qWarning("No player rating");
+		}
+
 		tournament->addPlayer(new EngineBuilder(engine.config),
 				      engine.tc,
 				      match->addOpeningBook(engine.book),
