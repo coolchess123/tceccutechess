@@ -634,8 +634,6 @@ void Tournament::onGameFinished(ChessGame* game)
 
 	writeEpd(game);
 	writePgn(pgn, gameNumber);
-	if (m_pgnCleanup)
-		delete pgn;
 
 	Chess::Result::Type resultType(game->result().type());
 	bool crashed = (resultType == Chess::Result::Disconnection ||
@@ -651,6 +649,10 @@ void Tournament::onGameFinished(ChessGame* game)
 	}
 
 	emit gameFinished(game, gameNumber, iWhite, iBlack);
+
+	// delete pgn after signal emit so it's available to signal handlers
+	if (m_pgnCleanup)
+		delete pgn;
 
 	if (areAllGamesFinished() || (m_stopping && m_gameData.isEmpty()))
 	{

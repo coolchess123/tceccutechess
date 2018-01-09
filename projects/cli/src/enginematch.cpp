@@ -595,7 +595,6 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 				pMap.insert("terminationDetails", result.shortDescription());
 				PgnGame *pgn = game->pgn();
 				if (pgn) {
-#if 0
 					// const EcoInfo eco = pgn->eco();
 					QString val;
 					val = pgn->tagValue("ECO");
@@ -604,12 +603,6 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					if (!val.isEmpty()) pMap.insert("opening", val);
 					val = pgn->tagValue("Variation");
 					if (!val.isEmpty()) pMap.insert("variation", val);
-#else
-					QString val("?");
-					pMap.insert("ECO", val);
-					pMap.insert("opening", val);
-					pMap.insert("variation", val);
-#endif
 					// TODO: after TCEC is over, change this to moveCount, since that's what it is
 					pMap.insert("plyCount", qRound(game->moves().size() / 2.));
 				}
