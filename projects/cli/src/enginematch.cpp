@@ -244,7 +244,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 			qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile));
 		} else {
 			QTextStream out(&output);
-			out.setCodec(QTextCodec::codecForName("latin1")); // otherwise output is converted to ASCII
+			out.setCodec("UTF-8"); // otherwise output is converted to ASCII
 			out << scheduleText;
 		}
 	}
@@ -484,7 +484,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		qWarning("cannot open tournament configuration file: %s", qPrintable(crossTableFile));
 	} else {
 		QTextStream out(&output);
-		out.setCodec(QTextCodec::codecForName("latin1")); // otherwise output is converted to ASCII
+		out.setCodec("UTF-8"); // otherwise output is converted to ASCII
 		out << crossTableText;
 	}
 }
