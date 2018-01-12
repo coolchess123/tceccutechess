@@ -137,6 +137,9 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	} else {
 		str += sScore;
 	}
+
+	str += ',';
+
 #else
 	QString str = eval.scoreText();
 	if (eval.depth() > 0)
