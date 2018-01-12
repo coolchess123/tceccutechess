@@ -406,11 +406,10 @@ void Tournament::startGame(TournamentPair* pair)
 
 	game->pgn()->setEvent(m_name);
 	game->pgn()->setSite(m_site);
-	int gameNo = m_nextGameNumber + 1 - (m_round - 1) * m_gamesPerEncounter;
+	int gameNo = m_nextGameNumber % m_gamesPerEncounter + 1;
 	game->pgn()->setRound(m_round, gameNo);
 
-	if (m_finishedGameCount > 0)
-		game->setStartDelay(m_startDelay);
+	game->setStartDelay(m_startDelay);
 	game->setAdjudicator(m_adjudicator);
 
 	GameData* data = new GameData;

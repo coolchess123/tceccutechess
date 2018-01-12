@@ -527,7 +527,8 @@ void PgnGame::setResultDescription(const QString& description)
 	}
 
 	QString& comment = m_moves.last().comment;
-	if (!comment.isEmpty()) {
+	if (!comment.isEmpty())
+	{
 		if (comment[comment.size() - 1] != ',')
 			comment += ',';
 		comment += ' ';
