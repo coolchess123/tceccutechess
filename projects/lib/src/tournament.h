@@ -119,6 +119,8 @@ class LIB_EXPORT Tournament : public QObject
 		 * stopping criterion.
 		 */
 		Sprt* sprt() const;
+		/*! Returns true if the players swap sides in an encounter */
+		bool swapSides() const;
 
 		/*! Sets the tournament's name to \a name. */
 		void setName(const QString& name);

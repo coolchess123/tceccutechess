@@ -166,6 +166,11 @@ Sprt* Tournament::sprt() const
 	return m_sprt;
 }
 
+bool Tournament::swapSides() const
+{
+	return m_swapSides;
+}
+
 bool Tournament::canSetRoundMultiplier() const
 {
 	return true;

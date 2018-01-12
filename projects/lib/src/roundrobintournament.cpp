@@ -91,7 +91,6 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 
 	while (gameNumber < finalGameCount())
 	{
-
 		if (pairNumber >= topHalf.size())
 		{
 			pairNumber = 0;
@@ -102,7 +101,7 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 		int white = topHalf.at(pairNumber);
 		int black = bottomHalf.at(pairNumber);
 
-		pairNumber++;
+		++pairNumber;
 
 		if (white < playerCount() && black < playerCount())
 		{
@@ -112,7 +111,8 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 									   playerAt(black).builder()->name()));
 				++gameNumber;
 
-				qSwap(white, black);
+				if(swapSides())
+					qSwap(white, black);
 			}
 		}
 	}
