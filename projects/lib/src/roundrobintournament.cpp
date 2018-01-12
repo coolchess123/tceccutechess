@@ -31,6 +31,7 @@ QString RoundRobinTournament::type() const
 	return "round-robin";
 }
 
+#if 0
 QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 {
 	int count = playerCount() + (playerCount() % 2);
@@ -38,26 +39,13 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 	QList<int> bergerTable;
 	QMap<QString, QPair<int, int> > WBmap;
 	QString ls;
-	bool wantsDebug = false;
 
 	initializePairing(bergerTable);
-
-	if (wantsDebug) {
-		ls.clear();
-		for(int i = 0; i < bergerTable.size(); i++) {
-			if (i) ls += " ";
-			ls += QString::number(bergerTable[i]);
-		}
-		qDebug("%s", qPrintable(ls));
-	}
 
 	int bergerPtr = 0;
 	int gameNumber = 0;
 	int currentRound = 1;
 	QList< QPair<QString, QString> > pList;
-
-	if (wantsDebug)
-		qDebug("Round %d", currentRound);
 
 	while(gameNumber < finalGameCount()) {
 		if (bergerPtr >= bergerTable.size()) {
@@ -68,15 +56,6 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 			bergerPtr = 0;
 			currentRound++;
 			bergerTable.insert(!(((currentRound - 1) % roundsPerCycle) % 2), bergerTable.takeAt(bergerTable.indexOf(count - 1)));
-			if (wantsDebug) {
-				qDebug("Round %d", currentRound);
-				ls.clear();
-				for(int i = 0; i < bergerTable.size(); i++) {
-					if (i) ls += " ";
-					ls += QString::number(bergerTable[i]);
-				}
-				qDebug("%s", qPrintable(ls));
-			}
 		}
 		int white = bergerTable[bergerPtr++];
 		int black = bergerTable[bergerPtr++];
@@ -87,19 +66,6 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 		if (white < playerCount() && black < playerCount()) {
 			pList.append(qMakePair(playerAt(white).builder()->name(), playerAt(black).builder()->name()));
 
-			if (wantsDebug) {
-				int wW, wB;
-				int bW, bB;
-				QPair<int, int>& thisPair = WBmap[playerAt(white).builder()->name()];
-				thisPair.first++;
-				wW = thisPair.first;
-				wB = thisPair.second;
-				QPair<int, int>& thatPair = WBmap[playerAt(black).builder()->name()];
-				thatPair.second++;
-				bW = thatPair.first;
-				bB = thatPair.second;
-				qDebug("%s (%dW %dB) - %s (%dW %dB)", qPrintable(playerAt(white).builder()->name()), wW, wB, qPrintable(playerAt(black).builder()->name()), bW, bB);
-			}
 			gameNumber++;
 		} else {
 			// what about byes? cutechess doesn't usually count them
@@ -108,6 +74,52 @@ QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 	//exit(0);
 	return pList;
 }
+#else
+QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
+{
+	const int count = playerCount() + (playerCount() % 2);
+	QList<int> topHalf;
+	QList<int> bottomHalf;
+	QList< QPair<QString, QString> > pList;
+	int pairNumber = 0;
+	int gameNumber = 0;
+
+	for (int i = 0; i < count / 2; i++)
+		topHalf.append(i);
+	for (int i = count - 1; i >= count / 2; i--)
+		bottomHalf.append(i);
+
+	while (gameNumber < finalGameCount())
+	{
+
+		if (pairNumber >= topHalf.size())
+		{
+			pairNumber = 0;
+			topHalf.insert(1, bottomHalf.takeFirst());
+			bottomHalf.append(topHalf.takeLast());
+		}
+
+		int white = topHalf.at(pairNumber);
+		int black = bottomHalf.at(pairNumber);
+
+		pairNumber++;
+
+		if (white < playerCount() && black < playerCount())
+		{
+			for(int game = 0; game < gamesPerEncounter(); ++game)
+			{
+				pList.append(qMakePair(playerAt(white).builder()->name(),
+									   playerAt(black).builder()->name()));
+				++gameNumber;
+
+				qSwap(white, black);
+			}
+		}
+	}
+
+	return pList;
+}
+#endif
 
 void RoundRobinTournament::initializePairing()
 {
