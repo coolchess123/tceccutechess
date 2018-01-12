@@ -115,14 +115,14 @@ QString Result::description() const
 	else if (m_type == Timeout)
 	{
 		if (l.isEmpty())
-			str = tr("Draw by timeout");
+			str = tr("Timeout");
 		else
 			str = tr("%1 loses on time").arg(l);
 	}
 	else if (m_type == Adjudication)
 	{
 		if (w.isEmpty())
-			str = tr("Draw by adjudication");
+			str = tr("Adjudication");
 		else
 			str = tr("%1 wins by adjudication").arg(w);
 	}
@@ -131,14 +131,14 @@ QString Result::description() const
 	else if (m_type == Disconnection)
 	{
 		if (l.isEmpty())
-			str = tr("Draw by disconnection");
+			str = tr("Disconnection");
 		else
 			str = tr("%1 disconnects").arg(l);
 	}
 	else if (m_type == StalledConnection)
 	{
 		if (l.isEmpty())
-			str = tr("Draw by stalled connection");
+			str = tr("Stalled connection");
 		else
 			str = tr("%1's connection stalls").arg(l);
 	}

@@ -406,7 +406,11 @@ void Tournament::startGame(TournamentPair* pair)
 
 	game->pgn()->setEvent(m_name);
 	game->pgn()->setSite(m_site);
-	int gameNo = m_nextGameNumber % m_gamesPerEncounter + 1;
+
+	const int pCount = playerCount() - (playerCount() % 2);
+	const int totalRounds = m_finalGameCount / pCount;
+	const int gamesPerRound = m_finalGameCount / totalRounds;
+	const int gameNo = m_nextGameNumber % gamesPerRound + 1;
 	game->pgn()->setRound(m_round, gameNo);
 
 	game->setStartDelay(m_startDelay);
