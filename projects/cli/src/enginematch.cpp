@@ -604,7 +604,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					val = pgn->tagValue("Variation");
 					if (!val.isEmpty()) pMap.insert("variation", val);
 					// TODO: after TCEC is over, change this to moveCount, since that's what it is
-					pMap.insert("plyCount", qRound(game->moves().size() / 2.));
+					pMap.insert("plyCount", (game->moves().size() + 1) / 2);
 				}
 				pMap.insert("finalFen", game->board()->fenString());
 
