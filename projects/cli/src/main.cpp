@@ -363,10 +363,14 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	}
 
 	QString ttype;
-	if (usingTournamentFile && tfMap.contains("tournamentType")) // tournament file overrides cli options
-		ttype = tfMap["tournamentType"].toString();
+	if (usingTournamentFile && tMap.contains("type")) // tournament file overrides cli options
+		ttype = tMap["type"].toString();
 	else
+	{
 		ttype = parser.takeOption("-tournament").toString();
+		if (!ttype.isEmpty())
+			tMap.insert("type", ttype);
+	}
 	if (ttype.isEmpty())
 		ttype = "round-robin";
 	Tournament* tournament = TournamentFactory::create(ttype, manager, parent);
