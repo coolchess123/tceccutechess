@@ -57,7 +57,9 @@ Tournament::Tournament(GameManager* gameManager, QObject *parent)
 	  m_repetitionCounter(0),
 	  m_swapSides(true),
 	  m_pgnOutMode(PgnGame::Verbose),
-	  m_pair(nullptr)
+	  m_pair(nullptr),
+	  m_livePgnOutMode(PgnGame::Verbose),
+	  m_resumeGameNumber(0)
 {
 	Q_ASSERT(gameManager != nullptr);
 }
@@ -722,6 +724,77 @@ void Tournament::start()
 
 	initializePairing();
 	m_finalGameCount = gamesPerCycle() * gamesPerEncounter() * roundMultiplier();
+
+	if (m_resumeGameNumber)
+	{
+		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
+		{
+			if (m_nextGameNumber >= m_finalGameCount)
+				return;
+
+			TournamentPair* pair(nextPair(m_nextGameNumber));
+			if (!pair || !pair->isValid())
+				return;
+
+			if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+			{
+				m_startFen.clear();
+				m_openingMoves.clear();
+			}
+
+			m_pair = pair;
+			m_pair->addStartedGame();
+
+			const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
+			const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
+
+			Chess::Board* board = Chess::BoardFactory::create(m_variant);
+			Q_ASSERT(board != nullptr);
+			ChessGame* game = new ChessGame(board, new PgnGame());
+
+			game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
+			game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
+
+			if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
+			{
+				game->setStartingFen(m_startFen);
+				game->setMoves(m_openingMoves);
+				m_startFen.clear();
+				m_openingMoves.clear();
+				m_repetitionCounter++;
+			}
+			else
+			{
+				m_repetitionCounter = 1;
+				if (m_openingSuite != nullptr)
+				{
+					if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+						qWarning("The opening suite is incompatible with the "
+						"current chess variant");
+				}
+			}
+
+			game->generateOpening();
+			if (m_repetitionCounter < m_openingRepetitions)
+			{
+				m_startFen = game->startingFen();
+				if (m_startFen.isEmpty() && board->isRandomVariant())
+				{
+					m_startFen = board->defaultFenString();
+					game->setStartingFen(m_startFen);
+				}
+				m_openingMoves = game->moves();
+			}
+
+			if (m_swapSides)
+				m_pair->swapPlayers();
+
+			delete game;
+
+			++m_nextGameNumber;
+			++m_finishedGameCount;
+		}
+	}
 
 	startNextGame();
 }
