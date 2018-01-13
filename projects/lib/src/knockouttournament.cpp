@@ -291,6 +291,12 @@ QString KnockoutTournament::results() const
 	return lines.join('\n');
 }
 
+int KnockoutTournament::gamesPerRound() const
+{
+	// TODO: Implement for TCEC
+	return 0;
+}
+
 QList< QPair<QString, QString> > KnockoutTournament::getPairings()
 {
 	// TODO: Implement knockout for TCEC

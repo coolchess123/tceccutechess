@@ -439,7 +439,10 @@ void PgnGame::setDate(const QDate& date)
 
 void PgnGame::setRound(int round, int game)
 {
-	setTag("Round", QString::number(round) + "." + QString::number(game));
+	QString value(QString::number(round));
+	if (game > 0)
+		value += '.' + QString::number(game);
+	setTag("Round", value);
 }
 
 void PgnGame::setPlayerName(Chess::Side side, const QString& name)

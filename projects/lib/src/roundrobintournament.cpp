@@ -31,6 +31,13 @@ QString RoundRobinTournament::type() const
 	return "round-robin";
 }
 
+int RoundRobinTournament::gamesPerRound() const
+{
+	const int pCount = playerCount() - (playerCount() % 2);
+	const int totalRounds = finalGameCount() / pCount;
+	return finalGameCount() / totalRounds;
+}
+
 #if 0
 QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 {

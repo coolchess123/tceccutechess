@@ -64,6 +64,8 @@ class LIB_EXPORT Tournament : public QObject
 		virtual QString type() const = 0;
 		/*! Returns a list of all pairings (by player name) for this tournament. */
 		virtual QList< QPair<QString, QString> > getPairings() = 0;
+		/*! Returns the number of games per round for this tournament. */
+		virtual int gamesPerRound() const = 0;
 		/*! Returns the GameManager that manages the tournament's games. */
 		GameManager* gameManager() const;
 		/*! Returns true if the tournament is finished; otherwise returns false. */

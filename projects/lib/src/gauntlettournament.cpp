@@ -32,6 +32,11 @@ QString GauntletTournament::type() const
 	return "gauntlet";
 }
 
+int GauntletTournament::gamesPerRound() const
+{
+	return (playerCount() - 1) * gamesPerEncounter();
+}
+
 QList< QPair<QString, QString> > GauntletTournament::getPairings()
 {
 	QList< QPair<QString, QString> > pList;
