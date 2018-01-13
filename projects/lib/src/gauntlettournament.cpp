@@ -34,8 +34,29 @@ QString GauntletTournament::type() const
 
 QList< QPair<QString, QString> > GauntletTournament::getPairings()
 {
-	// TODO: implement for TCEC
 	QList< QPair<QString, QString> > pList;
+	int gameNumber = 0;
+	int opponent = 1;
+
+	while (gameNumber < finalGameCount())
+	{
+		if (opponent >= playerCount())
+			opponent = 1;
+
+		int white = 0;
+		int black = opponent++;
+
+		for(int game = 0; game < gamesPerEncounter(); ++game)
+		{
+			pList.append(qMakePair(playerAt(white).builder()->name(),
+								   playerAt(black).builder()->name()));
+			++gameNumber;
+
+			if(swapSides())
+				qSwap(white, black);
+		}
+	}
+
 	return pList;
 }
 
