@@ -244,7 +244,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 			qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile));
 		} else {
 			QTextStream out(&output);
-			out.setCodec("UTF-8"); // otherwise output is converted to ASCII
+			out.setCodec("ISO 8859-1"); // otherwise output is converted to ASCII
 			out << scheduleText;
 		}
 	}
