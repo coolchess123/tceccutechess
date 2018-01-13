@@ -729,9 +729,6 @@ void Tournament::start()
 	{
 		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
 		{
-			if (m_nextGameNumber >= m_finalGameCount)
-				return;
-
 			TournamentPair* pair(nextPair(m_nextGameNumber));
 			if (!pair || !pair->isValid())
 				return;
@@ -786,13 +783,16 @@ void Tournament::start()
 				m_openingMoves = game->moves();
 			}
 
+			++m_nextGameNumber;
+			++m_finishedGameCount;
+
+			if (m_nextGameNumber > m_finalGameCount)
+				m_finalGameCount = m_nextGameNumber;
+
 			if (m_swapSides)
 				m_pair->swapPlayers();
 
 			delete game;
-
-			++m_nextGameNumber;
-			++m_finishedGameCount;
 		}
 	}
 
