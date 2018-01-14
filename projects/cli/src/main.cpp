@@ -324,7 +324,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	parser.addOption("-livepgnout", QVariant::StringList, 1, 2);
 	parser.addOption("-tournamentfile", QVariant::String, 1, 1);
 	parser.addOption("-resume", QVariant::Bool, 0, 0);
-	parser.addOption("-ecopng", QVariant::String, 1, 1);
+	parser.addOption("-ecopgn", QVariant::String, 1, 1);
 
 	if (!parser.parse())
 		return nullptr;
@@ -336,7 +336,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	bool wantsResume = false;
 	bool wantsDebug = parser.takeOption("-debug").toBool();
 
-	QString ecoPgn = parser.takeOption("-ecopng").toString();
+	QString ecoPgn = parser.takeOption("-ecopgn").toString();
 	if (!ecoPgn.isEmpty())
 	{
 		if (QFile::exists(ecoPgn))
