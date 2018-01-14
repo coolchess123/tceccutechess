@@ -40,6 +40,8 @@
 #include <board/result.h>
 #include <jsonparser.h>
 #include <jsonserializer.h>
+#include <econode.h>
+#include <pgnstream.h>
 
 #include "cutechesscoreapp.h"
 #include "matchparser.h"
@@ -322,6 +324,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	parser.addOption("-livepgnout", QVariant::StringList, 1, 2);
 	parser.addOption("-tournamentfile", QVariant::String, 1, 1);
 	parser.addOption("-resume", QVariant::Bool, 0, 0);
+	parser.addOption("-ecopng", QVariant::String, 1, 1);
 
 	if (!parser.parse())
 		return nullptr;
@@ -332,6 +335,24 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	QVariantList eList;
 	bool wantsResume = false;
 	bool wantsDebug = parser.takeOption("-debug").toBool();
+
+	QString ecoPgn = parser.takeOption("-ecopng").toString();
+	if (!ecoPgn.isEmpty())
+	{
+		if (QFile::exists(ecoPgn))
+		{
+			QFile input(ecoPgn);
+			if (input.open(QIODevice::ReadOnly | QIODevice::Text))
+			{
+				PgnStream pgnStream(&input);
+				EcoNode::initialize(pgnStream);
+			}
+			else
+				qWarning("cannot open eco file %s", qPrintable(ecoPgn));
+		}
+		else
+			qWarning("eco file %s not found", qPrintable(ecoPgn));
+	}
 
 	QString tournamentFile = parser.takeOption("-tournamentfile").toString();
 	bool usingTournamentFile = false;

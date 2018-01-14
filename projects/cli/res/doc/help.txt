@@ -175,3 +175,5 @@ TCEC options:
 			argument to save in a minimal/compact PGN format.
   -tournamentfile FILE	Set the FILE where to save tournament resumption data
   -resume		Resume the tournament saved in 'tournamentfile'
+  -ecopgn FILE		Use ECO classification from the games specified in FILE
+  			in PGN format instead of the internal ECO database.
