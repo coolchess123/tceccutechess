@@ -84,8 +84,11 @@ class LIB_EXPORT PgnGame
 		QList< QPair<QString, QString> > tags() const;
 		/*! Returns the moves that were played in the game. */
 		const QVector<MoveData>& moves() const;
-		/*! Adds a new move to the game. */
-		void addMove(const MoveData& data);
+		/*! Adds a new move to the game.
+		 * \param data the move to add.
+		 * \param addECO write ECO information tags if true.
+		 */
+		void addMove(const MoveData& data, bool addECO = true);
 		void setMove(int ply, const MoveData& data);
 
 		/*!

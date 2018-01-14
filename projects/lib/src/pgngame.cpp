@@ -98,12 +98,12 @@ const QVector<PgnGame::MoveData>& PgnGame::moves() const
 	return m_moves;
 }
 
-void PgnGame::addMove(const MoveData& data)
+void PgnGame::addMove(const MoveData& data, bool addECO)
 {
 	m_moves.append(data);
 
 	m_eco = (m_eco && isStandard()) ? m_eco->child(data.moveString) : nullptr;
-	if (m_eco && m_eco->isLeaf())
+	if (addECO && m_eco && m_eco->isLeaf())
 	{
 		setTag("ECO", m_eco->ecoCode());
 		setTag("Opening", m_eco->opening());
@@ -197,7 +197,7 @@ bool PgnGame::parseMove(PgnStream& in)
 
 	MoveData md = { board->key(), board->genericMove(move),
 			str, QString() };
-	addMove(md);
+	addMove(md, false);
 
 	board->makeMove(move);
 	return true;
