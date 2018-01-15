@@ -201,7 +201,7 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 
 	MoveData md = { board->key(), board->genericMove(move),
 			str, QString() };
-	addMove(md, false);
+	addMove(md, addEco);
 
 	board->makeMove(move);
 	return true;
