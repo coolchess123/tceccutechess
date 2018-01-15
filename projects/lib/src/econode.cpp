@@ -120,10 +120,6 @@ void EcoNode::initialize(PgnStream& in)
 	PgnGame game;
 	while (game.read(in, INT_MAX - 1, false))
 	{
-		QString ecoTag = game.tagValue("ECO");
-		QString openingTag = game.tagValue("Opening");
-		QString variationTag = game.tagValue("Variation");
-
 		current = s_root;
 		for (const PgnGame::MoveData& move : game.moves())
 		{
@@ -139,21 +135,22 @@ void EcoNode::initialize(PgnStream& in)
 		if (current == s_root)
 			continue;
 
-		current->m_ecoCode = ecoFromString(ecoTag);
+		current->m_ecoCode = ecoFromString(game.tagValue("ECO"));
 
-		if (!openingTag.isEmpty())
+		QString val = game.tagValue("Opening");
+		if (!val.isEmpty())
 		{
-			int index = tmpOpenings.value(openingTag, -1);
+			int index = tmpOpenings.value(val, -1);
 			if (index == -1)
 			{
 				index = tmpOpenings.count();
-				tmpOpenings[openingTag] = index;
-				s_openings.append(openingTag);
+				tmpOpenings[val] = index;
+				s_openings.append(val);
 			}
 			current->m_opening = index;
 		}
 
-		current->m_variation = variationTag;
+		current->m_variation = game.tagValue("Variation");
 	}
 }
 
