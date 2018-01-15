@@ -85,10 +85,10 @@ class LIB_EXPORT PgnGame
 		/*! Returns the moves that were played in the game. */
 		const QVector<MoveData>& moves() const;
 		/*! Adds a new move to the game.
-		 * \param data the move to add.
-		 * \param addECO write ECO information tags if true.
+		 * \param data The move to add.
+		 * \param addEco Adds opening information if true.
 		 */
-		void addMove(const MoveData& data, bool addECO = true);
+		void addMove(const MoveData& data, bool addEco = true);
 		void setMove(int ply, const MoveData& data);
 
 		/*!
@@ -104,13 +104,15 @@ class LIB_EXPORT PgnGame
 		 *
 		 * \param in The PGN stream to read from.
 		 * \param maxMoves The maximum number of halfmoves to read.
+		 * \param addEco Adds opening information if true.
 		 *
 		 * \note Even if the stream contains multiple games,
 		 * only one will be read.
 		 *
 		 * Returns true if any tags and/or moves were read.
 		 */
-		bool read(PgnStream& in, int maxMoves = INT_MAX - 1);
+		bool read(PgnStream& in, int maxMoves = INT_MAX - 1,
+				  bool addEco = true);
 		/*!
 		 * Writes the game to a text stream.
 		 *
@@ -201,7 +203,7 @@ class LIB_EXPORT PgnGame
 		void setGameEndTime(const QDateTime& dateTime);
 
 	private:
-		bool parseMove(PgnStream& in);
+		bool parseMove(PgnStream& in, bool addEco);
 		
 		Chess::Side m_startingSide;
 		const EcoNode* m_eco;

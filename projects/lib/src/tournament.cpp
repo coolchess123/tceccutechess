@@ -658,7 +658,6 @@ void Tournament::onGameFinished(ChessGame* game)
 
 	emit gameFinished(game, gameNumber, iWhite, iBlack);
 
-	// delete pgn after signal emit so it's available to signal handlers
 	if (m_pgnCleanup)
 		delete pgn;
 
