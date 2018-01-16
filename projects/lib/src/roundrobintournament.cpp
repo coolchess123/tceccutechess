@@ -33,125 +33,134 @@ QString RoundRobinTournament::type() const
 
 int RoundRobinTournament::gamesPerRound() const
 {
-	const int pCount = playerCount() - (playerCount() % 2);
-	const int totalRounds = finalGameCount() / pCount;
+	const int count = playerCount() - (playerCount() % 2);
+
+	if (bergerSchedule())
+		return count / 2;
+
+	const int totalRounds = finalGameCount() / count;
+
 	return finalGameCount() / totalRounds;
 }
 
-#if 0
-QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
-{
-	int count = playerCount() + (playerCount() % 2);
-	int roundsPerCycle = gamesPerCycle() / (count / 2);
-	QList<int> bergerTable;
-	QMap<QString, QPair<int, int> > WBmap;
-	QString ls;
-
-	initializePairing(bergerTable);
-
-	int bergerPtr = 0;
-	int gameNumber = 0;
-	int currentRound = 1;
-	QList< QPair<QString, QString> > pList;
-
-	while(gameNumber < finalGameCount()) {
-		if (bergerPtr >= bergerTable.size()) {
-			for (int i = 0; i < count; i++) {
-				if (bergerTable[i] == count - 1) ;
-				else bergerTable[i] = (bergerTable[i] + (count / 2)) % (count - 1);
-			}
-			bergerPtr = 0;
-			currentRound++;
-			bergerTable.insert(!(((currentRound - 1) % roundsPerCycle) % 2), bergerTable.takeAt(bergerTable.indexOf(count - 1)));
-		}
-		int white = bergerTable[bergerPtr++];
-		int black = bergerTable[bergerPtr++];
-
-		if ((gameNumber / gamesPerCycle()) % 2)
-			qSwap(white, black);
-
-		if (white < playerCount() && black < playerCount()) {
-			pList.append(qMakePair(playerAt(white).builder()->name(), playerAt(black).builder()->name()));
-
-			gameNumber++;
-		} else {
-			// what about byes? cutechess doesn't usually count them
-		}
-	}
-	//exit(0);
-	return pList;
-}
-#else
 QList< QPair<QString, QString> > RoundRobinTournament::getPairings()
 {
 	const int count = playerCount() + (playerCount() % 2);
-	QList<int> topHalf;
-	QList<int> bottomHalf;
 	QList< QPair<QString, QString> > pList;
-	int pairNumber = 0;
-	int gameNumber = 0;
 
-	for (int i = 0; i < count / 2; i++)
-		topHalf.append(i);
-	for (int i = count - 1; i >= count / 2; i--)
-		bottomHalf.append(i);
-
-	while (gameNumber < finalGameCount())
+	if (bergerSchedule())
 	{
-		if (pairNumber >= topHalf.size())
+		const int roundsPerCycle = gamesPerCycle() / (count / 2);
+		QList<int> bergerTable;
+		QMap<QString, QPair<int, int> > WBmap;
+		QString ls;
+
+		initializePairing(bergerTable);
+
+		int bergerPtr = 0;
+		int gameNumber = 0;
+		int currentRound = 1;
+
+		while(gameNumber < finalGameCount())
 		{
-			pairNumber = 0;
-			topHalf.insert(1, bottomHalf.takeFirst());
-			bottomHalf.append(topHalf.takeLast());
-		}
+			if (bergerPtr >= bergerTable.size())
+			{
+				for (int i = 0; i < count; i++)
+					if (bergerTable[i] != count - 1)
+						bergerTable[i] = (bergerTable[i] + (count / 2)) % (count - 1);
 
-		int white = topHalf.at(pairNumber);
-		int black = bottomHalf.at(pairNumber);
+				bergerPtr = 0;
+				++currentRound;
+				bergerTable.insert(!(((currentRound - 1) % roundsPerCycle) % 2),
+								   bergerTable.takeAt(bergerTable.indexOf(count - 1)));
+			}
+			int white = bergerTable[bergerPtr++];
+			int black = bergerTable[bergerPtr++];
 
-		++pairNumber;
+			if (swapSides() && (gameNumber / gamesPerCycle()) % 2)
+				qSwap(white, black);
 
-		if (white < playerCount() && black < playerCount())
-		{
-			for(int game = 0; game < gamesPerEncounter(); ++game)
+			if (white < playerCount() && black < playerCount())
 			{
 				pList.append(qMakePair(playerAt(white).builder()->name(),
 									   playerAt(black).builder()->name()));
-				++gameNumber;
 
-				if(swapSides())
-					qSwap(white, black);
+				++gameNumber;
+			}
+		}
+	}
+	else
+	{
+		QList<int> topHalf;
+		QList<int> bottomHalf;
+		int pairNumber = 0;
+		int gameNumber = 0;
+
+		for (int i = 0; i < count / 2; i++)
+			topHalf.append(i);
+		for (int i = count - 1; i >= count / 2; i--)
+			bottomHalf.append(i);
+
+		while (gameNumber < finalGameCount())
+		{
+			if (pairNumber >= topHalf.size())
+			{
+				pairNumber = 0;
+				topHalf.insert(1, bottomHalf.takeFirst());
+				bottomHalf.append(topHalf.takeLast());
+			}
+
+			int white = topHalf.at(pairNumber);
+			int black = bottomHalf.at(pairNumber);
+
+			++pairNumber;
+
+			if (white < playerCount() && black < playerCount())
+			{
+				for(int game = 0; game < gamesPerEncounter(); ++game)
+				{
+					pList.append(qMakePair(playerAt(white).builder()->name(),
+										   playerAt(black).builder()->name()));
+					++gameNumber;
+
+					if(swapSides())
+						qSwap(white, black);
+				}
 			}
 		}
 	}
 
 	return pList;
 }
-#endif
 
 void RoundRobinTournament::initializePairing()
 {
 	m_pairNumber = 0;
-	m_topHalf.clear();
-	m_bottomHalf.clear();
-	int count = playerCount() + (playerCount() % 2);
+	if (bergerSchedule())
+		initializePairing(m_topHalf);
+	else
+	{
+		m_topHalf.clear();
+		m_bottomHalf.clear();
+		int count = playerCount() + (playerCount() % 2);
 
-	for (int i = 0; i < count / 2; i++)
-		m_topHalf.append(i);
-	for (int i = count - 1; i >= count / 2; i--)
-		m_bottomHalf.append(i);
+		for (int i = 0; i < count / 2; i++)
+			m_topHalf.append(i);
+		for (int i = count - 1; i >= count / 2; i--)
+			m_bottomHalf.append(i);
+	}
 }
 
 void RoundRobinTournament::initializePairing(QList<int>& bergerTable)
 {
 	int count = playerCount() + (playerCount() % 2);
-
 	bergerTable.clear();
 	bergerTable.reserve(count);
-	for (int i  = 0; i < count; i++)
+	for (int i  = 0; i < count; ++i)
 		bergerTable.append(0);
-	for (int i = 0; i < count / 2; i++)
+	for (int i = 0; i < count / 2; ++i)
 		bergerTable[i * 2] = i;
-	for (int i = count - 1; i >= count / 2; i--)
+	for (int i = count - 1; i >= count / 2; --i)
 		bergerTable[((count - i) * 2) - 1] = i;
 }
 
@@ -164,21 +173,48 @@ TournamentPair* RoundRobinTournament::nextPair(int gameNumber)
 {
 	if (gameNumber >= finalGameCount())
 		return nullptr;
-	if (gameNumber % gamesPerEncounter() != 0)
-		return currentPair();
 
-	if (m_pairNumber >= m_topHalf.size())
+	int white, black;
+
+	if (bergerSchedule())
 	{
-		m_pairNumber = 0;
-		setCurrentRound(currentRound() + 1);
-		m_topHalf.insert(1, m_bottomHalf.takeFirst());
-		m_bottomHalf.append(m_topHalf.takeLast());
+		const int count = playerCount() + (playerCount() % 2);
+		const int roundsPerCycle = gamesPerCycle() / (count / 2);
+
+		if (m_pairNumber >= m_topHalf.size())
+		{
+			for (int i = 0; i < count; i++)
+				if (m_topHalf[i] != count - 1)
+					m_topHalf[i] = (m_topHalf[i] + (count / 2)) % (count - 1);
+			m_pairNumber = 0;
+
+			const int cRound = currentRound();
+			m_topHalf.insert(!((cRound % roundsPerCycle) % 2),
+							   m_topHalf.takeAt(m_topHalf.indexOf(count - 1)));
+			setCurrentRound(cRound + 1);
+		}
+
+		white = m_topHalf[m_pairNumber++];
+		black = m_topHalf[m_pairNumber++];
 	}
+	else
+	{
+		if (gameNumber % gamesPerEncounter() != 0)
+			return currentPair();
 
-	int white = m_topHalf.at(m_pairNumber);
-	int black = m_bottomHalf.at(m_pairNumber);
+		if (m_pairNumber >= m_topHalf.size())
+		{
+			m_pairNumber = 0;
+			setCurrentRound(currentRound() + 1);
+			m_topHalf.insert(1, m_bottomHalf.takeFirst());
+			m_bottomHalf.append(m_topHalf.takeLast());
+		}
 
-	m_pairNumber++;
+		white = m_topHalf.at(m_pairNumber);
+		black = m_bottomHalf.at(m_pairNumber);
+
+		m_pairNumber++;
+	}
 
 	// If 'white' or 'black' equals 'playerCount()' it means
 	// that it's a "bye" player, that is an empty player that

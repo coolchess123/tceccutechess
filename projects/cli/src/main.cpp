@@ -325,6 +325,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	parser.addOption("-tournamentfile", QVariant::String, 1, 1);
 	parser.addOption("-resume", QVariant::Bool, 0, 0);
 	parser.addOption("-ecopgn", QVariant::String, 1, 1);
+	parser.addOption("-bergerschedule", QVariant::Bool, 0, 0);
 
 	if (!parser.parse())
 		return nullptr;
@@ -522,6 +523,8 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 			openingsOption.name = "-bookmode";
 			openingsOption.value = tMap["bookmode"];
 		}
+		if (tMap.contains("bergerSchedule"))
+			tournament->setBergerSchedule(tMap["bergerSchedule"].toBool());
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
 			for (int e = 0; e < eList.size(); e++) {
@@ -848,6 +851,11 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 					qWarning("Cannot resume a non-initialized tournament. Creating new tournament file @ %s", qPrintable(tournamentFile));
 				else
 					qWarning("The -resume flag is meant to be used with the -tournamentfile option. Ignoring.");
+			}
+			else if(name == "-bergerschedule") {
+				bool flag = value.toBool();
+				tournament->setBergerSchedule(flag);
+				tMap.insert("bergerSchedule", flag);
 			}
 			else
 				qFatal("Unknown argument: \"%s\"", qPrintable(name));

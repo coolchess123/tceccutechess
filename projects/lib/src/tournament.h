@@ -121,8 +121,14 @@ class LIB_EXPORT Tournament : public QObject
 		 * stopping criterion.
 		 */
 		Sprt* sprt() const;
-		/*! Returns true if the players swap sides in an encounter */
+		/*! Returns true if the players swap sides in an encounter. */
 		bool swapSides() const;
+		/*! Returns true if the tournament wants Berger/Schurig scheduling. */
+		bool bergerSchedule() const;
+		/*! Returns true if the tournament wants Berger/Schurig scheduling.
+		 * and the tournament type is "round-robin".
+		 */
+		bool usesBergerSchedule() const;
 
 		/*! Sets the tournament's name to \a name. */
 		void setName(const QString& name);
@@ -253,6 +259,10 @@ class LIB_EXPORT Tournament : public QObject
 		 * repeated and randomly chosen openings, will resume as well.
 		 */
 		void setResume(int nextGameNumber);
+		/*!
+		 * Sets the tournament to Berger/Schurig scheduling if \a enabled.
+		 */
+		void setBergerSchedule(bool enabled);
 		/*!
 		 * Adds player \a builder to the tournament.
 		 *
@@ -488,6 +498,7 @@ class LIB_EXPORT Tournament : public QObject
 		PgnGame::PgnMode m_livePgnOutMode;
 		QString m_eventDate;
 		int m_resumeGameNumber;
+		bool m_bergerSchedule;
 };
 
 #endif // TOURNAMENT_H

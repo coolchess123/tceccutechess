@@ -177,3 +177,5 @@ TCEC options:
   -resume		Resume the tournament saved in 'tournamentfile'
   -ecopgn FILE		Use ECO classification from the games specified in FILE
   			in PGN format instead of the internal ECO database.
+  -bergerschedule	Use Berger/Schurig scheduling in 'round-robin'
+  			tournaments.

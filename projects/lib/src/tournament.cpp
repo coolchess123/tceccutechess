@@ -173,6 +173,16 @@ bool Tournament::swapSides() const
 	return m_swapSides;
 }
 
+bool Tournament::bergerSchedule() const
+{
+	return m_bergerSchedule;
+}
+
+bool Tournament::usesBergerSchedule() const
+{
+	return m_bergerSchedule && type() == "round-robin";
+}
+
 bool Tournament::canSetRoundMultiplier() const
 {
 	return true;
@@ -300,6 +310,12 @@ void Tournament::setOpeningBookOwnership(bool enabled)
 	m_bookOwnership = enabled;
 }
 
+void Tournament::setBergerSchedule(bool enabled)
+{
+	m_bergerSchedule = enabled;
+	qWarning("setBergerSchedule");
+}
+
 void Tournament::setResume(int nextGameNumber)
 {
 	Q_ASSERT(nextGameNumber >= 0);
@@ -359,6 +375,11 @@ void Tournament::startGame(TournamentPair* pair)
 	Q_ASSERT(pair->isValid());
 	m_pair = pair;
 	m_pair->addStartedGame();
+
+	if (m_swapSides && usesBergerSchedule()
+			&& (m_nextGameNumber / gamesPerCycle()) % 2
+				== m_pair->hasOriginalOrder())
+		m_pair->swapPlayers();
 
 	const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
 	const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
@@ -433,7 +454,7 @@ void Tournament::startGame(TournamentPair* pair)
 
 	// Make sure the next game (if any) between the pair will
 	// start with reversed colors.
-	if (m_swapSides)
+	if (m_swapSides && !usesBergerSchedule())
 		m_pair->swapPlayers();
 
 	auto whiteBuilder = white.builder();
