@@ -130,7 +130,7 @@ void ChessEngine::applyConfiguration(const EngineConfiguration& configuration)
 	for (const QString& str : initStrings)
 		write(str);
 
-	m_configurationString = QString();
+	m_configurationString = "Protocol=" + configuration.protocol() + "; ";
 	const auto options = configuration.options();
 	for (const auto option : options)
 	{
