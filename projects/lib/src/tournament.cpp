@@ -59,7 +59,8 @@ Tournament::Tournament(GameManager* gameManager, QObject *parent)
 	  m_pgnOutMode(PgnGame::Verbose),
 	  m_pair(nullptr),
 	  m_livePgnOutMode(PgnGame::Verbose),
-	  m_resumeGameNumber(0)
+	  m_resumeGameNumber(0),
+	  m_bergerSchedule(false)
 {
 	Q_ASSERT(gameManager != nullptr);
 }
@@ -313,7 +314,6 @@ void Tournament::setOpeningBookOwnership(bool enabled)
 void Tournament::setBergerSchedule(bool enabled)
 {
 	m_bergerSchedule = enabled;
-	qWarning("setBergerSchedule");
 }
 
 void Tournament::setResume(int nextGameNumber)
@@ -375,8 +375,8 @@ void Tournament::startGame(TournamentPair* pair)
 	Q_ASSERT(pair->isValid());
 	m_pair = pair;
 	m_pair->addStartedGame();
-
-	if (m_swapSides && usesBergerSchedule()
+	const bool usesBerger = usesBergerSchedule();
+	if (m_swapSides && usesBerger
 			&& (m_nextGameNumber / gamesPerCycle()) % 2
 				== m_pair->hasOriginalOrder())
 		m_pair->swapPlayers();
@@ -401,35 +401,68 @@ void Tournament::startGame(TournamentPair* pair)
 	game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
 	game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
 
-	if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
+	if (usesBerger)
 	{
-		game->setStartingFen(m_startFen);
-		game->setMoves(m_openingMoves);
-		m_startFen.clear();
-		m_openingMoves.clear();
-		m_repetitionCounter++;
+		QPair<QVector<Chess::Move>, QString>& cycleGame =
+						m_cycleOpenings[m_nextGameNumber % gamesPerCycle()];
+		if (m_nextGameNumber / gamesPerCycle() % m_openingRepetitions)
+		{
+			game->setStartingFen(cycleGame.second);
+			game->setMoves(cycleGame.first);
+
+			game->generateOpening();
+		}
+		else
+		{
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+
+			game->generateOpening();
+			cycleGame.first = game->moves();
+			cycleGame.second = game->startingFen();
+			if (cycleGame.second.isEmpty() && board->isRandomVariant())
+			{
+				cycleGame.second = board->defaultFenString();
+				game->setStartingFen(cycleGame.second);
+			}
+		}
 	}
 	else
 	{
-		m_repetitionCounter = 1;
-		if (m_openingSuite != nullptr)
+		if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
 		{
-			if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
-				qWarning("The opening suite is incompatible with the "
-				"current chess variant");
-		}
-	}
-
-	game->generateOpening();
-	if (m_repetitionCounter < m_openingRepetitions)
-	{
-		m_startFen = game->startingFen();
-		if (m_startFen.isEmpty() && board->isRandomVariant())
-		{
-			m_startFen = board->defaultFenString();
 			game->setStartingFen(m_startFen);
+			game->setMoves(m_openingMoves);
+			m_startFen.clear();
+			m_openingMoves.clear();
+			m_repetitionCounter++;
 		}
-		m_openingMoves = game->moves();
+		else
+		{
+			m_repetitionCounter = 1;
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+		}
+
+		game->generateOpening();
+		if (m_repetitionCounter < m_openingRepetitions)
+		{
+			m_startFen = game->startingFen();
+			if (m_startFen.isEmpty() && board->isRandomVariant())
+			{
+				m_startFen = board->defaultFenString();
+				game->setStartingFen(m_startFen);
+			}
+			m_openingMoves = game->moves();
+		}
 	}
 
 	game->pgn()->setEvent(m_name);
@@ -454,7 +487,7 @@ void Tournament::startGame(TournamentPair* pair)
 
 	// Make sure the next game (if any) between the pair will
 	// start with reversed colors.
-	if (m_swapSides && !usesBergerSchedule())
+	if (m_swapSides && !usesBerger)
 		m_pair->swapPlayers();
 
 	auto whiteBuilder = white.builder();
@@ -736,6 +769,11 @@ void Tournament::start()
 	m_pgnGames.clear();
 	m_startFen.clear();
 	m_openingMoves.clear();
+	const bool usesBerger = usesBergerSchedule();
+	if (usesBerger)
+		m_cycleOpenings.resize(gamesPerCycle());
+	else
+		m_cycleOpenings.clear();
 
 	connect(m_gameManager, SIGNAL(ready()),
 		this, SLOT(startNextGame()));
@@ -760,6 +798,11 @@ void Tournament::start()
 			m_pair = pair;
 			m_pair->addStartedGame();
 
+			if (m_swapSides && usesBerger
+					&& (m_nextGameNumber / gamesPerCycle()) % 2
+						== m_pair->hasOriginalOrder())
+				m_pair->swapPlayers();
+
 			const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
 			const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
 
@@ -770,35 +813,68 @@ void Tournament::start()
 			game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
 			game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
 
-			if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
+			if (usesBerger)
 			{
-				game->setStartingFen(m_startFen);
-				game->setMoves(m_openingMoves);
-				m_startFen.clear();
-				m_openingMoves.clear();
-				m_repetitionCounter++;
+				QPair<QVector<Chess::Move>, QString>& cycleGame =
+								m_cycleOpenings[m_nextGameNumber % gamesPerCycle()];
+				if (m_nextGameNumber / gamesPerCycle() % m_openingRepetitions)
+				{
+					game->setStartingFen(cycleGame.second);
+					game->setMoves(cycleGame.first);
+
+					game->generateOpening();
+				}
+				else
+				{
+					if (m_openingSuite != nullptr)
+					{
+						if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+							qWarning("The opening suite is incompatible with the "
+							"current chess variant");
+					}
+
+					game->generateOpening();
+					cycleGame.first = game->moves();
+					cycleGame.second = game->startingFen();
+					if (cycleGame.second.isEmpty() && board->isRandomVariant())
+					{
+						cycleGame.second = board->defaultFenString();
+						game->setStartingFen(cycleGame.second);
+					}
+				}
 			}
 			else
 			{
-				m_repetitionCounter = 1;
-				if (m_openingSuite != nullptr)
+				if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
 				{
-					if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
-						qWarning("The opening suite is incompatible with the "
-						"current chess variant");
-				}
-			}
-
-			game->generateOpening();
-			if (m_repetitionCounter < m_openingRepetitions)
-			{
-				m_startFen = game->startingFen();
-				if (m_startFen.isEmpty() && board->isRandomVariant())
-				{
-					m_startFen = board->defaultFenString();
 					game->setStartingFen(m_startFen);
+					game->setMoves(m_openingMoves);
+					m_startFen.clear();
+					m_openingMoves.clear();
+					m_repetitionCounter++;
 				}
-				m_openingMoves = game->moves();
+				else
+				{
+					m_repetitionCounter = 1;
+					if (m_openingSuite != nullptr)
+					{
+						if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+							qWarning("The opening suite is incompatible with the "
+							"current chess variant");
+					}
+				}
+
+				game->generateOpening();
+				if (m_repetitionCounter < m_openingRepetitions)
+				{
+					m_startFen = game->startingFen();
+					if (m_startFen.isEmpty() && board->isRandomVariant())
+					{
+						m_startFen = board->defaultFenString();
+						game->setStartingFen(m_startFen);
+					}
+					m_openingMoves = game->moves();
+				}
 			}
 
 			++m_nextGameNumber;
@@ -807,7 +883,7 @@ void Tournament::start()
 			if (m_nextGameNumber > m_finalGameCount)
 				m_finalGameCount = m_nextGameNumber;
 
-			if (m_swapSides)
+			if (m_swapSides && !usesBerger)
 				m_pair->swapPlayers();
 
 			delete game;

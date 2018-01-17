@@ -125,7 +125,7 @@ class LIB_EXPORT Tournament : public QObject
 		bool swapSides() const;
 		/*! Returns true if the tournament wants Berger/Schurig scheduling. */
 		bool bergerSchedule() const;
-		/*! Returns true if the tournament wants Berger/Schurig scheduling.
+		/*! Returns true if the tournament wants Berger/Schurig scheduling
 		 * and the tournament type is "round-robin".
 		 */
 		bool usesBergerSchedule() const;
@@ -499,6 +499,7 @@ class LIB_EXPORT Tournament : public QObject
 		QString m_eventDate;
 		int m_resumeGameNumber;
 		bool m_bergerSchedule;
+		QVector<QPair<QVector<Chess::Move>, QString> > m_cycleOpenings;
 };
 
 #endif // TOURNAMENT_H
