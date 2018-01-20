@@ -19,6 +19,7 @@
 #include "board/board.h"
 
 #include "enginematch.h"
+#include <QtMath>
 #include <QMultiMap>
 #include <QTextCodec>
 #include <chessplayer.h>
@@ -36,7 +37,8 @@ EngineMatch::EngineMatch(Tournament* tournament, QObject* parent)
 	  m_tournament(tournament),
 	  m_debug(false),
 	  m_ratingInterval(0),
-	  m_bookMode(OpeningBook::Ram)
+	  m_bookMode(OpeningBook::Ram),
+	  m_eloKfactor(15.0)
 {
 	Q_ASSERT(tournament != nullptr);
 
@@ -108,6 +110,11 @@ void EngineMatch::setBookMode(OpeningBook::AccessMode mode)
 void EngineMatch::setTournamentFile(QString& tournamentFile)
 {
 	m_tournamentFile = tournamentFile;
+}
+
+void EngineMatch::setEloKfactor(qreal eloKfactor)
+{
+	m_eloKfactor = eloKfactor;
 }
 
 void EngineMatch::generateSchedule(QVariantList& pList)
@@ -257,23 +264,25 @@ public:
 	CrossTableData(QString engineName, int elo = 0) :
 		m_score(0),
 		m_neustadtlScore(0),
+		m_rating(elo),
 		m_gamesPlayedAsWhite(0),
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
-		m_winsAsBlack(0)
+		m_winsAsBlack(0),
+		m_elo(0)
 	{
 		m_engineName = engineName;
-		m_elo = elo;
 	};
 
 	CrossTableData() :
-	m_score(0),
-	m_neustadtlScore(0),
-	m_elo(0),
-	m_gamesPlayedAsWhite(0),
-	m_gamesPlayedAsBlack(0),
-	m_winsAsWhite(0),
-	m_winsAsBlack(0)
+		m_score(0),
+		m_neustadtlScore(0),
+		m_rating(0),
+		m_gamesPlayedAsWhite(0),
+		m_gamesPlayedAsBlack(0),
+		m_winsAsWhite(0),
+		m_winsAsBlack(0),
+		m_elo(0)
 	{
 
 	};
@@ -284,11 +293,12 @@ public:
 	QString m_engineAbbrev;
 	double m_score;
 	double m_neustadtlScore;
-	int m_elo;
+	int m_rating;
 	int m_gamesPlayedAsWhite;
 	int m_gamesPlayedAsBlack;
 	int m_winsAsWhite;
 	int m_winsAsBlack;
+	int m_elo;
 	QMap<QString, QString> m_tableData;
 };
 
@@ -312,9 +322,9 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	return s1.m_score > s2.m_score;
 }
 
-void EngineMatch::generateCrossTable(QVariantList& pList)
+void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 {
-	int playerCount = m_tournament->playerCount();
+	const int playerCount = m_tournament->playerCount();
 	QMap<QString, CrossTableData> ctMap;
 	QStringList abbrevList;
 	int roundLength = 2;
@@ -398,6 +408,49 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		if (ctd.m_neustadtlScore > largestSB) largestSB = ctd.m_neustadtlScore;
 		if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 	}
+	// calculate Elo
+	int maxElo = 1;
+	ct.toFront();
+	while (ct.hasNext()) {
+		ct.next();
+		CrossTableData& ctd = ctMap[ct.key()];
+		QMapIterator<QString, CrossTableData> ot(ct);
+		while (ot.hasNext()) {
+			ot.next();
+			CrossTableData& otd = ctMap[ot.key()];
+			const QString& tds = ctd.m_tableData[ot.key()];
+
+			qreal real = 0.0;
+			int games = 0;
+
+			for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
+				if (*c == QChar('1')) {
+					++games;
+					real += 1.0;
+				} else if (*c == QChar('=')) {
+					++games;
+					real += 0.5;
+				} else if (*c == QChar('0'))
+					++games;
+
+			if (games > 0) {
+				real /= games;
+				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
+
+				int elo = qRound(eloKfactor * (real - expected));
+				ctd.m_elo += elo;
+				otd.m_elo -= elo;
+
+				if (elo < 0)
+					elo = -elo;
+				if (elo > maxElo)
+					maxElo = elo;
+			}
+		}
+	}
+	maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
+	if (maxElo < 3)
+		maxElo = 3;
 
 	if (playerCount == 2) {
 		roundLength = 2;
@@ -438,14 +491,16 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	int maxScore = largestScore >= 100 ? 5 : largestScore >= 10 ? 4 : 3;
 	int maxSB = largestSB >= 100 ? 6 : largestSB >= 10 ? 5 : 4;
 	int maxGames = m_tournament->currentRound() >= 100 ? 4 : m_tournament->currentRound() >= 10 ? 3 : 2;
-	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6")
+	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7")
 		.arg("N", 2)
 		.arg("Engine", -maxName)
-		.arg("Rtng", -4)
+		.arg("Rtng", 4)
 		.arg("Pts", maxScore)
 		.arg("Gm", maxGames)
-		.arg("SB", maxSB);
+		.arg("SB", maxSB)
+		.arg("Elo", maxElo);
 
+	QString eloText;
 	QString crossTableBodyText;
 
 	QList<CrossTableData> list = ctMap.values();
@@ -455,13 +510,16 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	for (i = list.begin(); i != list.end(); ++i, ++count) {
 		crossTableHeaderText += QString(" %1").arg(i->m_engineAbbrev, -roundLength);
 
-		crossTableBodyText += QString("%1 %2 %3 %4 %5 %6")
+		eloText = i->m_elo > 0 ? "+" : "";
+		eloText += QString::number(i->m_elo);
+		crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7")
 			.arg(count, 2)
 			.arg(i->m_engineName, -maxName)
-			.arg(i->m_elo, 4)
+			.arg(i->m_rating, 4)
 			.arg(i->m_score, maxScore, 'f', 1)
 			.arg(i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack, maxGames)
-			.arg(i->m_neustadtlScore, maxSB, 'f', 2);
+			.arg(i->m_neustadtlScore, maxSB, 'f', 2)
+			.arg(eloText, maxElo);
 
 		QList<CrossTableData>::iterator j;
 		for (j = list.begin(); j != list.end(); ++j) {
@@ -548,7 +606,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 			}
 		}
 		generateSchedule(pList);
-		generateCrossTable(pList);
+		generateCrossTable(pList, m_eloKfactor);
 	}
 }
 
@@ -647,7 +705,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					serializer.serialize(out);
 				}
 				generateSchedule(pList);
-				generateCrossTable(pList);
+				generateCrossTable(pList, m_eloKfactor);
 			}
 		}
 	}

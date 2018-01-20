@@ -179,3 +179,7 @@ TCEC options:
   			in PGN format instead of the internal ECO database.
   -bergerschedule	Use Berger/Schurig scheduling in 'round-robin'
   			tournaments.
+  -kfactor		Specifies the K-factor to use for crosstable Elo
+  			calculation (default: 15.0).
+  
+  
