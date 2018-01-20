@@ -420,21 +420,22 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 			CrossTableData& otd = ctMap[ot.key()];
 			const QString& tds = ctd.m_tableData[ot.key()];
 
-			if (!tds.isEmpty()) {
-				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
-				qreal real = 0.0;
-				int games = 0;
+			qreal real = 0.0;
+			int games = 0;
 
-				for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
-					if (*c == QChar('1')) {
-						++games;
-						real += 1.0;
-					} else if (*c == QChar('=')) {
-						++games;
-						real += 0.5;
-					} else if (*c == QChar('0'))
-						++games;
+			for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
+				if (*c == QChar('1')) {
+					++games;
+					real += 1.0;
+				} else if (*c == QChar('=')) {
+					++games;
+					real += 0.5;
+				} else if (*c == QChar('0'))
+					++games;
+
+			if (games > 0) {
 				real /= games;
+				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
 
 				int elo = qRound(eloKfactor * (real - expected));
 				ctd.m_elo += elo;
