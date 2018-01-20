@@ -409,6 +409,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 		if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 	}
 	// calculate Elo
+	int maxElo = 1;
 	ct.toFront();
 	while (ct.hasNext()) {
 		ct.next();
@@ -435,12 +436,20 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 						++games;
 				real /= games;
 
-				const int elo = qRound(eloKfactor * (real - expected));
+				int elo = qRound(eloKfactor * (real - expected));
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
+
+				if (elo < 0)
+					elo = -elo;
+				if (elo > maxElo)
+					maxElo = elo;
 			}
 		}
 	}
+	maxElo = qCeil(qLn(maxElo) * M_LOG10E) + 1;
+	if (maxElo < 3)
+		maxElo = 3;
 
 	if (playerCount == 2) {
 		roundLength = 2;
@@ -488,7 +497,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 		.arg("Pts", maxScore)
 		.arg("Gm", maxGames)
 		.arg("SB", maxSB)
-		.arg("Elo", 4);
+		.arg("Elo", maxElo);
 
 	QString eloText;
 	QString crossTableBodyText;
@@ -509,7 +518,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 			.arg(i->m_score, maxScore, 'f', 1)
 			.arg(i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack, maxGames)
 			.arg(i->m_neustadtlScore, maxSB, 'f', 2)
-			.arg(eloText, 4);
+			.arg(eloText, maxElo);
 
 		QList<CrossTableData>::iterator j;
 		for (j = list.begin(); j != list.end(); ++j) {
