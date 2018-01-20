@@ -42,6 +42,7 @@ class EngineMatch : public QObject
 		void setRatingInterval(int interval);
 		void setBookMode(OpeningBook::AccessMode mode);
 		void setTournamentFile(QString &tournamentFile);
+		void setEloKfactor(qreal eloKfactor);
 
 		void start();
 		void stop();
@@ -58,7 +59,7 @@ class EngineMatch : public QObject
 	private:
 		void printRanking();
 		void generateSchedule(QVariantList& pList);
-		void generateCrossTable(QVariantList& pList);
+		void generateCrossTable(QVariantList& pList, qreal eloKfactor);
 
 		Tournament* m_tournament;
 		bool m_debug;
@@ -67,6 +68,7 @@ class EngineMatch : public QObject
 		QMap<QString, OpeningBook*> m_books;
 		QElapsedTimer m_startTime;
 		QString m_tournamentFile;
+		qreal m_eloKfactor;
 };
 
 #endif // ENGINEMATCH_H

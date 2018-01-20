@@ -37,7 +37,8 @@ EngineMatch::EngineMatch(Tournament* tournament, QObject* parent)
 	  m_tournament(tournament),
 	  m_debug(false),
 	  m_ratingInterval(0),
-	  m_bookMode(OpeningBook::Ram)
+	  m_bookMode(OpeningBook::Ram),
+	  m_eloKfactor(15.0)
 {
 	Q_ASSERT(tournament != nullptr);
 
@@ -109,6 +110,11 @@ void EngineMatch::setBookMode(OpeningBook::AccessMode mode)
 void EngineMatch::setTournamentFile(QString& tournamentFile)
 {
 	m_tournamentFile = tournamentFile;
+}
+
+void EngineMatch::setEloKfactor(qreal eloKfactor)
+{
+	m_eloKfactor = eloKfactor;
 }
 
 void EngineMatch::generateSchedule(QVariantList& pList)
@@ -251,8 +257,6 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 	}
 }
 
-const qreal EloK = 15.0;
-
 struct CrossTableData
 {
 public:
@@ -318,7 +322,7 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	return s1.m_score > s2.m_score;
 }
 
-void EngineMatch::generateCrossTable(QVariantList& pList)
+void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 {
 	const int playerCount = m_tournament->playerCount();
 	QMap<QString, CrossTableData> ctMap;
@@ -431,7 +435,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 						++games;
 				real /= games;
 
-				const int elo = qRound(EloK * (real - expected));
+				const int elo = qRound(eloKfactor * (real - expected));
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
 			}
@@ -592,7 +596,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 			}
 		}
 		generateSchedule(pList);
-		generateCrossTable(pList);
+		generateCrossTable(pList, m_eloKfactor);
 	}
 }
 
@@ -691,7 +695,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					serializer.serialize(out);
 				}
 				generateSchedule(pList);
-				generateCrossTable(pList);
+				generateCrossTable(pList, m_eloKfactor);
 			}
 		}
 	}

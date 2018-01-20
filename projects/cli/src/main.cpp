@@ -326,6 +326,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	parser.addOption("-resume", QVariant::Bool, 0, 0);
 	parser.addOption("-ecopgn", QVariant::String, 1, 1);
 	parser.addOption("-bergerschedule", QVariant::Bool, 0, 0);
+	parser.addOption("-kfactor", QVariant::Double, 1, 1);
 
 	if (!parser.parse())
 		return nullptr;
@@ -857,6 +858,14 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 				tournament->setBergerSchedule(flag);
 				tMap.insert("bergerSchedule", flag);
 			}
+			else if (name == "-kfactor") {
+				const qreal val = value.toDouble();
+				ok = val >= 1.0 && val <= 100.0;
+				if (ok)
+					tMap.insert("eloKfactor", val);
+				else
+					qWarning("Invalid K-factor %f", val);
+			}
 			else
 				qFatal("Unknown argument: \"%s\"", qPrintable(name));
 
@@ -889,6 +898,9 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	// Debugging mode. Prints all engine input and output.
 	if (wantsDebug)
 		match->setDebugMode(true);
+
+	if (tMap.contains("eloKfactor"))
+		match->setEloKfactor(tMap["eloKfactor"].toDouble());
 
 	if (!eachOptions.isEmpty())
 	{
