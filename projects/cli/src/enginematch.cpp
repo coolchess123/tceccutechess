@@ -19,6 +19,7 @@
 #include "board/board.h"
 
 #include "enginematch.h"
+#include <QtMath>
 #include <QMultiMap>
 #include <QTextCodec>
 #include <chessplayer.h>
@@ -250,6 +251,8 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 	}
 }
 
+const qreal EloK = 15.0;
+
 struct CrossTableData
 {
 public:
@@ -257,23 +260,25 @@ public:
 	CrossTableData(QString engineName, int elo = 0) :
 		m_score(0),
 		m_neustadtlScore(0),
+		m_rating(elo),
 		m_gamesPlayedAsWhite(0),
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
-		m_winsAsBlack(0)
+		m_winsAsBlack(0),
+		m_elo(0)
 	{
 		m_engineName = engineName;
-		m_elo = elo;
 	};
 
 	CrossTableData() :
-	m_score(0),
-	m_neustadtlScore(0),
-	m_elo(0),
-	m_gamesPlayedAsWhite(0),
-	m_gamesPlayedAsBlack(0),
-	m_winsAsWhite(0),
-	m_winsAsBlack(0)
+		m_score(0),
+		m_neustadtlScore(0),
+		m_rating(0),
+		m_gamesPlayedAsWhite(0),
+		m_gamesPlayedAsBlack(0),
+		m_winsAsWhite(0),
+		m_winsAsBlack(0),
+		m_elo(0)
 	{
 
 	};
@@ -284,11 +289,12 @@ public:
 	QString m_engineAbbrev;
 	double m_score;
 	double m_neustadtlScore;
-	int m_elo;
+	int m_rating;
 	int m_gamesPlayedAsWhite;
 	int m_gamesPlayedAsBlack;
 	int m_winsAsWhite;
 	int m_winsAsBlack;
+	int m_elo;
 	QMap<QString, QString> m_tableData;
 };
 
@@ -314,7 +320,7 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 
 void EngineMatch::generateCrossTable(QVariantList& pList)
 {
-	int playerCount = m_tournament->playerCount();
+	const int playerCount = m_tournament->playerCount();
 	QMap<QString, CrossTableData> ctMap;
 	QStringList abbrevList;
 	int roundLength = 2;
@@ -398,6 +404,33 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		if (ctd.m_neustadtlScore > largestSB) largestSB = ctd.m_neustadtlScore;
 		if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 	}
+	// calculate Elo
+	ct.toFront();
+	while (ct.hasNext()) {
+		ct.next();
+		CrossTableData& ctd = ctMap[ct.key()];
+		QMapIterator<QString, CrossTableData> ot(ct);
+		while (ot.hasNext()) {
+			ot.next();
+			CrossTableData& otd = ctMap[ot.key()];
+
+			const QString& tds = ctd.m_tableData[otd.m_engineName];
+			if (!tds.isEmpty()) {
+				qreal ctr = 0.0;
+
+				for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
+					if (*c == QChar('1'))
+						ctr += 1.0;
+					else if (*c == QChar('='))
+						ctr += 0.5;
+				ctr /= ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
+
+				const int elo = qRound(EloK * (ctr - 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0))));
+				ctd.m_elo += elo;
+				otd.m_elo -= elo;
+			}
+		}
+	}
 
 	if (playerCount == 2) {
 		roundLength = 2;
@@ -438,14 +471,16 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	int maxScore = largestScore >= 100 ? 5 : largestScore >= 10 ? 4 : 3;
 	int maxSB = largestSB >= 100 ? 6 : largestSB >= 10 ? 5 : 4;
 	int maxGames = m_tournament->currentRound() >= 100 ? 4 : m_tournament->currentRound() >= 10 ? 3 : 2;
-	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6")
+	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7")
 		.arg("N", 2)
 		.arg("Engine", -maxName)
-		.arg("Rtng", -4)
+		.arg("Rtng", 4)
 		.arg("Pts", maxScore)
 		.arg("Gm", maxGames)
-		.arg("SB", maxSB);
+		.arg("SB", maxSB)
+		.arg("Elo", 4);
 
+	QString eloText;
 	QString crossTableBodyText;
 
 	QList<CrossTableData> list = ctMap.values();
@@ -455,13 +490,16 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	for (i = list.begin(); i != list.end(); ++i, ++count) {
 		crossTableHeaderText += QString(" %1").arg(i->m_engineAbbrev, -roundLength);
 
-		crossTableBodyText += QString("%1 %2 %3 %4 %5 %6")
+		eloText = i->m_elo > 0 ? "+" : "";
+		eloText += QString("%2").arg(i->m_elo);
+		crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7")
 			.arg(count, 2)
 			.arg(i->m_engineName, -maxName)
-			.arg(i->m_elo, 4)
+			.arg(i->m_rating, 4)
 			.arg(i->m_score, maxScore, 'f', 1)
 			.arg(i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack, maxGames)
-			.arg(i->m_neustadtlScore, maxSB, 'f', 2);
+			.arg(i->m_neustadtlScore, maxSB, 'f', 2)
+			.arg(eloText, 4);
 
 		QList<CrossTableData>::iterator j;
 		for (j = list.begin(); j != list.end(); ++j) {
