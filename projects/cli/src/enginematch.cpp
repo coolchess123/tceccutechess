@@ -447,7 +447,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 			}
 		}
 	}
-	maxElo = qCeil(qLn(maxElo) * M_LOG10E) + 2;
+	maxElo = qCeil(qLn(maxElo) * M_LOG10E) + 1;
 	if (maxElo < 3)
 		maxElo = 3;
 
