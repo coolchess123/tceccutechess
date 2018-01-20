@@ -413,19 +413,25 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		while (ot.hasNext()) {
 			ot.next();
 			CrossTableData& otd = ctMap[ot.key()];
+			const QString& tds = ctd.m_tableData[ot.key()];
 
-			const QString& tds = ctd.m_tableData[otd.m_engineName];
 			if (!tds.isEmpty()) {
-				qreal ctr = 0.0;
+				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
+				qreal real = 0.0;
+				int games = 0;
 
 				for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
-					if (*c == QChar('1'))
-						ctr += 1.0;
-					else if (*c == QChar('='))
-						ctr += 0.5;
-				ctr /= ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
+					if (*c == QChar('1')) {
+						++games;
+						real += 1.0;
+					} else if (*c == QChar('=')) {
+						++games;
+						real += 0.5;
+					} else if (*c == QChar('0'))
+						++games;
+				real /= games;
 
-				const int elo = qRound(EloK * (ctr - 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0))));
+				const int elo = qRound(EloK * (real - expected));
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
 			}
@@ -491,7 +497,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		crossTableHeaderText += QString(" %1").arg(i->m_engineAbbrev, -roundLength);
 
 		eloText = i->m_elo > 0 ? "+" : "";
-		eloText += QString("%2").arg(i->m_elo);
+		eloText += QString::number(i->m_elo);
 		crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7")
 			.arg(count, 2)
 			.arg(i->m_engineName, -maxName)
