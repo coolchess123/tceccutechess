@@ -501,7 +501,6 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 	maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
 	if (maxElo < 3)
 		maxElo = 3;
-	qWarning("%d", maxElo);
 	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7")
 		.arg("N", 2)
 		.arg("Engine", -maxName)
