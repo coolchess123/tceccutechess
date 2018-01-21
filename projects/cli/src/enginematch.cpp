@@ -385,13 +385,13 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 	}
 	// calculate SB
 	QMapIterator<QString, CrossTableData> ct(ctMap);
-	double largestSB = 0;
-	double largestScore = 0;
+	qreal largestSB = 1.0;
+	qreal largestScore = 1.0;
 	while (ct.hasNext()) {
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
 		QMapIterator<QString, QString> td(ctd.m_tableData);
-		double sb = 0;
+		qreal sb = 0.0;
 		while (td.hasNext()) {
 			td.next();
 			QString::ConstIterator c = td.value().begin();
@@ -410,10 +410,12 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 	}
 	// calculate Elo
 	int maxElo = 1;
+	int maxGames = 1;
 	ct.toFront();
 	while (ct.hasNext()) {
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
+
 		QMapIterator<QString, CrossTableData> ot(ct);
 		while (ot.hasNext()) {
 			ot.next();
@@ -437,20 +439,19 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 				real /= games;
 				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
 
-				int elo = qRound(eloKfactor * (real - expected));
+				const int elo = qRound(eloKfactor * (real - expected));
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
-
-				if (elo < 0)
-					elo = -elo;
-				if (elo > maxElo)
-					maxElo = elo;
 			}
+
+			const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
+			if (totGames > maxGames)
+				maxGames = totGames;
+			const int totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
+			if (totElo > maxElo)
+				maxElo = totElo;
 		}
 	}
-	maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
-	if (maxElo < 3)
-		maxElo = 3;
 
 	if (playerCount == 2) {
 		roundLength = 2;
@@ -488,9 +489,19 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 		}
 	}
 
-	int maxScore = largestScore >= 100 ? 5 : largestScore >= 10 ? 4 : 3;
-	int maxSB = largestSB >= 100 ? 6 : largestSB >= 10 ? 5 : 4;
-	int maxGames = m_tournament->currentRound() >= 100 ? 4 : m_tournament->currentRound() >= 10 ? 3 : 2;
+	int maxScore = qFloor(qLn(largestScore) * M_LOG10E) + 3;
+	if (maxScore < 3)
+		maxScore = 3;
+	int maxSB = qFloor(qLn(largestSB) * M_LOG10E) + 4;
+	if (maxSB < 4)
+		maxSB = 4;
+	maxGames = qFloor(qLn(maxGames) * M_LOG10E) + 1;
+	if (maxGames < 2)
+		maxGames = 2;
+	maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
+	if (maxElo < 3)
+		maxElo = 3;
+	qWarning("%d", maxElo);
 	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7")
 		.arg("N", 2)
 		.arg("Engine", -maxName)
