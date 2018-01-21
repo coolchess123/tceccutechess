@@ -322,7 +322,7 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	return s1.m_score > s2.m_score;
 }
 
-void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
+void EngineMatch::generateCrossTable(QVariantList& pList)
 {
 	const int playerCount = m_tournament->playerCount();
 	QMap<QString, CrossTableData> ctMap;
@@ -439,7 +439,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList, qreal eloKfactor)
 				real /= games;
 				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
 
-				const int elo = qRound(eloKfactor * (real - expected));
+				const int elo = qRound(m_eloKfactor * (real - expected));
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
 			}
@@ -616,7 +616,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 			}
 		}
 		generateSchedule(pList);
-		generateCrossTable(pList, m_eloKfactor);
+		generateCrossTable(pList);
 	}
 }
 
@@ -715,7 +715,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					serializer.serialize(out);
 				}
 				generateSchedule(pList);
-				generateCrossTable(pList, m_eloKfactor);
+				generateCrossTable(pList);
 			}
 		}
 	}

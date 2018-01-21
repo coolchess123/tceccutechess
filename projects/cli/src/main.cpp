@@ -860,7 +860,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 			}
 			else if (name == "-kfactor") {
 				const qreal val = value.toDouble();
-				ok = val >= 1.0 && val <= 100.0;
+				ok = val >= 1.0 && val <= 200.0;
 				if (ok)
 					tMap.insert("eloKfactor", val);
 				else

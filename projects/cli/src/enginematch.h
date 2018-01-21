@@ -59,7 +59,7 @@ class EngineMatch : public QObject
 	private:
 		void printRanking();
 		void generateSchedule(QVariantList& pList);
-		void generateCrossTable(QVariantList& pList, qreal eloKfactor);
+		void generateCrossTable(QVariantList& pList);
 
 		Tournament* m_tournament;
 		bool m_debug;
