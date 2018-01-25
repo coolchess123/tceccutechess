@@ -38,7 +38,8 @@ int RoundRobinTournament::gamesPerRound() const
 	if (bergerSchedule())
 		return count / 2;
 
-	const int totalRounds = finalGameCount() / count;
+	const int totalRounds = finalGameCount() >= count
+					? finalGameCount() / count : 1;
 
 	return finalGameCount() / totalRounds;
 }
