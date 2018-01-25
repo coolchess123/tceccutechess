@@ -634,6 +634,8 @@ void Tournament::onGameStarted(ChessGame* game)
 	m_players[iBlack].setName(game->player(Chess::Side::Black)->name());
 
 	emit gameStarted(game, data->number, iWhite, iBlack);
+
+	onPgnMove();
 }
 
 void Tournament::onPgnMove()
