@@ -383,10 +383,11 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			blackData.m_gamesPlayedAsBlack++;
 		}
 	}
-	// calculate SB
+	// calculate SB and ratings sum
 	QMapIterator<QString, CrossTableData> ct(ctMap);
 	qreal largestSB = 1.0;
 	qreal largestScore = 1.0;
+	int sumRatings = 0;
 	while (ct.hasNext()) {
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
@@ -407,8 +408,10 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ctd.m_neustadtlScore = sb;
 		if (ctd.m_neustadtlScore > largestSB) largestSB = ctd.m_neustadtlScore;
 		if (ctd.m_score > largestScore) largestScore = ctd.m_score;
+		sumRatings += ctd.m_rating;
 	}
 	// calculate Elo
+	const qreal avgRating = qreal(sumRatings) / playerCount;
 	int maxElo = 1;
 	int maxGames = 1;
 	ct.toFront();
@@ -416,41 +419,19 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
 
-		QMapIterator<QString, CrossTableData> ot(ct);
-		while (ot.hasNext()) {
-			ot.next();
-			CrossTableData& otd = ctMap[ot.key()];
-			const QString& tds = ctd.m_tableData[ot.key()];
-
-			qreal real = 0.0;
-			int games = 0;
-
-			for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
-				if (*c == QChar('1')) {
-					++games;
-					real += 1.0;
-				} else if (*c == QChar('=')) {
-					++games;
-					real += 0.5;
-				} else if (*c == QChar('0'))
-					++games;
-
-			if (games > 0) {
-				real /= games;
-				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
-
-				const int elo = qFloor(m_eloKfactor * (real - expected));
-				ctd.m_elo += elo;
-				otd.m_elo -= elo;
-			}
-		}
-
 		const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
-		if (totGames > maxGames)
-			maxGames = totGames;
-		const int totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
-		if (totElo > maxElo)
-			maxElo = totElo;
+		if (totGames) {
+			const qreal real = ctd.m_score / totGames;
+			const qreal expected = 1.0 / (1.0 + qPow(10.0, (avgRating - ctd.m_rating) / 400.0));
+			ctd.m_elo = qFloor(m_eloKfactor * (real - expected));
+
+			const int totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
+			if (totElo > maxElo)
+				maxElo = totElo;
+
+			if (totGames > maxGames)
+				maxGames = totGames;
+		}
 	}
 
 	if (playerCount == 2) {
