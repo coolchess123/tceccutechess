@@ -171,15 +171,16 @@ Engine options:
 TCEC options:
 
   -livepgnout FILE [min]
-  			Send the live output pgn to FILE. Use the 'min'
+  			Send the live output PGN to FILE. Use the 'min'
 			argument to save in a minimal/compact PGN format.
-  -tournamentfile FILE	Set the FILE where to save tournament resumption data
-  -resume		Resume the tournament saved in 'tournamentfile'
+  -tournamentfile FILE	Set the FILE where to save tournament resumption data.
+  -resume		Resume the tournament saved in 'tournamentfile'. Resume
+  			mode uses tournament options and engine options saved
+  			previously in 'tournamentfile', hence these options
+  			shouldn't be used when resuming a tournament.
   -ecopgn FILE		Use ECO classification from the games specified in FILE
   			in PGN format instead of the internal ECO database.
   -bergerschedule	Use Berger/Schurig scheduling in 'round-robin'
   			tournaments.
-  -kfactor		Specifies the K-factor to use for crosstable Elo
-  			calculation (default: 15.0).
-  
-  
+  -kfactor N		Set the K-factor to use for crosstable Elo
+  			calculation to N. The default is 15.0.

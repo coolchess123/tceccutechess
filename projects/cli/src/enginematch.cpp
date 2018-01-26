@@ -439,18 +439,18 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 				real /= games;
 				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
 
-				const int elo = qRound(m_eloKfactor * (real - expected));
+				const int elo = qFloor(m_eloKfactor * (real - expected));
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
 			}
-
-			const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
-			if (totGames > maxGames)
-				maxGames = totGames;
-			const int totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
-			if (totElo > maxElo)
-				maxElo = totElo;
 		}
+
+		const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
+		if (totGames > maxGames)
+			maxGames = totGames;
+		const int totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
+		if (totElo > maxElo)
+			maxElo = totElo;
 	}
 
 	if (playerCount == 2) {
