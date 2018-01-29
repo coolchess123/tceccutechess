@@ -20,8 +20,9 @@
 #include <algorithm>
 
 RoundRobinTournament::RoundRobinTournament(GameManager* gameManager,
+					   EngineManager* engineManager,
 					   QObject *parent)
-	: Tournament(gameManager, parent),
+	: Tournament(gameManager, engineManager, parent),
 	  m_pairNumber(0)
 {
 }

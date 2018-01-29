@@ -41,6 +41,18 @@ EngineConfiguration EngineManager::engineAt(int index) const
 	return m_engines.at(index);
 }
 
+int EngineManager::engineIndex(const QString& name) const
+{
+	int index = 0;
+	for (const EngineConfiguration& engine : m_engines)
+	{
+		if (name == engine.name())
+			return index;
+		++index;
+	}
+	return -1;
+}
+
 void EngineManager::addEngine(const EngineConfiguration& engine)
 {
 	m_engines << engine;
@@ -114,6 +126,55 @@ void EngineManager::loadEngines(const QString& fileName)
 
 	for (const QVariant& engine : engines)
 		addEngine(EngineConfiguration(engine));
+}
+
+void EngineManager::reloadEngines(const QString& fileName)
+{
+	if (!QFile::exists(fileName))
+		return;
+
+	QFile input(fileName);
+	if (!input.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		qWarning("cannot open engine configuration file: %s", qPrintable(fileName));
+		return;
+	}
+
+	QTextStream stream(&input);
+	JsonParser parser(stream);
+	const QVariantList engines(parser.parse().toList());
+
+	if (parser.hasError())
+	{
+		qWarning("%s", qPrintable(QString("bad engine configuration file line %1 in %2: %3")
+			.arg(parser.errorLineNumber()).arg(fileName).arg(parser.errorString()))); // clazy:exclude=qstring-arg
+		return;
+	}
+
+	QSet<QString> names = engineNames();
+	QList<EngineConfiguration> newEngines;
+	for (const QVariant& engine : engines)
+		newEngines << engine;
+
+	for (const EngineConfiguration& engine : newEngines)
+	{
+		const int index = engineIndex(engine.name());
+		if (index >= 0)
+		{
+			names.remove(engine.name());
+			if (engineAt(index) != engine)
+				updateEngineAt(index, engine);
+		}
+		else
+			addEngine(engine);
+	}
+
+	for (const QString& name : names)
+	{
+		const int index = engineIndex(name);
+		if (index >= 0)
+			removeEngineAt(index);
+	}
 }
 
 void EngineManager::saveEngines(const QString& fileName)

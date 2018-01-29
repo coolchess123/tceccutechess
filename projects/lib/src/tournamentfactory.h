@@ -23,6 +23,7 @@ class QString;
 class QObject;
 class Tournament;
 class GameManager;
+class EngineManager;
 
 /*!
  * \brief A factory for creating Tournament objects. */
@@ -31,12 +32,14 @@ class LIB_EXPORT TournamentFactory
 	public:
 		/*!
 		 * Creates and returns a new tournament of type \a type
-		 * that uses \a manager to manage its games.
+		 * that uses \a gameManager to manage its games and
+		 * \a engineManager to manage its engines.
 		 *
 		 * Returns 0 if \a type is not supported.
 		 */
 		static Tournament* create(const QString& type,
-					  GameManager* manager,
+					  GameManager* gameManager,
+					  EngineManager* engineManager,
 					  QObject* parent = nullptr);
 
 	private:

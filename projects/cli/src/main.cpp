@@ -291,7 +291,7 @@ bool parseEngine(const QStringList& args, EngineData& data)
 	return true;
 }
 
-EngineMatch* parseMatch(const QStringList& args, QObject* parent)
+EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 {
 	MatchParser parser(args);
 	parser.addOption("-srand", QVariant::UInt, 1, 1);
@@ -331,7 +331,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	if (!parser.parse())
 		return nullptr;
 
-	GameManager* manager = CuteChessCoreApplication::instance()->gameManager();
+	GameManager* gameManager = CuteChessCoreApplication::instance()->gameManager();
 
 	QVariantMap tfMap, tMap, eMap;
 	QVariantList eList;
@@ -396,7 +396,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	}
 	if (ttype.isEmpty())
 		ttype = "round-robin";
-	Tournament* tournament = TournamentFactory::create(ttype, manager, parent);
+	Tournament* tournament = TournamentFactory::create(ttype, gameManager, app.engineManager(), &app);
 	if (tournament == nullptr)
 	{
 		qWarning("Invalid tournament type: %s", qPrintable(ttype));
@@ -429,7 +429,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 		tMap.insert("srand", srand);
 	}
 
-	EngineMatch* match = new EngineMatch(tournament, parent);
+	EngineMatch* match = new EngineMatch(tournament, &app);
 	if (!tournamentFile.isEmpty()) match->setTournamentFile(tournamentFile);
 
 	QList<EngineData> engines;
@@ -474,7 +474,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 		if (tMap.contains("openingRepetitions"))
 			tournament->setOpeningRepetitions(tMap["openingRepetitions"].toInt());
 		if (tMap.contains("concurrency"))
-			manager->setConcurrency(tMap["concurrency"].toInt());
+			gameManager->setConcurrency(tMap["concurrency"].toInt());
 		if (tMap.contains("drawAdjudication")) {
 			QVariantMap dMap = tMap["drawAdjudication"].toMap();
 			if (dMap.contains("movenumber") &&
@@ -604,7 +604,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 			{
 				ok = value.toInt() > 0;
 				if (ok) {
-					manager->setConcurrency(value.toInt());
+					gameManager->setConcurrency(value.toInt());
 					tMap.insert("concurrency", value.toInt());
 				}
 			}
@@ -1054,7 +1054,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	s_match = parseMatch(arguments, &app);
+	s_match = parseMatch(arguments, app);
 	if (s_match == nullptr)
 		return 1;
 	QObject::connect(s_match, SIGNAL(finished()), &app, SLOT(quit()));

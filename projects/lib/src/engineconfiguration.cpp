@@ -411,3 +411,8 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 	}
 	return *this;
 }
+
+bool EngineConfiguration::operator!=(const EngineConfiguration& other) const
+{
+	return !operator==(other);
+}

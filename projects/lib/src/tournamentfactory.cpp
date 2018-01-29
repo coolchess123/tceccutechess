@@ -21,15 +21,16 @@
 #include "knockouttournament.h"
 
 Tournament* TournamentFactory::create(const QString& type,
-				      GameManager* manager,
+				      GameManager* gameManager,
+					  EngineManager* engineManager,
 				      QObject* parent)
 {
 	if (type == "round-robin")
-		return new RoundRobinTournament(manager, parent);
+		return new RoundRobinTournament(gameManager, engineManager, parent);
 	if (type == "gauntlet")
-		return new GauntletTournament(manager, parent);
+		return new GauntletTournament(gameManager, engineManager, parent);
 	if (type == "knockout")
-		return new KnockoutTournament(manager, parent);
+		return new KnockoutTournament(gameManager, engineManager, parent);
 
 	return nullptr;
 }

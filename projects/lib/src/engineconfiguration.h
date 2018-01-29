@@ -223,6 +223,9 @@ class LIB_EXPORT EngineConfiguration
 		 */
 		EngineConfiguration& operator=(const EngineConfiguration& other);
 
+		bool operator==(const EngineConfiguration& other) const;
+		bool operator!=(const EngineConfiguration& other) const;
+
 	private:
 		QString m_name;
 		QString m_command;

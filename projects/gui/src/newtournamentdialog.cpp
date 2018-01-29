@@ -252,7 +252,7 @@ Tournament* NewTournamentDialog::createTournament(GameManager* gameManager) cons
 	auto ts = ui->m_tournamentSettings;
 
 	auto t = TournamentFactory::create(
-		ts->tournamentType(), gameManager, parent());
+		ts->tournamentType(), gameManager, m_srcEngineManager, parent());
 
 	t->setPgnCleanupEnabled(false);
 	t->setName(ui->m_nameEdit->text());

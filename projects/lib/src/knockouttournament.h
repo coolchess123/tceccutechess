@@ -34,6 +34,7 @@ class LIB_EXPORT KnockoutTournament : public Tournament
 	public:
 		/*! Creates a new Knockout tournament. */
 		explicit KnockoutTournament(GameManager* gameManager,
+						EngineManager* engineManager,
 					    QObject *parent = nullptr);
 
 		// Inherited from Tournament

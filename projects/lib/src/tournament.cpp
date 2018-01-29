@@ -31,9 +31,11 @@
 #include "sprt.h"
 #include "elo.h"
 
-Tournament::Tournament(GameManager* gameManager, QObject *parent)
+Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
+					   QObject *parent)
 	: QObject(parent),
 	  m_gameManager(gameManager),
+	  m_engineManager(engineManager),
 	  m_lastGame(nullptr),
 	  m_variant("standard"),
 	  m_round(0),
@@ -97,6 +99,11 @@ Tournament::~Tournament()
 GameManager* Tournament::gameManager() const
 {
 	return m_gameManager;
+}
+
+EngineManager* Tournament::engineManager() const
+{
+	return m_engineManager;
 }
 
 bool Tournament::isFinished() const
@@ -373,6 +380,11 @@ bool Tournament::hasGauntletRatingsOrder() const
 void Tournament::startGame(TournamentPair* pair)
 {
 	Q_ASSERT(pair->isValid());
+
+	// Reload the engines
+	QString configFile("engines.json");
+	m_engineManager->reloadEngines(configFile);
+
 	m_pair = pair;
 	m_pair->addStartedGame();
 	const bool usesBerger = usesBergerSchedule();
