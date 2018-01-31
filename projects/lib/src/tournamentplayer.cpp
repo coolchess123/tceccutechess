@@ -38,6 +38,11 @@ const PlayerBuilder* TournamentPlayer::builder() const
 	return m_builder;
 }
 
+PlayerBuilder* TournamentPlayer::builder()
+{
+	return m_builder;
+}
+
 QString TournamentPlayer::name() const
 {
 	return m_builder->name();

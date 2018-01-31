@@ -441,6 +441,7 @@ class LIB_EXPORT Tournament : public QObject
 		void onGameDestroyed(ChessGame* game);
 		void onGameStartFailed(ChessGame* game);
 		void onPgnMove();
+		void onEngineUpdated(int engineIndex);
 
 	private:
 		struct GameData

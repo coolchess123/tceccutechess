@@ -22,6 +22,7 @@
 #include <QSet>
 #include "gamemanager.h"
 #include "playerbuilder.h"
+#include "enginebuilder.h"
 #include "board/boardfactory.h"
 #include "chessplayer.h"
 #include "chessgame.h"
@@ -65,6 +66,10 @@ Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 	  m_bergerSchedule(false)
 {
 	Q_ASSERT(gameManager != nullptr);
+	Q_ASSERT(engineManager != nullptr);
+
+	connect(engineManager, SIGNAL(engineUpdated(int)), this,
+		SLOT(onEngineUpdated(int)));
 }
 
 Tournament::~Tournament()
@@ -661,6 +666,20 @@ void Tournament::onPgnMove()
 
 	QFile::resize(m_livePgnOut, 0);
 	pgn->write(m_livePgnOut, m_livePgnOutMode);
+}
+
+void Tournament::onEngineUpdated(int engineIndex)
+{
+	EngineConfiguration config = m_engineManager->engineAt(engineIndex);
+
+	for (auto player : m_players)
+		if (player.name() == config.name())
+		{
+			EngineBuilder* builder =
+							reinterpret_cast<EngineBuilder*>(player.builder());
+			builder->setConfiguration(config);
+			break;
+		}
 }
 
 void Tournament::onGameFinished(ChessGame* game)

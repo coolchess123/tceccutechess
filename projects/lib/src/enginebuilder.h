@@ -32,6 +32,9 @@ class LIB_EXPORT EngineBuilder : public PlayerBuilder
 		/*! Creates a new EngineBuilder. */
 		EngineBuilder(const EngineConfiguration& config);
 
+		/* ! Sets a new engine configuration. */
+		void setConfiguration(const EngineConfiguration& config);
+
 		// Inherited from PlayerBuilder
 		virtual bool isHuman() const;
 		virtual ChessPlayer* create(QObject* receiver,
