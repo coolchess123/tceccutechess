@@ -22,6 +22,7 @@
 #include <QSet>
 #include "gamemanager.h"
 #include "playerbuilder.h"
+#include "enginebuilder.h"
 #include "board/boardfactory.h"
 #include "chessplayer.h"
 #include "chessgame.h"
@@ -31,9 +32,11 @@
 #include "sprt.h"
 #include "elo.h"
 
-Tournament::Tournament(GameManager* gameManager, QObject *parent)
+Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
+					   QObject *parent)
 	: QObject(parent),
 	  m_gameManager(gameManager),
+	  m_engineManager(engineManager),
 	  m_lastGame(nullptr),
 	  m_variant("standard"),
 	  m_round(0),
@@ -60,9 +63,14 @@ Tournament::Tournament(GameManager* gameManager, QObject *parent)
 	  m_pair(nullptr),
 	  m_livePgnOutMode(PgnGame::Verbose),
 	  m_resumeGameNumber(0),
-	  m_bergerSchedule(false)
+	  m_bergerSchedule(false),
+	  m_reloadEngines(false)
 {
 	Q_ASSERT(gameManager != nullptr);
+	Q_ASSERT(engineManager != nullptr);
+
+	connect(engineManager, SIGNAL(engineUpdated(int)), this,
+		SLOT(onEngineUpdated(int)));
 }
 
 Tournament::~Tournament()
@@ -97,6 +105,11 @@ Tournament::~Tournament()
 GameManager* Tournament::gameManager() const
 {
 	return m_gameManager;
+}
+
+EngineManager* Tournament::engineManager() const
+{
+	return m_engineManager;
 }
 
 bool Tournament::isFinished() const
@@ -316,6 +329,11 @@ void Tournament::setBergerSchedule(bool enabled)
 	m_bergerSchedule = enabled;
 }
 
+void Tournament::setReloadEngines(bool enabled)
+{
+	m_reloadEngines = enabled;
+}
+
 void Tournament::setResume(int nextGameNumber)
 {
 	Q_ASSERT(nextGameNumber >= 0);
@@ -373,6 +391,14 @@ bool Tournament::hasGauntletRatingsOrder() const
 void Tournament::startGame(TournamentPair* pair)
 {
 	Q_ASSERT(pair->isValid());
+
+	// Reload the engines
+	if (m_reloadEngines)
+	{
+		QString configFile("engines.json");
+		m_engineManager->reloadEngines(configFile);
+	}
+
 	m_pair = pair;
 	m_pair->addStartedGame();
 	const bool usesBerger = usesBergerSchedule();
@@ -649,6 +675,20 @@ void Tournament::onPgnMove()
 
 	QFile::resize(m_livePgnOut, 0);
 	pgn->write(m_livePgnOut, m_livePgnOutMode);
+}
+
+void Tournament::onEngineUpdated(int engineIndex)
+{
+	const EngineConfiguration& config = m_engineManager->engineAt(engineIndex);
+
+	for (auto player : m_players)
+		if (player.name() == config.name())
+		{
+			EngineBuilder* builder =
+							reinterpret_cast<EngineBuilder*>(player.builder());
+			builder->setConfiguration(config);
+			break;
+		}
 }
 
 void Tournament::onGameFinished(ChessGame* game)

@@ -28,6 +28,12 @@ EngineBuilder::EngineBuilder(const EngineConfiguration& config)
 	setRating(config.rating());
 }
 
+void EngineBuilder::setConfiguration(const EngineConfiguration& config)
+{
+	m_config = config;
+	setRating(config.rating());
+}
+
 bool EngineBuilder::isHuman() const
 {
 	return false;

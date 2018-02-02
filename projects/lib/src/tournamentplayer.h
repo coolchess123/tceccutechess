@@ -35,6 +35,7 @@ class LIB_EXPORT TournamentPlayer
 
 		/*! Returns the player's builder object. */
 		const PlayerBuilder* builder() const;
+		PlayerBuilder* builder();
 		/*! Returns the player's name. */
 		QString name() const;
 		/*! Sets the player's name to \a name. */

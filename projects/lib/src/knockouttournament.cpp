@@ -23,8 +23,9 @@
 
 
 KnockoutTournament::KnockoutTournament(GameManager* gameManager,
+					   EngineManager* engineManager,
 				       QObject *parent)
-	: Tournament(gameManager, parent)
+	: Tournament(gameManager, engineManager, parent)
 {
 }
 

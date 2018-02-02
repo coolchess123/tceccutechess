@@ -16,7 +16,7 @@
 */
 
 #include "engineconfiguration.h"
-
+#include <QSet>
 #include "engineoption.h"
 #include "enginetextoption.h"
 #include "engineoptionfactory.h"
@@ -410,4 +410,61 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 			m_options.append(option->copy());
 	}
 	return *this;
+}
+
+bool EngineConfiguration::operator!=(const EngineConfiguration& other) const
+{
+	return !operator==(other);
+}
+
+static bool equivalent(const QStringList& l1, const QStringList& l2, Qt::CaseSensitivity cs = Qt::CaseSensitive)
+{
+	for (auto str : l1)
+		if (!l2.contains(str, cs))
+			return false;
+	for (auto str : l2)
+		if (!l1.contains(str, cs))
+			return false;
+	return true;
+}
+
+bool EngineConfiguration::operator==(const EngineConfiguration& other) const
+{
+	if (m_whiteEvalPov != other.m_whiteEvalPov
+		|| m_pondering != other.m_pondering
+		|| m_validateClaims != other.m_validateClaims
+		|| m_restartMode != other.m_restartMode
+		|| m_rating != other.m_rating
+		|| m_name != other.m_name
+		|| m_command != other.m_command
+		|| m_workingDirectory != other.m_workingDirectory
+		|| m_stderrFile != other.m_stderrFile
+		|| m_protocol != other.m_protocol
+		|| m_arguments != other.m_arguments
+		|| m_initStrings != other.m_initStrings
+		|| !equivalent(m_variants, other.m_variants))
+		return false;
+
+	QSet<QString> names;
+	for (auto op : m_options)
+		names.insert(op->name());
+
+	for (auto oop : other.m_options)
+	{
+		bool found = false;
+		for (auto op : m_options)
+		{
+			if (oop->name() == op->name())
+			{
+				if (oop->value() == op->value())
+					found = true;
+				names.remove(op->name());
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+
+	return names.isEmpty();
 }

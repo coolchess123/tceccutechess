@@ -291,7 +291,7 @@ bool parseEngine(const QStringList& args, EngineData& data)
 	return true;
 }
 
-EngineMatch* parseMatch(const QStringList& args, QObject* parent)
+EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 {
 	MatchParser parser(args);
 	parser.addOption("-srand", QVariant::UInt, 1, 1);
@@ -327,11 +327,12 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	parser.addOption("-ecopgn", QVariant::String, 1, 1);
 	parser.addOption("-bergerschedule", QVariant::Bool, 0, 0);
 	parser.addOption("-kfactor", QVariant::Double, 1, 1);
+	parser.addOption("-reloadconf", QVariant::Bool, 0, 0);
 
 	if (!parser.parse())
 		return nullptr;
 
-	GameManager* manager = CuteChessCoreApplication::instance()->gameManager();
+	GameManager* gameManager = CuteChessCoreApplication::instance()->gameManager();
 
 	QVariantMap tfMap, tMap, eMap;
 	QVariantList eList;
@@ -396,7 +397,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 	}
 	if (ttype.isEmpty())
 		ttype = "round-robin";
-	Tournament* tournament = TournamentFactory::create(ttype, manager, parent);
+	Tournament* tournament = TournamentFactory::create(ttype, gameManager, app.engineManager(), &app);
 	if (tournament == nullptr)
 	{
 		qWarning("Invalid tournament type: %s", qPrintable(ttype));
@@ -429,7 +430,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 		tMap.insert("srand", srand);
 	}
 
-	EngineMatch* match = new EngineMatch(tournament, parent);
+	EngineMatch* match = new EngineMatch(tournament, &app);
 	if (!tournamentFile.isEmpty()) match->setTournamentFile(tournamentFile);
 
 	QList<EngineData> engines;
@@ -474,7 +475,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 		if (tMap.contains("openingRepetitions"))
 			tournament->setOpeningRepetitions(tMap["openingRepetitions"].toInt());
 		if (tMap.contains("concurrency"))
-			manager->setConcurrency(tMap["concurrency"].toInt());
+			gameManager->setConcurrency(tMap["concurrency"].toInt());
 		if (tMap.contains("drawAdjudication")) {
 			QVariantMap dMap = tMap["drawAdjudication"].toMap();
 			if (dMap.contains("movenumber") &&
@@ -526,6 +527,8 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 		}
 		if (tMap.contains("bergerSchedule"))
 			tournament->setBergerSchedule(tMap["bergerSchedule"].toBool());
+		if (tMap.contains("reloadConfiguration"))
+			tournament->setReloadEngines(tMap["reloadConfiguration"].toBool());
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
 			for (int e = 0; e < eList.size(); e++) {
@@ -604,7 +607,7 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 			{
 				ok = value.toInt() > 0;
 				if (ok) {
-					manager->setConcurrency(value.toInt());
+					gameManager->setConcurrency(value.toInt());
 					tMap.insert("concurrency", value.toInt());
 				}
 			}
@@ -866,6 +869,11 @@ EngineMatch* parseMatch(const QStringList& args, QObject* parent)
 				else
 					qWarning("Invalid K-factor %f", val);
 			}
+			else if(name == "-reloadconf") {
+				bool flag = value.toBool();
+				tournament->setReloadEngines(flag);
+				tMap.insert("reloadConfiguration", flag);
+			}
 			else
 				qFatal("Unknown argument: \"%s\"", qPrintable(name));
 
@@ -1054,7 +1062,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	s_match = parseMatch(arguments, &app);
+	s_match = parseMatch(arguments, app);
 	if (s_match == nullptr)
 		return 1;
 	QObject::connect(s_match, SIGNAL(finished()), &app, SLOT(quit()));

@@ -31,6 +31,7 @@
 #include "gameadjudicator.h"
 #include "tournamentplayer.h"
 #include "tournamentpair.h"
+#include "enginemanager.h"
 class GameManager;
 class PlayerBuilder;
 class ChessGame;
@@ -50,7 +51,8 @@ class LIB_EXPORT Tournament : public QObject
 		 * Creates a new tournament that uses \a gameManager
 		 * to manage the games.
 		 */
-		Tournament(GameManager* gameManager, QObject *parent);
+		Tournament(GameManager* gameManager, EngineManager* engineManager,
+				   QObject *parent);
 		/*!
 		 * Destroys the tournament.
 		 *
@@ -68,6 +70,8 @@ class LIB_EXPORT Tournament : public QObject
 		virtual int gamesPerRound() const = 0;
 		/*! Returns the GameManager that manages the tournament's games. */
 		GameManager* gameManager() const;
+		/*! Returns the EngineManager that manages the tournament's engines. */
+		EngineManager* engineManager() const;
 		/*! Returns true if the tournament is finished; otherwise returns false. */
 		bool isFinished() const;
 		/*! Returns a detailed description of the error. */
@@ -264,6 +268,10 @@ class LIB_EXPORT Tournament : public QObject
 		 */
 		void setBergerSchedule(bool enabled);
 		/*!
+		 * Reloads the local engines.json before game start if \a enabled.
+		 */
+		void setReloadEngines(bool enabled);
+		/*!
 		 * Adds player \a builder to the tournament.
 		 *
 		 * The player's time control will be \a timeControl, which
@@ -437,6 +445,7 @@ class LIB_EXPORT Tournament : public QObject
 		void onGameDestroyed(ChessGame* game);
 		void onGameStartFailed(ChessGame* game);
 		void onPgnMove();
+		void onEngineUpdated(int engineIndex);
 
 	private:
 		struct GameData
@@ -456,6 +465,7 @@ class LIB_EXPORT Tournament : public QObject
 		};
 
 		GameManager* m_gameManager;
+		EngineManager* m_engineManager;
 		ChessGame* m_lastGame;
 		QString m_error;
 		QString m_name;
@@ -500,6 +510,7 @@ class LIB_EXPORT Tournament : public QObject
 		int m_resumeGameNumber;
 		bool m_bergerSchedule;
 		QVector<QPair<QVector<Chess::Move>, QString> > m_cycleOpenings;
+		bool m_reloadEngines;
 };
 
 #endif // TOURNAMENT_H
