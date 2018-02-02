@@ -22,24 +22,6 @@
 #include <jsonserializer.h>
 
 
-#include "engineoption.h"
-static void printConfig(const EngineConfiguration& config)
-{
-	QString configString;
-	const auto options = config.options();
-	for (const auto option : options)
-	{
-		if (option->isEditable())
-			configString += option->name() + "=" + option->value().toString() + "; ";
-	}
-
-	qWarning("%s\n\t%s\n\t%s\n\t%s",
-			 qPrintable(config.name()),
-			 qPrintable(config.command()),
-			 qPrintable(config.workingDirectory()),
-			 qPrintable(configString));
-}
-
 EngineManager::EngineManager(QObject* parent)
 	: QObject(parent)
 {
@@ -80,7 +62,6 @@ void EngineManager::addEngine(const EngineConfiguration& engine)
 
 void EngineManager::updateEngineAt(int index, const EngineConfiguration& engine)
 {
-	printConfig(engine);
 	m_engines[index] = engine;
 
 	emit engineUpdated(index);
@@ -173,10 +154,7 @@ void EngineManager::reloadEngines(const QString& fileName)
 	QSet<QString> names = engineNames();
 	QList<EngineConfiguration> newEngines;
 	for (const QVariant& engine : engines)
-	{
-		printConfig(engine);
 		newEngines << engine;
-	}
 
 	for (const EngineConfiguration& engine : newEngines)
 	{

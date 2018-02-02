@@ -327,6 +327,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-ecopgn", QVariant::String, 1, 1);
 	parser.addOption("-bergerschedule", QVariant::Bool, 0, 0);
 	parser.addOption("-kfactor", QVariant::Double, 1, 1);
+	parser.addOption("-reloadconf", QVariant::Bool, 0, 0);
 
 	if (!parser.parse())
 		return nullptr;
@@ -526,6 +527,8 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 		}
 		if (tMap.contains("bergerSchedule"))
 			tournament->setBergerSchedule(tMap["bergerSchedule"].toBool());
+		if (tMap.contains("reloadConfiguration"))
+			tournament->setReloadEngines(tMap["reloadConfiguration"].toBool());
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
 			for (int e = 0; e < eList.size(); e++) {
@@ -865,6 +868,11 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					tMap.insert("eloKfactor", val);
 				else
 					qWarning("Invalid K-factor %f", val);
+			}
+			else if(name == "-reloadconf") {
+				bool flag = value.toBool();
+				tournament->setReloadEngines(flag);
+				tMap.insert("reloadConfiguration", flag);
 			}
 			else
 				qFatal("Unknown argument: \"%s\"", qPrintable(name));

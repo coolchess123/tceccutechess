@@ -32,7 +32,6 @@
 #include "sprt.h"
 #include "elo.h"
 
-
 Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 					   QObject *parent)
 	: QObject(parent),
@@ -64,7 +63,8 @@ Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 	  m_pair(nullptr),
 	  m_livePgnOutMode(PgnGame::Verbose),
 	  m_resumeGameNumber(0),
-	  m_bergerSchedule(false)
+	  m_bergerSchedule(false),
+	  m_reloadEngines(false)
 {
 	Q_ASSERT(gameManager != nullptr);
 	Q_ASSERT(engineManager != nullptr);
@@ -329,6 +329,11 @@ void Tournament::setBergerSchedule(bool enabled)
 	m_bergerSchedule = enabled;
 }
 
+void Tournament::setReloadEngines(bool enabled)
+{
+	m_reloadEngines = enabled;
+}
+
 void Tournament::setResume(int nextGameNumber)
 {
 	Q_ASSERT(nextGameNumber >= 0);
@@ -388,8 +393,11 @@ void Tournament::startGame(TournamentPair* pair)
 	Q_ASSERT(pair->isValid());
 
 	// Reload the engines
-	QString configFile("engines.json");
-	m_engineManager->reloadEngines(configFile);
+	if (m_reloadEngines)
+	{
+		QString configFile("engines.json");
+		m_engineManager->reloadEngines(configFile);
+	}
 
 	m_pair = pair;
 	m_pair->addStartedGame();

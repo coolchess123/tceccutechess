@@ -268,6 +268,10 @@ class LIB_EXPORT Tournament : public QObject
 		 */
 		void setBergerSchedule(bool enabled);
 		/*!
+		 * Reloads the local engines.json before game start if \a enabled.
+		 */
+		void setReloadEngines(bool enabled);
+		/*!
 		 * Adds player \a builder to the tournament.
 		 *
 		 * The player's time control will be \a timeControl, which
@@ -506,6 +510,7 @@ class LIB_EXPORT Tournament : public QObject
 		int m_resumeGameNumber;
 		bool m_bergerSchedule;
 		QVector<QPair<QVector<Chess::Move>, QString> > m_cycleOpenings;
+		bool m_reloadEngines;
 };
 
 #endif // TOURNAMENT_H

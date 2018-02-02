@@ -184,3 +184,13 @@ TCEC options:
   			tournaments.
   -kfactor N		Set the K-factor to use for crosstable Elo
   			calculation to N. The default is 15.0.
+  -reloadconf	Reloads the 'engines.json' file in the working
+  			directory before the start of every game. Note that
+  			loaded options aren't applied until the engines are
+  			restarted, which means the 'restart' engine option
+  			influences when the reloaded options are applied.
+  			Also note that engine options specified with '-engine'
+  			and '-each' instead of in the 'engines.json' file
+  			aren't applied to the engines after reloading, meaning
+  			you have to specify every engine option in the
+  			'engines.json' if you use this option.
