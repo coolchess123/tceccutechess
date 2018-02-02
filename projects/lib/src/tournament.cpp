@@ -32,6 +32,7 @@
 #include "sprt.h"
 #include "elo.h"
 
+
 Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 					   QObject *parent)
 	: QObject(parent),
@@ -670,7 +671,7 @@ void Tournament::onPgnMove()
 
 void Tournament::onEngineUpdated(int engineIndex)
 {
-	EngineConfiguration config = m_engineManager->engineAt(engineIndex);
+	const EngineConfiguration& config = m_engineManager->engineAt(engineIndex);
 
 	for (auto player : m_players)
 		if (player.name() == config.name())
