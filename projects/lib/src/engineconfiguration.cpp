@@ -27,7 +27,8 @@ EngineConfiguration::EngineConfiguration()
 	  m_pondering(false),
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
-	  m_rating(0)
+	  m_rating(0),
+	  m_disqualified(false)
 {
 }
 
@@ -42,7 +43,8 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_pondering(false),
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
-	  m_rating(0)
+	  m_rating(0),
+	  m_disqualified(false)
 {
 }
 
@@ -52,7 +54,8 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_pondering(false),
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
-	  m_rating(0)
+	  m_rating(0),
+	  m_disqualified(false)
 {
 	const QVariantMap map = variant.toMap();
 
@@ -100,6 +103,9 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 
 	if (map.contains("rating"))
 		setRating(map["rating"].toInt());
+
+	if (map.contains("disqualified"))
+		setDisqualified(map["disqualified"].toBool());
 }
 
 EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
@@ -115,7 +121,8 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_pondering(other.m_pondering),
 	  m_validateClaims(other.m_validateClaims),
 	  m_restartMode(other.m_restartMode),
-	  m_rating(other.m_rating)
+	  m_rating(other.m_rating),
+	  m_disqualified(other.m_disqualified)
 {
 	const auto options = other.options();
 	for (const EngineOption* option : options)
@@ -143,6 +150,7 @@ EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 	m_restartMode = other.m_restartMode;
 	m_options = other.m_options;
 	m_rating = other.m_rating;
+	m_disqualified = other.m_disqualified;
 
 	// other's destructor will cause a mess if its m_options isn't cleared
 	other.m_options.clear();
@@ -195,6 +203,9 @@ QVariant EngineConfiguration::toVariant() const
 	if (m_rating)
 		map.insert("rating", m_rating);
 
+	if (m_disqualified)
+		map.insert("disqualified", m_disqualified);
+
 	return map;
 }
 
@@ -228,6 +239,11 @@ void EngineConfiguration::setRating(const int rating)
 	m_rating = rating > 0 ? rating : 0;
 }
 
+void EngineConfiguration::setDisqualified(bool enable)
+{
+	m_disqualified = enable;
+}
+
 QString EngineConfiguration::name() const
 {
 	return m_name;
@@ -256,6 +272,11 @@ QString EngineConfiguration::protocol() const
 int EngineConfiguration::rating() const
 {
 	return m_rating;
+}
+
+bool EngineConfiguration::disqualified() const
+{
+	return m_disqualified;
 }
 
 QStringList EngineConfiguration::arguments() const
@@ -401,6 +422,7 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 		m_validateClaims = other.m_validateClaims;
 		m_restartMode = other.m_restartMode;
 		m_rating = other.m_rating;
+		m_disqualified = other.m_disqualified;
 
 		qDeleteAll(m_options);
 		m_options.clear();
@@ -435,6 +457,7 @@ bool EngineConfiguration::operator==(const EngineConfiguration& other) const
 		|| m_validateClaims != other.m_validateClaims
 		|| m_restartMode != other.m_restartMode
 		|| m_rating != other.m_rating
+		|| m_disqualified != other.m_disqualified
 		|| m_name != other.m_name
 		|| m_command != other.m_command
 		|| m_workingDirectory != other.m_workingDirectory

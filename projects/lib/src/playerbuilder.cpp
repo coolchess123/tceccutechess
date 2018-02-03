@@ -19,7 +19,8 @@
 
 PlayerBuilder::PlayerBuilder(const QString& name)
 	: m_name(name),
-	  m_rating(0)
+	  m_rating(0),
+	  m_disqualified(false)
 {
 }
 
@@ -45,4 +46,14 @@ int PlayerBuilder::rating() const
 void PlayerBuilder::setRating(const int rating)
 {
 	m_rating = rating;
+}
+
+bool PlayerBuilder::disqualified() const
+{
+	return m_disqualified;
+}
+
+void PlayerBuilder::setDisqualified(bool enable)
+{
+	m_disqualified = enable;
 }

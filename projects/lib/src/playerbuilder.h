@@ -55,6 +55,10 @@ class LIB_EXPORT PlayerBuilder
 		int rating() const;
 		/*! Sets the player's rating to \a rating. */
 		void setRating(const int rating);
+		/*! Returns the player's disqualified status */
+		bool disqualified() const;
+		/*! Sets the player's disqualified status to \a enable. */
+		void setDisqualified(bool enable);
 		/*!
 		 * Creates a new player and sets its parent to \a parent.
 		 *
@@ -73,6 +77,7 @@ class LIB_EXPORT PlayerBuilder
 	private:
 		QString m_name;
 		int m_rating;
+		bool m_disqualified;
 };
 
 #endif // PLAYERBUILDER_H

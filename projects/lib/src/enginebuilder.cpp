@@ -26,12 +26,14 @@ EngineBuilder::EngineBuilder(const EngineConfiguration& config)
 	  m_config(config)
 {
 	setRating(config.rating());
+	setDisqualified(config.disqualified());
 }
 
 void EngineBuilder::setConfiguration(const EngineConfiguration& config)
 {
 	m_config = config;
 	setRating(config.rating());
+	setDisqualified(config.disqualified());
 }
 
 bool EngineBuilder::isHuman() const
