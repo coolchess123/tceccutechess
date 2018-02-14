@@ -1035,7 +1035,7 @@ int main(int argc, char* argv[])
 		{
 			out << "cutechess-cli " << CUTECHESS_CLI_VERSION << endl;
 			out << "Using Qt version " << qVersion() << endl << endl;
-			out << "Copyright (C) 2008-2017 Ilari Pihlajisto and Arto Jonsson" << endl;
+			out << "Copyright (C) 2008-2018 Ilari Pihlajisto and Arto Jonsson" << endl;
 			out << "\t      2014 Jeremy Bernstein" << endl;
 			out << "\t      2018 Guy Vreuls" << endl;
 			out << "This is free software; see the source for copying ";

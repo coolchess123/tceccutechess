@@ -26,6 +26,7 @@ ChessPlayer::ChessPlayer(QObject* parent)
 	  m_timer(new QTimer(this)),
 	  m_claimedResult(false),
 	  m_validateClaims(true),
+	  m_canPlayAfterTimeout(false),
 	  m_board(nullptr),
 	  m_opponent(nullptr),
 	  m_rating(0)
@@ -207,7 +208,12 @@ void ChessPlayer::setRating(const int rating)
 
 bool ChessPlayer::canPlayAfterTimeout() const
 {
-	return false;
+	return m_canPlayAfterTimeout;
+}
+
+void ChessPlayer::setCanPlayAfterTimeout(bool enable)
+{
+        m_canPlayAfterTimeout = enable;
 }
 
 void ChessPlayer::startPondering()

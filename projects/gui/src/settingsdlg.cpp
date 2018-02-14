@@ -43,6 +43,27 @@ SettingsDialog::SettingsDialog(QWidget* parent)
 		QSettings().setValue("ui/close_unused_initial_tab", checked);
 	});
 
+	connect(ui->m_useFullUserNameCheck, &QCheckBox::toggled,
+		this, [=](bool checked)
+	{
+		QSettings().setValue("ui/use_full_user_name", checked);
+	});
+
+	connect(ui->m_playersSidesOnClocksCheck, &QCheckBox::toggled,
+		this, [=](bool checked)
+	{
+		QSettings().setValue("ui/display_players_sides_on_clocks", checked);
+	});
+
+
+	connect(ui->m_humanCanPlayAfterTimeoutCheck, &QCheckBox::toggled,
+		[=](bool checked)
+	{
+		QSettings().setValue("games/human_can_play_after_timeout",
+				      checked);
+	});
+
+
 	connect(ui->m_concurrencySpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this, [=](int value)
 	{
@@ -173,6 +194,10 @@ void SettingsDialog::readSettings()
 		s.value("highlight_legal_moves", true).toBool());
 	ui->m_closeUnusedInitialTabCheck->setChecked(
 		s.value("close_unused_initial_tab", true).toBool());
+	ui->m_useFullUserNameCheck->setChecked(
+		s.value("use_full_user_name", true).toBool());
+	ui->m_playersSidesOnClocksCheck->setChecked(
+		s.value("display_players_sides_on_clocks", false).toBool());
 	ui->m_tbPathEdit->setText(s.value("tb_path").toString());
 	s.endGroup();
 
@@ -181,6 +206,8 @@ void SettingsDialog::readSettings()
 	s.endGroup();
 
 	s.beginGroup("games");
+	ui->m_humanCanPlayAfterTimeoutCheck
+		->setChecked(s.value("human_can_play_after_timeout", true).toBool());
 	ui->m_defaultPgnOutFileEdit
 		->setText(s.value("default_pgn_output_file").toString());
 	s.endGroup();
