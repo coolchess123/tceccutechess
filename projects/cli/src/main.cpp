@@ -302,6 +302,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-concurrency", QVariant::Int, 1, 1);
 	parser.addOption("-draw", QVariant::StringList);
 	parser.addOption("-resign", QVariant::StringList);
+	parser.addOption("-maxmoves", QVariant::Int, 1, 1);
 	parser.addOption("-tb", QVariant::String, 1, 1);
 	parser.addOption("-tbpieces", QVariant::Int, 1, 1);
 	parser.addOption("-tbignore50", QVariant::Bool, 0, 0);
@@ -500,6 +501,9 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 		if (tMap.contains("swapSides"))
 			tournament->setSwapSides(tMap["swapSides"].toBool());
 
+		if (tMap.contains("maxMoves"))
+			adjudicator.setMaximumGameLength(tMap["maxMoves"].toInt());
+
 		if (tMap.contains("tb")) {
 			adjudicator.setTablebaseAdjudication(true);
 
@@ -649,6 +653,17 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					rMap.insert("movecount", moveCount);
 					rMap.insert("score", score);
 					tMap.insert("resignAdjudication", rMap);
+				}
+			}
+			// Maximum game length before draw adjudication
+			else if (name == "-maxmoves")
+			{
+				ok = value.toInt() >= 0;
+				const int maxMoves = value.toInt();
+				if (ok)
+				{
+					adjudicator.setMaximumGameLength(maxMoves);
+					tMap.insert("maxMoves", maxMoves);
 				}
 			}
 			// Syzygy tablebase adjudication
