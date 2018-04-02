@@ -109,7 +109,8 @@ void EngineManager::loadEngines(const QString& fileName)
 	QFile input(fileName);
 	if (!input.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
-		qWarning("cannot open engine configuration file: %s", qPrintable(fileName));
+		qWarning("cannot open engine configuration file: %s",
+			 qUtf8Printable(fileName));
 		return;
 	}
 
@@ -119,7 +120,7 @@ void EngineManager::loadEngines(const QString& fileName)
 
 	if (parser.hasError())
 	{
-		qWarning("%s", qPrintable(QString("bad engine configuration file line %1 in %2: %3")
+		qWarning("%s", qUtf8Printable(QString("bad engine configuration file line %1 in %2: %3")
 			.arg(parser.errorLineNumber()).arg(fileName).arg(parser.errorString()))); // clazy:exclude=qstring-arg
 		return;
 	}
@@ -187,7 +188,8 @@ void EngineManager::saveEngines(const QString& fileName)
 	QFile output(fileName);
 	if (!output.open(QIODevice::WriteOnly | QIODevice::Text))
 	{
-		qWarning("cannot open engine configuration file: %s", qPrintable(fileName));
+		qWarning("cannot open engine configuration file: %s",
+			 qUtf8Printable(fileName));
 		return;
 	}
 

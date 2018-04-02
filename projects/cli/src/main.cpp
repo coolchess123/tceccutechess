@@ -100,7 +100,7 @@ OpeningSuite* parseOpenings(const MatchParser::Option& option, Tournament* tourn
 	else if (ok)
 	{
 		qWarning("Invalid opening suite format: \"%s\"",
-			 qPrintable(params["format"]));
+			 qUtf8Printable(params["format"]));
 		ok = false;
 	}
 
@@ -112,7 +112,7 @@ OpeningSuite* parseOpenings(const MatchParser::Option& option, Tournament* tourn
 	else if (ok)
 	{
 		qWarning("Invalid opening selection order: \"%s\"",
-			 qPrintable(params["order"]));
+			 qUtf8Printable(params["order"]));
 		ok = false;
 	}
 
@@ -129,7 +129,7 @@ OpeningSuite* parseOpenings(const MatchParser::Option& option, Tournament* tourn
 							   order,
 							   start - 1);
 		if (order == OpeningSuite::RandomOrder)
-			qDebug("Indexing opening suite...");
+			qInfo("Indexing opening suite...");
 		ok = suite->initialize();
 		if (ok)
 			return suite;
@@ -352,10 +352,10 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				EcoNode::initialize(pgnStream);
 			}
 			else
-				qWarning("cannot open eco file %s", qPrintable(ecoPgn));
+				qWarning("cannot open eco file %s", qUtf8Printable(ecoPgn));
 		}
 		else
-			qWarning("eco file %s not found", qPrintable(ecoPgn));
+			qWarning("eco file %s not found", qUtf8Printable(ecoPgn));
 	}
 
 	QString tournamentFile = parser.takeOption("-tournamentfile").toString();
@@ -367,7 +367,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			if (QFile::exists(tournamentFile)) {
 				QFile input(tournamentFile);
 				if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
-					qWarning("cannot open tournament configuration file: %s", qPrintable(tournamentFile));
+					qWarning("cannot open tournament configuration file: %s", qUtf8Printable(tournamentFile));
 					return 0;
 				}
 
@@ -401,7 +401,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	Tournament* tournament = TournamentFactory::create(ttype, gameManager, app.engineManager(), &app);
 	if (tournament == nullptr)
 	{
-		qWarning("Invalid tournament type: %s", qPrintable(ttype));
+		qWarning("Invalid tournament type: %s", qUtf8Printable(ttype));
 		return nullptr;
 	}
 
@@ -718,7 +718,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				{
 					qWarning("Tournament \"%s\" does not support "
 						 "user-defined round multipliers",
-						 qPrintable(tournament->type()));
+						 qUtf8Printable(tournament->type()));
 					ok = false;
 				}
 				else
@@ -867,7 +867,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			// Resume a TCEC tournament
 			else if (name == "-resume") {
 				if (!tournamentFile.isEmpty())
-					qWarning("Cannot resume a non-initialized tournament. Creating new tournament file @ %s", qPrintable(tournamentFile));
+					qWarning("Cannot resume a non-initialized tournament. Creating new tournament file @ %s", qUtf8Printable(tournamentFile));
 				else
 					qWarning("The -resume flag is meant to be used with the -tournamentfile option. Ignoring.");
 			}
@@ -890,14 +890,14 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				tMap.insert("reloadConfiguration", flag);
 			}
 			else
-				qFatal("Unknown argument: \"%s\"", qPrintable(name));
+				qFatal("Unknown argument: \"%s\"", qUtf8Printable(name));
 
 			if (!ok)
 			{
 				// Empty values default to boolean type
 				if (value.isValid() && value.type() == QVariant::Bool)
 					qWarning("Empty value for option \"%s\"",
-						 qPrintable(name));
+						 qUtf8Printable(name));
 				else
 				{
 					QString val;
@@ -906,7 +906,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					else
 						val = value.toString();
 					qWarning("Invalid value for option \"%s\": \"%s\"",
-						 qPrintable(name), qPrintable(val));
+						 qUtf8Printable(name), qUtf8Printable(val));
 				}
 
 				delete match;
@@ -1002,7 +1002,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	if (!tournamentFile.isEmpty() && !tMap.isEmpty()) {
 		QFile output(tournamentFile);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open tournament configuration file: %s", qPrintable(tournamentFile));
+			qWarning("cannot open tournament configuration file: %s", qUtf8Printable(tournamentFile));
 			return 0;
 		}
 

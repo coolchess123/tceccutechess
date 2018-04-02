@@ -256,6 +256,7 @@ void MoveList::selectChosenMove()
 	m_moves[moveNum].move.mergeCharFormat(c, format);
 
 	c.endEditBlock();
+	m_moveList->setTextCursor(c);
 }
 
 bool MoveList::selectMove(int moveNum)
@@ -280,7 +281,7 @@ void MoveList::onLinkClicked(const QUrl& url)
 	if (!ok)
 	{
 		qWarning("MoveList: invalid move number: %s",
-		    qPrintable(url.userName()));
+		    qUtf8Printable(url.userName()));
 
 		return;
 	}
@@ -297,7 +298,7 @@ void MoveList::onLinkClicked(const QUrl& url)
 	}
 	else
 		qWarning("MoveList: unknown scheme: %s",
-		    qPrintable(url.scheme()));
+			 qUtf8Printable(url.scheme()));
 
 	selectMove(ply);
 }

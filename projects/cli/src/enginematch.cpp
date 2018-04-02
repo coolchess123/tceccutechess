@@ -542,11 +542,11 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 {
 	Q_ASSERT(game != nullptr);
 
-	qDebug("Started game %d of %d (%s vs %s)",
-	       number,
-	       m_tournament->finalGameCount(),
-	       qPrintable(game->player(Chess::Side::White)->name()),
-	       qPrintable(game->player(Chess::Side::Black)->name()));
+	qInfo("Started game %d of %d (%s vs %s)",
+	      number,
+	      m_tournament->finalGameCount(),
+	      qUtf8Printable(game->player(Chess::Side::White)->name()),
+	      qUtf8Printable(game->player(Chess::Side::Black)->name()));
 
 	if (!m_tournamentFile.isEmpty()) {
 		QVariantMap tfMap;
@@ -606,11 +606,11 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 	Q_ASSERT(game != nullptr);
 
 	Chess::Result result(game->result());
-	qDebug("Finished game %d (%s vs %s): %s",
-	       number,
-	       qPrintable(game->player(Chess::Side::White)->name()),
-	       qPrintable(game->player(Chess::Side::Black)->name()),
-	       qPrintable(result.toVerboseString()));
+	qInfo("Finished game %d (%s vs %s): %s",
+	      number,
+	      qUtf8Printable(game->player(Chess::Side::White)->name()),
+	      qUtf8Printable(game->player(Chess::Side::Black)->name()),
+	      qUtf8Printable(result.toVerboseString()));
 
 	if (!m_tournamentFile.isEmpty()) {
 		QVariantMap tfMap;
@@ -706,12 +706,12 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 		TournamentPlayer fcp = m_tournament->playerAt(0);
 		TournamentPlayer scp = m_tournament->playerAt(1);
 		int totalResults = fcp.gamesFinished();
-		qDebug("Score of %s vs %s: %d - %d - %d  [%.3f] %d",
-		       qPrintable(fcp.name()),
-		       qPrintable(scp.name()),
-		       fcp.wins(), scp.wins(), fcp.draws(),
-		       double(fcp.score()) / (totalResults * 2),
-		       totalResults);
+		qInfo("Score of %s vs %s: %d - %d - %d  [%.3f] %d",
+		      qUtf8Printable(fcp.name()),
+		      qUtf8Printable(scp.name()),
+		      fcp.wins(), scp.wins(), fcp.draws(),
+		      double(fcp.score()) / (totalResults * 2),
+		      totalResults);
 	}
 
 	if (m_ratingInterval != 0
@@ -727,9 +727,9 @@ void EngineMatch::onTournamentFinished()
 
 	QString error = m_tournament->errorString();
 	if (!error.isEmpty())
-		qWarning("%s", qPrintable(error));
+		qWarning("%s", qUtf8Printable(error));
 
-	qDebug("Finished match");
+	qInfo("Finished match");
 	connect(m_tournament->gameManager(), SIGNAL(finished()),
 		this, SIGNAL(finished()));
 	m_tournament->gameManager()->finish();
@@ -737,10 +737,10 @@ void EngineMatch::onTournamentFinished()
 
 void EngineMatch::print(const QString& msg)
 {
-	qDebug("%lld %s", m_startTime.elapsed(), qPrintable(msg));
+	qInfo("%lld %s", m_startTime.elapsed(), qUtf8Printable(msg));
 }
 
 void EngineMatch::printRanking()
 {
-	qDebug("%s", qPrintable(m_tournament->results()));
+	qInfo("%s", qUtf8Printable(m_tournament->results()));
 }

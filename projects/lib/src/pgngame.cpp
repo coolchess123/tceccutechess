@@ -149,7 +149,7 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 {
 	if (m_tags.isEmpty())
 	{
-		qDebug("No tags found");
+		qWarning("No tags found");
 		return false;
 	}
 
@@ -165,7 +165,7 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 
 		if (!tmp.isEmpty() && !in.setVariant(tmp))
 		{
-			qDebug("Unknown variant: %s", qPrintable(tmp));
+			qWarning("Unknown variant: %s", qUtf8Printable(tmp));
 			return false;
 		}
 		board = in.board();
@@ -177,7 +177,7 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 		{
 			if (board->isRandomVariant())
 			{
-				qDebug("Missing FEN tag");
+				qWarning("Missing FEN tag");
 				return false;
 			}
 			tmp = board->defaultFenString();
@@ -185,7 +185,7 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 
 		if (!board->setFenString(tmp))
 		{
-			qDebug("Invalid FEN string: %s", qPrintable(tmp));
+			qWarning("Invalid FEN string: %s", qUtf8Printable(tmp));
 			return false;
 		}
 		m_startingSide = board->startingSide();
@@ -195,7 +195,7 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 	Chess::Move move(board->moveFromString(str));
 	if (move.isNull())
 	{
-		qDebug("Illegal move: %s", qPrintable(str));
+		qWarning("Illegal move: %s", qUtf8Printable(str));
 		return false;
 	}
 
@@ -235,8 +235,8 @@ bool PgnGame::read(PgnStream& in, int maxMoves, bool addEco)
 				QString result = m_tags.value("Result");
 
 				if (!result.isEmpty() && str != result)
-					qDebug("%s",qPrintable(QString("Line %1: The termination "
-						"marker is different from the result tag").arg(in.lineNumber())));
+					qWarning("%s", qUtf8Printable(QString("Line %1: The termination "
+						 "marker is different from the result tag").arg(in.lineNumber())));
 				setTag("Result", str);
 			}
 			stop = true;
@@ -246,7 +246,7 @@ bool PgnGame::read(PgnStream& in, int maxMoves, bool addEco)
 				bool ok;
 				int nag = in.tokenString().toInt(&ok);
 				if (!ok || nag < 0 || nag > 255)
-					qDebug("Invalid NAG: %s", in.tokenString().constData());
+					qWarning("Invalid NAG: %s", in.tokenString().constData());
 			}
 			break;
 		case PgnStream::NoToken:
@@ -558,10 +558,15 @@ QString PgnGame::timeStamp(const QDateTime& dateTime)
 
 void PgnGame::setGameStartTime(const QDateTime& dateTime)
 {
+	m_gameStartTime = dateTime;
 	setTag("GameStartTime", timeStamp(dateTime));
 }
 
 void PgnGame::setGameEndTime(const QDateTime& dateTime)
 {
 	setTag("GameEndTime", timeStamp(dateTime));
+
+	int d = m_gameStartTime.secsTo(dateTime);
+	QTime time = QTime(d / 3600, d % 3600 / 60, d % 60);
+	setTag("GameDuration", time.toString("hh:mm:ss"));
 }
