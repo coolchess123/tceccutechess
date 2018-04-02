@@ -157,6 +157,8 @@ class LIB_EXPORT PgnGame
 		Chess::Side startingSide() const;
 		/*! Returns the starting position's FEN string. */
 		QString startingFenString() const;
+		/*! Returns the duration of the game */
+		const QTime& gameDuration() const;
 
 		/*!
 		 * Sets \a tag's value to \a value.
@@ -215,6 +217,7 @@ class LIB_EXPORT PgnGame
 		QString m_initialComment;
 		static QString timeStamp(const QDateTime& dateTime);
 		QDateTime m_gameStartTime;
+		QTime m_gameDuration;
 };
 
 /*! Reads a PGN game from a PGN stream. */

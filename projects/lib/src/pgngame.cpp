@@ -567,6 +567,11 @@ void PgnGame::setGameEndTime(const QDateTime& dateTime)
 	setTag("GameEndTime", timeStamp(dateTime));
 
 	int d = m_gameStartTime.secsTo(dateTime);
-	QTime time = QTime(d / 3600, d % 3600 / 60, d % 60);
-	setTag("GameDuration", time.toString("hh:mm:ss"));
+	m_gameDuration = QTime(d / 3600, d % 3600 / 60, d % 60);
+	setTag("GameDuration", m_gameDuration.toString("hh:mm:ss"));
+}
+
+const QTime& PgnGame::gameDuration() const
+{
+	return m_gameDuration;
 }

@@ -77,8 +77,6 @@ class LIB_EXPORT ChessGame : public QObject
 		void lockThread();
 		void unlockThread();
 
-		QString gameDuration() const;
-
 	public slots:
 		void start();
 		void pause();
@@ -124,9 +122,6 @@ class LIB_EXPORT ChessGame : public QObject
 		void addPgnMove(const Chess::Move& move, const QString& comment);
 		void emitLastMove();
 
-		void startGameTimer();
-		int stopGameTimer();
-		
 		QString evalString(const MoveEvaluation& eval);
 
 		Chess::Board* m_board;
@@ -150,9 +145,6 @@ class LIB_EXPORT ChessGame : public QObject
 		QSemaphore m_pauseSem;
 		QSemaphore m_resumeSem;
 		GameAdjudicator m_adjudicator;
-		int m_elapsed;
-		QElapsedTimer m_gameTimer;
-		QString m_gameDuration;
 };
 
 #endif // CHESSGAME_H

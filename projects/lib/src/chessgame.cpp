@@ -171,8 +171,7 @@ ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
 	  m_pgnInitialized(false),
 	  m_bookOwnership(false),
 	  m_boardShouldBeFlipped(false),
-	  m_pgn(pgn),
-	  m_elapsed(0)
+	  m_pgn(pgn)
 {
 	Q_ASSERT(pgn != nullptr);
 
@@ -265,30 +264,11 @@ ChessPlayer* ChessGame::playerToWait() const
 		return nullptr;
 	return m_player[m_board->sideToMove().opposite()];
 }
-void ChessGame::startGameTimer()
-{
-	m_gameTimer.start();
-}
-
-int ChessGame::stopGameTimer()
-{
-	return m_paused ? m_elapsed : m_elapsed + m_gameTimer.elapsed();
-}
-
-QString ChessGame::gameDuration() const
-{
-	return m_gameDuration;
-}
 
 void ChessGame::stop(bool emitMoveChanged)
 {
 	if (m_finished)
 		return;
-
-	int secs = stopGameTimer() / 1000;
-	int mins = (secs / 60) % 60;
-	int hours = (secs / 3600);
-	secs = secs % 60;
 
 	m_finished = true;
 	emit humanEnabled(false);
@@ -309,12 +289,6 @@ void ChessGame::stop(bool emitMoveChanged)
 	m_pgn->setTag("PlyCount", QString::number(plies));
 
 	m_pgn->setGameEndTime(gameEndTime);
-
-	m_gameDuration = QString("%1:%2:%3")
-		.arg(hours, 2, 10, QChar('0'))
-		.arg(mins, 2, 10, QChar('0'))
-		.arg(secs, 2, 10, QChar('0'));
-	m_pgn->setTag("GameDuration", m_gameDuration);
 
 	m_pgn->setResult(m_result);
 	m_pgn->setResultDescription(m_result.description());
@@ -781,10 +755,7 @@ void ChessGame::start()
 
 void ChessGame::pause()
 {
-	if (m_paused)
-		return;
 	m_paused = true;
-	m_elapsed += m_gameTimer.elapsed();
 }
 
 void ChessGame::resume()
@@ -792,7 +763,6 @@ void ChessGame::resume()
 	if (!m_paused)
 		return;
 	m_paused = false;
-	m_gameTimer.start();
 
 	QMetaObject::invokeMethod(this, "startTurn", Qt::QueuedConnection);
 }
@@ -871,10 +841,6 @@ void ChessGame::startGame()
 
 	resetBoard();
 	initializePgn();
-
-	startGameTimer();
-	m_gameDuration = "";
-
 	emit started(this);
 	emit fenChanged(m_board->startingFenString());
 	QDateTime gameStartTime = QDateTime::currentDateTime();

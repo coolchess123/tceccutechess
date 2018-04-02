@@ -654,6 +654,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					if (!val.isEmpty()) pMap.insert("variation", val);
 					// TODO: after TCEC is over, change this to moveCount, since that's what it is
 					pMap.insert("plyCount", (game->moves().size() + 1) / 2);
+					pMap.insert("gameDuration", pgn->gameDuration().toString("hh:mm:ss"));
 				}
 				pMap.insert("finalFen", game->board()->fenString());
 
@@ -683,7 +684,6 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 						pMap.insert("blackEval", sScore);
 				}
 
-				pMap.insert("gameDuration", game->gameDuration());
 				pList.replace(number-1, pMap);
 				tfMap.insert("matchProgress", pList);
 
