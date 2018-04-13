@@ -43,6 +43,7 @@ class EngineMatch : public QObject
 		void setBookMode(OpeningBook::AccessMode mode);
 		void setTournamentFile(QString &tournamentFile);
 		void setEloKfactor(qreal eloKfactor);
+		void setJsonFormat(bool jsonFormat);
 
 		void start();
 		void stop();
@@ -69,6 +70,7 @@ class EngineMatch : public QObject
 		QElapsedTimer m_startTime;
 		QString m_tournamentFile;
 		qreal m_eloKfactor;
+		bool m_jsonFormat;
 };
 
 #endif // ENGINEMATCH_H

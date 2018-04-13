@@ -175,7 +175,9 @@ TCEC options:
 
   -livepgnout FILE [min]
   			Send the live output PGN to FILE. Use the 'min'
-			argument to save in a minimal/compact PGN format.
+			argument to save in a minimal/compact PGN format. If
+			FILE ends in '.json', the output PGN and the schedule
+			will be saved in JSON format.  
   -tournamentfile FILE	Set the FILE where to save tournament resumption data.
   -resume		Resume the tournament saved in 'tournamentfile'. Resume
   			mode uses tournament options and engine options saved

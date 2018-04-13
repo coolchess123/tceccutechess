@@ -338,6 +338,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	QVariantMap tfMap, tMap, eMap;
 	QVariantList eList;
 	bool wantsResume = false;
+	bool wantsJsonFormat = false;
 	bool wantsDebug = parser.takeOption("-debug").toBool();
 
 	QString ecoPgn = parser.takeOption("-ecopgn").toString();
@@ -468,6 +469,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				tournament->setLivePgnOutput(tMap["livePgnOutput"].toString(), (PgnGame::PgnMode)tMap["livePgnOutMode"].toInt());
 			else
 				tournament->setLivePgnOutput(tMap["livePgnOutput"].toString());
+			wantsJsonFormat = tMap["livePgnOutput"].toString().right(5) == ".json";
 		}
 		if (tMap.contains("epdOutput"))
 			tournament->setEpdOutput(tMap["epdOutput"].toString());
@@ -798,6 +800,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					tournament->setLivePgnOutput(list.at(0), mode);
 					tMap.insert("livePgnOutput", list.at(0));
 					tMap.insert("livePgnOutMode", mode);
+					wantsJsonFormat = list.at(0).right(5) == ".json";
 				}
 			}
 			// FEN/EPD output file to save positions
@@ -921,6 +924,9 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	// Debugging mode. Prints all engine input and output.
 	if (wantsDebug)
 		match->setDebugMode(true);
+
+	if (wantsJsonFormat)
+		match->setJsonFormat(true);
 
 	if (tMap.contains("eloKfactor"))
 		match->setEloKfactor(tMap["eloKfactor"].toDouble());

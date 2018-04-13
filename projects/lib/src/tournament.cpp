@@ -931,7 +931,7 @@ void Tournament::start()
 			delete game;
 		}
 		// Assume all games were saved to the pgn before the stoppage
-		m_savedGameCount= m_finishedGameCount;
+		m_savedGameCount = m_finishedGameCount;
 	}
 
 	startNextGame();
