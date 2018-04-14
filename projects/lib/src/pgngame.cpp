@@ -575,3 +575,8 @@ const QTime& PgnGame::gameDuration() const
 {
 	return m_gameDuration;
 }
+
+QString PgnGame::initialComment() const
+{
+	return m_initialComment;
+}

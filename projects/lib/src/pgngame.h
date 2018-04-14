@@ -159,6 +159,8 @@ class LIB_EXPORT PgnGame
 		QString startingFenString() const;
 		/*! Returns the duration of the game */
 		const QTime& gameDuration() const;
+		/*! Returns the initial comment. */
+		QString initialComment() const;
 
 		/*!
 		 * Sets \a tag's value to \a value.

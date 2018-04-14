@@ -67,13 +67,29 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 		str += "1";
 	}
 
+	// selective depth
+	str += ", sd=";
+	if (eval.selectiveDepth() > 0) {
+		str += QString::number(eval.selectiveDepth());
+	} else {
+		str += "1";
+	}
+
 	// ponder move 'pd' algebraic move
 	QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
+//	if (sanPv.isEmpty())	// assume pv is already in SAN notation
+//		sanPv = eval.pv();
+#if 0
 	QStringList sanList = sanPv.split(' ');
 	if (sanList.length() > 1) {
 		str+= ", pd=" + sanList[1];
 	}
+#else
+	if (!eval.ponderMove().isEmpty())
+		str+= ", pd=" + eval.ponderMove();
+#endif
 
+#if 0
 	// move time 'mt' "hh:mm:ss"
 	int t = eval.time(); // milliseconds
 	str += ", mt=";
@@ -110,15 +126,33 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	// speed 's' "%d kN/s"
 	int nps = eval.nps();
 	str += ", s=" + QString::number(qFloor(nps / 1000)) + " kN/s";
+#else
+	// move time 'mt'
+	str += ", mt=" + QString::number(eval.time());
+
+	// time left 'tl'
+	ChessPlayer *player = m_player[m_board->sideToMove()];
+	Q_ASSERT(player != 0);
+	str += ", tl=" + QString::number(player->timeControl()->timeLeft());
+
+	// speed 's'
+	str += ", s=" + QString::number(eval.nps());
+#endif
 
 	// nodes 'n' "%d"
 	str += ", n=" + QString::number(eval.nodeCount());
 
 	// pv 'pv' algebraic string
-	str += ", pv=" + m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
+	str += ", pv=" + sanPv;
 
 	// tbhits 'tb'
 	str += ", tb=" + QString::number(eval.tbHits());
+
+	// hash usage
+	str += ", h=" + QString::number(eval.hashUsage() / 10.0, 'f', 1);
+
+	// ponderhit rate
+	str += ", ph=" + QString::number(eval.ponderhitRate() / 10.0, 'f', 1);
 
 	// 50-move clock 'R50'
 	Chess::WesternBoard *wboard = dynamic_cast<Chess::WesternBoard *>(m_board);
@@ -138,7 +172,10 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 		str += sScore;
 	}
 
-	str += ',';
+	// FEN
+	str += ", fn=" + m_board->fenString();
+
+//	str += ',';
 
 #else
 	QString str = eval.scoreText();
