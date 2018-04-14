@@ -725,13 +725,13 @@ void Tournament::onPgnMove()
 
 		mMap["m"] = move.moveString;
 
-		QString pos(static_cast<char>(move.move.sourceSquare().file() + 'a'));
-		pos += static_cast<char>(move.move.sourceSquare().rank() + '1');
-		mMap["from"] = pos;
+		QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
+		sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
+		mMap["from"] = sq;
 
-		pos = static_cast<char>(move.move.targetSquare().file() + 'a');
-		pos += static_cast<char>(move.move.targetSquare().rank() + '1');
-		mMap["to"] = pos;
+		sq = static_cast<char>(move.move.targetSquare().file() + 'a');
+		sq += static_cast<char>(move.move.targetSquare().rank() + '1');
+		mMap["to"] = sq;
 
 		if (move.comment == "book")
 			mMap["book"] = true;
