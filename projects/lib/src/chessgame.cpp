@@ -38,7 +38,8 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	// score
 	// str += " ev=";
 	QString sScore;
-	if (eval.depth() > 0)
+	int depth = eval.depth();
+	if (depth > 0)
 	{
 		int score = eval.score();
 		int absScore = qAbs(score);
@@ -61,19 +62,16 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	}
 
 	str += "d=";
-	if (eval.depth() > 0) {
-		str += QString::number(eval.depth());
-	} else {
-		str += "1";
-	}
+	if (depth <= 0)
+		depth = 1;
+	str += QString::number(depth);
 
 	// selective depth
 	str += ", sd=";
-	if (eval.selectiveDepth() > 0) {
+	if (eval.selectiveDepth() > depth)
 		str += QString::number(eval.selectiveDepth());
-	} else {
-		str += "1";
-	}
+	else
+		str += QString::number(depth);
 
 	// ponder move 'pd' algebraic move
 	QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
@@ -173,7 +171,7 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	}
 
 	// FEN
-	str += ", fn=" + m_board->fenString();
+	str += ", fen=" + m_board->fenString();
 
 //	str += ',';
 
