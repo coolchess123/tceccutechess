@@ -322,7 +322,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-site", QVariant::String, 1, 1);
 	parser.addOption("-wait", QVariant::Int, 1, 1);
 	parser.addOption("-seeds", QVariant::UInt, 1, 1);
-	parser.addOption("-livepgnout", QVariant::StringList, 1, 2);
+	parser.addOption("-livepgnout", QVariant::StringList, 1, 4);
 	parser.addOption("-tournamentfile", QVariant::String, 1, 1);
 	parser.addOption("-resume", QVariant::Bool, 0, 0);
 	parser.addOption("-ecopgn", QVariant::String, 1, 1);
@@ -338,7 +338,8 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	QVariantMap tfMap, tMap, eMap;
 	QVariantList eList;
 	bool wantsResume = false;
-	bool wantsJsonFormat = false;
+	bool wantsPgnFormat = true;
+	bool wantsJsonFormat = true;
 	bool wantsDebug = parser.takeOption("-debug").toBool();
 
 	QString ecoPgn = parser.takeOption("-ecopgn").toString();
@@ -469,7 +470,11 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				tournament->setLivePgnOutput(tMap["livePgnOutput"].toString(), (PgnGame::PgnMode)tMap["livePgnOutMode"].toInt());
 			else
 				tournament->setLivePgnOutput(tMap["livePgnOutput"].toString());
-			wantsJsonFormat = tMap["livePgnOutput"].toString().right(5) == ".json";
+			if (tMap.contains("pgnFormat"))
+				wantsPgnFormat = tMap["pgnFormat"].toBool();
+			if (tMap.contains("jsonFormat"))
+				wantsJsonFormat = tMap["jsonFormat"].toBool();
+			tournament->setLivePgnFormats(wantsPgnFormat, wantsJsonFormat);
 		}
 		if (tMap.contains("epdOutput"))
 			tournament->setEpdOutput(tMap["epdOutput"].toString());
@@ -789,18 +794,31 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			{
 				PgnGame::PgnMode mode = PgnGame::Verbose;
 				QStringList list = value.toStringList();
-				if (list.size() == 2)
+				int params = 1;
+				if (list.contains("min"))
 				{
-					if (list.at(1) == "min")
-						mode = PgnGame::Minimal;
-					else
-						ok = false;
+					mode = PgnGame::Minimal;
+					++params;
 				}
+				if (list.contains("nopgn"))
+				{
+					wantsPgnFormat = false;
+					++params;
+				}
+				if (list.contains("nojson"))
+				{
+					wantsJsonFormat = false;
+					++params;
+				}
+				if (list.size() != params)
+					ok = false;
 				if (ok) {
 					tournament->setLivePgnOutput(list.at(0), mode);
+					tournament->setLivePgnFormats(wantsPgnFormat, wantsJsonFormat);
 					tMap.insert("livePgnOutput", list.at(0));
 					tMap.insert("livePgnOutMode", mode);
-					wantsJsonFormat = list.at(0).right(5) == ".json";
+					tMap.insert("pgnFormat", wantsPgnFormat);
+					tMap.insert("jsonFormat", wantsJsonFormat);
 				}
 			}
 			// FEN/EPD output file to save positions
@@ -925,8 +943,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	if (wantsDebug)
 		match->setDebugMode(true);
 
-	if (wantsJsonFormat)
-		match->setJsonFormat(true);
+	match->setOutputFormats(wantsPgnFormat, wantsJsonFormat);
 
 	if (tMap.contains("eloKfactor"))
 		match->setEloKfactor(tMap["eloKfactor"].toDouble());

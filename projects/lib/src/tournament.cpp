@@ -63,6 +63,8 @@ Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 	  m_pgnOutMode(PgnGame::Verbose),
 	  m_pair(nullptr),
 	  m_livePgnOutMode(PgnGame::Verbose),
+	  m_pgnFormat(true),
+	  m_jsonFormat(true),
 	  m_resumeGameNumber(0),
 	  m_bergerSchedule(false),
 	  m_reloadEngines(false)
@@ -308,6 +310,11 @@ void Tournament::setLivePgnOutput(const QString& fileName, PgnGame::PgnMode mode
 {
 	m_livePgnOut = fileName;
 	m_livePgnOutMode = mode;
+}
+void Tournament::setLivePgnFormats(bool pgnFormat, bool jsonFormat)
+{
+	m_pgnFormat = pgnFormat;
+	m_jsonFormat = jsonFormat;
 }
 
 void Tournament::setOpeningRepetitions(int count)
@@ -675,93 +682,97 @@ void Tournament::onPgnMove()
 	PgnGame* pgn(sender->pgn());
 	Q_ASSERT(pgn != 0);
 
-	QFile::resize(m_livePgnOut, 0);
-	if (m_livePgnOut.right(5) != ".json")
+	if (m_pgnFormat)
 	{
-		pgn->write(m_livePgnOut, m_livePgnOutMode);
-		return;
+		QFile::resize(m_livePgnOut + ".pgn", 0);
+		pgn->write(m_livePgnOut + ".pgn", m_livePgnOutMode);
 	}
-	QVariantMap pMap;
 
-	// Parse and assemble engine options
-	QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
-	for (const QString& engine : engines)
+	if (m_jsonFormat)
 	{
-		QStringList parts = engine.trimmed().split(':', QString::SkipEmptyParts);
-		QVariantList oList;
-		if (parts.length() > 1)
+		QVariantMap pMap;
+
+		// Parse and assemble engine options
+		QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
+		for (const QString& engine : engines)
 		{
-			QStringList options = parts.at(1).trimmed().split(';', QString::SkipEmptyParts);
-			for (QString& option : options)
+			QStringList parts = engine.trimmed().split(':', QString::SkipEmptyParts);
+			QVariantList oList;
+			if (parts.length() > 1)
 			{
-				option = option.trimmed();
-				QVariantMap oMap;
-				const int pos = option.indexOf('=');
-				if(pos > 0)
+				QStringList options = parts.at(1).trimmed().split(';', QString::SkipEmptyParts);
+				for (QString& option : options)
 				{
-					oMap["Name"] = option.left(pos).trimmed();
-					oMap["Value"] = option.mid(pos + 1).trimmed();
-				} else
-					oMap["Name"] = option;
-				oList << oMap;
+					option = option.trimmed();
+					QVariantMap oMap;
+					const int pos = option.indexOf('=');
+					if(pos > 0)
+					{
+						oMap["Name"] = option.left(pos).trimmed();
+						oMap["Value"] = option.mid(pos + 1).trimmed();
+					} else
+						oMap["Name"] = option;
+					oList << oMap;
+				}
 			}
+			pMap[parts.at(0).trimmed()] = oList;
 		}
-		pMap[parts.at(0).trimmed()] = oList;
-	}
 
-	// Assemble tags
-	const QList< QPair<QString, QString> >& tags = pgn->tags();
-	QVariantMap hMap;
-	for(const QPair<QString, QString>& tagPair : tags)
-		hMap[tagPair.first] = tagPair.second;
-	pMap["Headers"] = hMap;
+		// Assemble tags
+		const QList< QPair<QString, QString> >& tags = pgn->tags();
+		QVariantMap hMap;
+		for(const QPair<QString, QString>& tagPair : tags)
+			hMap[tagPair.first] = tagPair.second;
+		pMap["Headers"] = hMap;
 
-	// Parse and assemble move stats
-	const QVector<PgnGame::MoveData>& moves = pgn->moves();
-	QVariantList mList;
-	for (const PgnGame::MoveData& move : moves)
-	{
-		QVariantMap mMap;
-
-		mMap["m"] = move.moveString;
-
-		QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
-		sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
-		mMap["from"] = sq;
-
-		sq = static_cast<char>(move.move.targetSquare().file() + 'a');
-		sq += static_cast<char>(move.move.targetSquare().rank() + '1');
-		mMap["to"] = sq;
-
-		if (move.comment == "book")
-			mMap["book"] = true;
-		else
+		// Parse and assemble move stats
+		const QVector<PgnGame::MoveData>& moves = pgn->moves();
+		QVariantList mList;
+		for (const PgnGame::MoveData& move : moves)
 		{
-			mMap["book"] = false;
+			QVariantMap mMap;
 
-			QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
-			for(QString& stat : stats)
+			mMap["m"] = move.moveString;
+
+			QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
+			sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
+			mMap["from"] = sq;
+
+			sq = static_cast<char>(move.move.targetSquare().file() + 'a');
+			sq += static_cast<char>(move.move.targetSquare().rank() + '1');
+			mMap["to"] = sq;
+
+			if (move.comment == "book")
+				mMap["book"] = true;
+			else
 			{
-				stat = stat.trimmed();
-				const int pos = stat.indexOf('=');
-				if (pos > 0)
-					mMap[stat.left(pos).trimmed()] = stat.mid(pos + 1).trimmed();
-				else	// real comment
-					mMap["rem"] = stat;
+				mMap["book"] = false;
+
+				QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
+				for(QString& stat : stats)
+				{
+					stat = stat.trimmed();
+					const int pos = stat.indexOf('=');
+					if (pos > 0)
+						mMap[stat.left(pos).trimmed()] = stat.mid(pos + 1).trimmed();
+					else	// real comment
+						mMap["rem"] = stat;
+				}
 			}
+
+			mList << mMap;
 		}
+		pMap["Moves"] = mList;
 
-		mList << mMap;
-	}
-	pMap["Moves"] = mList;
-
-	QFile output(m_livePgnOut);
-	if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		qWarning("cannot open live PGN output file: %s", qPrintable(m_livePgnOut));
-	} else {
-		QTextStream out(&output);
-		JsonSerializer serializer(pMap);
-		serializer.serialize(out);
+		QFile::resize(m_livePgnOut + ".json", 0);
+		QFile output(m_livePgnOut + ".json");
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open live PGN output file: %s", qPrintable(m_livePgnOut + ".json"));
+		} else {
+			QTextStream out(&output);
+			JsonSerializer serializer(pMap);
+			serializer.serialize(out);
+		}
 	}
 }
 

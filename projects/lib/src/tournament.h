@@ -228,6 +228,11 @@ class LIB_EXPORT Tournament : public QObject
 		void setLivePgnOutput(const QString& fileName,
 				  PgnGame::PgnMode mode = PgnGame::Verbose);
 
+ 		/*!
+ 		 * Sets the output formatting for the live output.
+ 		 */
+		void setLivePgnFormats(bool pgnFormat, bool jsonFormat);
+
 		/*!
 		 * Sets the number of opening repetitions to \a count.
 		 *
@@ -506,6 +511,8 @@ class LIB_EXPORT Tournament : public QObject
 		QVector<Chess::Move> m_openingMoves;
 		QString m_livePgnOut;
 		PgnGame::PgnMode m_livePgnOutMode;
+		bool m_pgnFormat;
+		bool m_jsonFormat;
 		QString m_eventDate;
 		int m_resumeGameNumber;
 		bool m_bergerSchedule;

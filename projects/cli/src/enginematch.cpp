@@ -40,7 +40,8 @@ EngineMatch::EngineMatch(Tournament* tournament, QObject* parent)
 	  m_ratingInterval(0),
 	  m_bookMode(OpeningBook::Ram),
 	  m_eloKfactor(15.0),
-	  m_jsonFormat(false)
+	  m_pgnFormat(true),
+	  m_jsonFormat(true)
 {
 	Q_ASSERT(tournament != nullptr);
 
@@ -119,8 +120,9 @@ void EngineMatch::setEloKfactor(qreal eloKfactor)
 	m_eloKfactor = eloKfactor;
 }
 
-void EngineMatch::setJsonFormat(bool jsonFormat)
+void EngineMatch::setOutputFormats(bool pgnFormat, bool jsonFormat)
 {
+	m_pgnFormat = pgnFormat;
 	m_jsonFormat = jsonFormat;
 }
 
@@ -130,18 +132,16 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 	if (pairings.isEmpty()) return;
 
 	QString scheduleFile(m_tournamentFile);
-	scheduleFile = scheduleFile.remove(".json") + "_schedule."
-				   + (m_jsonFormat ? "json" : "txt");
-
-	QFile output(scheduleFile);
-	if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile));
-		return;
-	}
-	QTextStream out(&output);
-	QVariantMap pMap;
+	scheduleFile = scheduleFile.remove(".json") + "_schedule.";
 
 	if (m_jsonFormat) {
+		QFile output(scheduleFile + "json");
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile + "json"));
+			return;
+		}
+		QTextStream out(&output);
+		QVariantMap pMap;
 		QVariantList sList;
 		QList< QPair<QString, QString> >::iterator i;
 		int count = 0;
@@ -198,128 +198,136 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 
 		JsonSerializer serializer(sList);
 		serializer.serialize(out);
-		return;
 	}
 
-	int maxName = 5, maxTerm = 11, maxFen = 9;
-	for (int i = 0; i < pList.size(); i++) {
-		int len;
-		pMap = pList.at(i).toMap();
-		if (pMap.contains("terminationDetails")) {
-			len = pMap["terminationDetails"].toString().length();
-			if (len > maxTerm) maxTerm = len;
+	if (m_pgnFormat) {
+		QFile output(scheduleFile + "txt");
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile + "txt"));
+			return;
 		}
-		if (pMap.contains("finalFen")) {
-			len = pMap["finalFen"].toString().length();
-			if (len > maxFen) maxFen = len;
+		QTextStream out(&output);
+		QVariantMap pMap;
+		int maxName = 5, maxTerm = 11, maxFen = 9;
+		for (int i = 0; i < pList.size(); i++) {
+			int len;
+			pMap = pList.at(i).toMap();
+			if (pMap.contains("terminationDetails")) {
+				len = pMap["terminationDetails"].toString().length();
+				if (len > maxTerm) maxTerm = len;
+			}
+			if (pMap.contains("finalFen")) {
+				len = pMap["finalFen"].toString().length();
+				if (len > maxFen) maxFen = len;
+			}
 		}
-	}
 
-	// now check the player list for maxName
-	int playerCount = m_tournament->playerCount();
-	for (int i = 0; i < playerCount; i++) {
-		int len = m_tournament->playerAt(i).builder()->name().length();
-		if (len > maxName) maxName = len;
-	}
+		// now check the player list for maxName
+		int playerCount = m_tournament->playerCount();
+		for (int i = 0; i < playerCount; i++) {
+			int len = m_tournament->playerAt(i).builder()->name().length();
+			if (len > maxName) maxName = len;
+		}
 
-	QString scheduleText;
-	scheduleText = QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14\n")
-		.arg("Nr", pairings.size() >= 100 ? 3 : 2)
-		.arg("White", maxName)
-		.arg("", 3)
-		.arg("", -3)
-		.arg("Black", -maxName)
-		.arg("Termination", -maxTerm)
-		.arg("Mov", 3)
-		.arg("WhiteEv", 7)
-		.arg("BlackEv", -7)
-		.arg("Start", -22)
-		.arg("Duration", 8)
-		.arg("ECO", 3)
-		.arg("FinalFen", -maxFen)
-		.arg("Opening");
+		QString scheduleText;
+		scheduleText = QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14\n")
+			.arg("Nr", pairings.size() >= 100 ? 3 : 2)
+			.arg("White", maxName)
+			.arg("", 3)
+			.arg("", -3)
+			.arg("Black", -maxName)
+			.arg("Termination", -maxTerm)
+			.arg("Mov", 3)
+			.arg("WhiteEv", 7)
+			.arg("BlackEv", -7)
+			.arg("Start", -22)
+			.arg("Duration", 8)
+			.arg("ECO", 3)
+			.arg("FinalFen", -maxFen)
+			.arg("Opening");
 
-	QList< QPair<QString, QString> >::iterator i;
-	int count = 0;
-	for (i = pairings.begin(); i != pairings.end(); ++i, ++count) {
-		QString whiteName, blackName, whiteResult, blackResult, termination, startTime, duration, ECO, finalFen, opening;
-		QString whiteEval, blackEval;
-		QString plies = 0;
+		QList< QPair<QString, QString> >::iterator i;
+		int count = 0;
+		for (i = pairings.begin(); i != pairings.end(); ++i, ++count) {
+			QString whiteName, blackName, whiteResult, blackResult, termination, startTime, duration, ECO, finalFen, opening;
+			QString whiteEval, blackEval;
+			QString plies = 0;
 
-		whiteName = i->first;
-		blackName = i->second;
+			whiteName = i->first;
+			blackName = i->second;
 
-		if (count < pList.size()) {
-			pMap = pList.at(count).toMap();
-			if (!pMap.isEmpty()) {
-				if (pMap.contains("white")) // TODO error check against above
-					whiteName = pMap["white"].toString();
-				if (pMap.contains("black"))
-					blackName = pMap["black"].toString();
-				if (pMap.contains("startTime"))
-					startTime = pMap["startTime"].toString();
-				if (pMap.contains("result")) {
-					QString result = pMap["result"].toString();
-					if (result == "*") {
-						whiteResult = blackResult = result;
-					} else if (result == "1-0") {
-						whiteResult = "1";
-						blackResult = "0";
-					} else if (result == "0-1") {
-						blackResult = "1";
-						whiteResult = "0";
-					} else {
-						whiteResult = blackResult = "1/2";
+			if (count < pList.size()) {
+				pMap = pList.at(count).toMap();
+				if (!pMap.isEmpty()) {
+					if (pMap.contains("white")) // TODO error check against above
+						whiteName = pMap["white"].toString();
+					if (pMap.contains("black"))
+						blackName = pMap["black"].toString();
+					if (pMap.contains("startTime"))
+						startTime = pMap["startTime"].toString();
+					if (pMap.contains("result")) {
+						QString result = pMap["result"].toString();
+						if (result == "*") {
+							whiteResult = blackResult = result;
+						} else if (result == "1-0") {
+							whiteResult = "1";
+							blackResult = "0";
+						} else if (result == "0-1") {
+							blackResult = "1";
+							whiteResult = "0";
+						} else {
+							whiteResult = blackResult = "1/2";
+						}
 					}
-				}
-				if (pMap.contains("terminationDetails"))
-					termination = pMap["terminationDetails"].toString();
-				if (pMap.contains("gameDuration"))
-					duration = pMap["gameDuration"].toString();
-				if (pMap.contains("finalFen"))
-					finalFen = pMap["finalFen"].toString();
-				if (pMap.contains("ECO"))
-					ECO = pMap["ECO"].toString();
-				if (pMap.contains("opening"))
-					opening = pMap["opening"].toString();
-				if (pMap.contains("variation")) {
-					QString variation = pMap["variation"].toString();
-					if (!variation.isEmpty())
-						opening += ", " + variation;
-				}
-				if (pMap.contains("plyCount"))
-					plies = pMap["plyCount"].toString();
-				if (pMap.contains("whiteEval"))
-					whiteEval = pMap["whiteEval"].toString();
-				if (pMap.contains("blackEval")) {
-					blackEval = pMap["blackEval"].toString();
-					if (blackEval.at(0) == '-') {
-						blackEval.remove(0, 1);
-					} else {
-						if (blackEval != "0.00")
-							blackEval = "-" + blackEval;
+					if (pMap.contains("terminationDetails"))
+						termination = pMap["terminationDetails"].toString();
+					if (pMap.contains("gameDuration"))
+						duration = pMap["gameDuration"].toString();
+					if (pMap.contains("finalFen"))
+						finalFen = pMap["finalFen"].toString();
+					if (pMap.contains("ECO"))
+						ECO = pMap["ECO"].toString();
+					if (pMap.contains("opening"))
+						opening = pMap["opening"].toString();
+					if (pMap.contains("variation")) {
+						QString variation = pMap["variation"].toString();
+						if (!variation.isEmpty())
+							opening += ", " + variation;
+					}
+					if (pMap.contains("plyCount"))
+						plies = pMap["plyCount"].toString();
+					if (pMap.contains("whiteEval"))
+						whiteEval = pMap["whiteEval"].toString();
+					if (pMap.contains("blackEval")) {
+						blackEval = pMap["blackEval"].toString();
+						if (blackEval.at(0) == '-') {
+							blackEval.remove(0, 1);
+						} else {
+							if (blackEval != "0.00")
+								blackEval = "-" + blackEval;
+						}
 					}
 				}
 			}
+			scheduleText += QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14\n")
+				.arg(QString::number(count+1), pairings.size() >= 100 ? 3 : 2)
+				.arg(whiteName, maxName)
+				.arg(whiteResult, 3)
+				.arg(blackResult, -3)
+				.arg(blackName, -maxName)
+				.arg(termination, -maxTerm)
+				.arg(plies, 3)
+				.arg(whiteEval, 7)
+				.arg(blackEval, -7)
+				.arg(startTime, -22)
+				.arg(duration, 8)
+				.arg(ECO, 3)
+				.arg(finalFen, -maxFen)
+				.arg(opening);
 		}
-		scheduleText += QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14\n")
-			.arg(QString::number(count+1), pairings.size() >= 100 ? 3 : 2)
-			.arg(whiteName, maxName)
-			.arg(whiteResult, 3)
-			.arg(blackResult, -3)
-			.arg(blackName, -maxName)
-			.arg(termination, -maxTerm)
-			.arg(plies, 3)
-			.arg(whiteEval, 7)
-			.arg(blackEval, -7)
-			.arg(startTime, -22)
-			.arg(duration, 8)
-			.arg(ECO, 3)
-			.arg(finalFen, -maxFen)
-			.arg(opening);
+		out.setCodec("ISO 8859-1"); // output is converted to ASCII
+		out << scheduleText;
 	}
-	out.setCodec("ISO 8859-1"); // output is converted to ASCII
-	out << scheduleText;
 }
 
 struct CrossTableData

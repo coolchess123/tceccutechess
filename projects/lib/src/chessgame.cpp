@@ -173,7 +173,7 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	// FEN
 	str += ", fen=" + m_board->fenString();
 
-//	str += ',';
+	str += ',';
 
 #else
 	QString str = eval.scoreText();
