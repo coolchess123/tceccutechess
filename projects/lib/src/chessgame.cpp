@@ -19,6 +19,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QtMath>
+#include <QRegularExpression>
 #include "board/board.h"
 #include "board/westernboard.h"
 #include "chessplayer.h"
@@ -75,8 +76,21 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 
 	// ponder move 'pd' algebraic move
 	QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
-//	if (sanPv.isEmpty())	// assume pv is already in SAN notation
-//		sanPv = eval.pv();
+	if (sanPv.isEmpty())
+	{
+		sanPv = eval.pv();
+		if (sanPv.contains('.'))
+		{
+			QString probPv(sanPv);
+			QRegularExpression re("\\d+\\.\\h+");	// Remove numbering
+			probPv.remove(re);
+			re.setPattern("\\.\\.\\.\\h+");			// Remove ellipses
+			probPv.remove(re);
+			sanPv = m_board->sanStringForPv(probPv, Chess::Board::StandardAlgebraic);
+			if (sanPv.isEmpty())
+				sanPv = probPv;
+		}
+	}
 #if 0
 	QStringList sanList = sanPv.split(' ');
 	if (sanList.length() > 1) {
