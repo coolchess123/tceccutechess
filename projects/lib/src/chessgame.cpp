@@ -27,180 +27,181 @@
 #include "chessengine.h"
 #include "engineoption.h"
 
-QString ChessGame::evalString(const MoveEvaluation& eval)
+QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& move)
 {
-	if (eval.isBookEval())
-		return "book";
 	if (eval.isEmpty())
 		return QString();
 
 #if 1
 	QString str;
-	// score
-	// str += " ev=";
-	QString sScore;
-	int depth = eval.depth();
-	if (depth > 0)
-	{
-		int score = eval.score();
-		int absScore = qAbs(score);
-
-		// Detect mate-in-n scores
-		if (absScore > 9900
-		&&  (absScore = 1000 - (absScore % 1000)) < 100)
+	if (eval.isBookEval())
+		str = "book";
+	else {
+		// score
+		QString sScore;
+		int depth = eval.depth();
+		if (depth > 0)
 		{
-			if (score < 0)
-				sScore = "-";
-			sScore += "M" + QString::number(absScore);
-		}
-		else
-			sScore = QString::number(double(score) / 100.0, 'f', 2);
+			int score = eval.score();
+			int absScore = qAbs(score);
 
-		// str += sScore + ",";
-	} else {
-		sScore = "0.00";
-		// str += sScore + ",";
-	}
+			// Detect mate-in-n scores
+			if (absScore > 9900
+			&&  (absScore = 1000 - (absScore % 1000)) < 100)
+			{
+				if (score < 0)
+					sScore = "-";
+				sScore += "M" + QString::number(absScore);
+			}
+			else
+				sScore = QString::number(double(score) / 100.0, 'f', 2);
 
-	str += "d=";
-	if (depth <= 0)
-		depth = 1;
-	str += QString::number(depth);
+		} else
+			sScore = "0.00";
 
-	// selective depth
-	str += ", sd=";
-	if (eval.selectiveDepth() > depth)
-		str += QString::number(eval.selectiveDepth());
-	else
+		str = "d=";
+		if (depth <= 0)
+			depth = 1;
 		str += QString::number(depth);
 
-	// ponder move 'pd' algebraic move
-	QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
-	if (sanPv.isEmpty())
-	{
-		bool lanCheck = true;
-		QRegularExpression re;
-
-		sanPv = eval.pv();
-		if (sanPv.contains('.'))
-		{
-			QString probPv(sanPv);
-			re.setPattern("\\d+\\.\\h+");	// Remove numbering
-			probPv.remove(re);
-			re.setPattern("\\.\\.\\.\\h+");	// Remove ellipses
-			probPv.remove(re);
-			sanPv = m_board->sanStringForPv(probPv, Chess::Board::StandardAlgebraic);
-			lanCheck = sanPv.isEmpty();
-			if (lanCheck)
-				sanPv = probPv;
-		}
-		re.setPattern("-|x");
-		if (lanCheck && sanPv.contains(re))				// LAN notation
-		{
-			re.setPattern("([NBRQK]?)([a-h][1-8])(-|x)([a-h][1-8])([NBRQ]?)");
-			sanPv = sanPv.replace(re, "\\2\\4\\5");
-			sanPv = m_board->sanStringForPv(sanPv, Chess::Board::StandardAlgebraic);
-		}
-	}
-#if 0
-	QStringList sanList = sanPv.split(' ');
-	if (sanList.length() > 1) {
-		str+= ", pd=" + sanList[1];
-	}
-#else
-	if (!eval.ponderMove().isEmpty())
-		str+= ", pd=" + eval.ponderMove();
-#endif
-
-#if 0
-	// move time 'mt' "hh:mm:ss"
-	int t = eval.time(); // milliseconds
-	str += ", mt=";
-	if (t == 0)
-		str += "00:00:00";
-	else {
-		int total = qFloor(t / 1000.);
-		int hours = qFloor(total / 3600.) % 24; // should be ok, right?
-		int minutes = (total / 60) % 60;
-		int seconds = total % 60;
-		str +=	QString::number(hours).rightJustified(2, '0') + ":" +
-				QString::number(minutes).rightJustified(2, '0') + ":" +
-				QString::number(seconds).rightJustified(2, '0');
-	}
-
-	// time left 'tl' "hh:mm:ss"
-	ChessPlayer *player = m_player[m_board->sideToMove()];
-	Q_ASSERT(player != 0);
-
-	int tl = player->timeControl()->timeLeft(); // milliseconds
-	str += ", tl=";
-	if (tl == 0)
-		str += "00:00:00";
-	else {
-		int total = qFloor(tl / 1000.);
-		int hours = qFloor(total / 3600.) % 24; // should be ok, right?
-		int minutes = (total / 60) % 60;
-		int seconds = total % 60;
-		str +=	QString::number(hours).rightJustified(2, '0') + ":" +
-				QString::number(minutes).rightJustified(2, '0') + ":" +
-				QString::number(seconds).rightJustified(2, '0');
-	}
-
-	// speed 's' "%d kN/s"
-	int nps = eval.nps();
-	str += ", s=" + QString::number(qFloor(nps / 1000)) + " kN/s";
-#else
-	// move time 'mt'
-	str += ", mt=" + QString::number(eval.time());
-
-	// time left 'tl'
-	ChessPlayer *player = m_player[m_board->sideToMove()];
-	Q_ASSERT(player != 0);
-	str += ", tl=" + QString::number(player->timeControl()->timeLeft());
-
-	// speed 's'
-	str += ", s=" + QString::number(eval.nps());
-#endif
-
-	// nodes 'n' "%d"
-	str += ", n=" + QString::number(eval.nodeCount());
-
-	// pv 'pv' algebraic string
-	str += ", pv=" + sanPv;
-
-	// tbhits 'tb'
-	str += ", tb=" + QString::number(eval.tbHits());
-
-	// hash usage
-	str += ", h=" + QString::number(eval.hashUsage() / 10.0, 'f', 1);
-
-	// ponderhit rate
-	str += ", ph=" + QString::number(eval.ponderhitRate() / 10.0, 'f', 1);
-
-	// 50-move clock 'R50'
-	Chess::WesternBoard *wboard = dynamic_cast<Chess::WesternBoard *>(m_board);
-	if (wboard) {
-		str += ", R50=" + QString::number(qFloor(((100 - wboard->reversibleMoveCount()) / 2.) + 0.5));
-	}
-
-	// eval from white's perspective 'wv'
-	Chess::Side side = m_board->sideToMove();
-	str += ", wv=";
-	if (side == Chess::Side::Black && sScore != "0.00") {
-		if (sScore[0] == '-')
-			str += sScore.right(sScore.length() - 1);
+		// selective depth
+		str += ", sd=";
+		if (eval.selectiveDepth() > depth)
+			str += QString::number(eval.selectiveDepth());
 		else
-			str += "-" + sScore;
-	} else {
-		str += sScore;
+			str += QString::number(depth);
+
+		// ponder move 'pd' algebraic move
+		QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
+		if (sanPv.isEmpty())
+		{
+			bool lanCheck = true;
+			QRegularExpression re;
+
+			sanPv = eval.pv();
+			if (sanPv.contains('.'))
+			{
+				QString probPv(sanPv);
+				re.setPattern("\\d+\\.\\h+");	// Remove numbering
+				probPv.remove(re);
+				re.setPattern("\\.\\.\\.\\h+");	// Remove ellipses
+				probPv.remove(re);
+				sanPv = m_board->sanStringForPv(probPv, Chess::Board::StandardAlgebraic);
+				lanCheck = sanPv.isEmpty();
+				if (lanCheck)
+					sanPv = probPv;
+			}
+			re.setPattern("-|x");
+			if (lanCheck && sanPv.contains(re))				// LAN notation
+			{
+				re.setPattern("([NBRQK]?)([a-h][1-8])(-|x)([a-h][1-8])([NBRQ]?)");
+				sanPv = sanPv.replace(re, "\\2\\4\\5");
+				sanPv = m_board->sanStringForPv(sanPv, Chess::Board::StandardAlgebraic);
+			}
+		}
+	#if 0
+		QStringList sanList = sanPv.split(' ');
+		if (sanList.length() > 1) {
+			str+= ", pd=" + sanList[1];
+		}
+	#else
+		if (!eval.ponderMove().isEmpty())
+			str+= ", pd=" + eval.ponderMove();
+	#endif
+
+	#if 0
+		// move time 'mt' "hh:mm:ss"
+		int t = eval.time(); // milliseconds
+		str += ", mt=";
+		if (t == 0)
+			str += "00:00:00";
+		else {
+			int total = qFloor(t / 1000.);
+			int hours = qFloor(total / 3600.) % 24; // should be ok, right?
+			int minutes = (total / 60) % 60;
+			int seconds = total % 60;
+			str +=	QString::number(hours).rightJustified(2, '0') + ":" +
+					QString::number(minutes).rightJustified(2, '0') + ":" +
+					QString::number(seconds).rightJustified(2, '0');
+		}
+
+		// time left 'tl' "hh:mm:ss"
+		ChessPlayer *player = m_player[m_board->sideToMove()];
+		Q_ASSERT(player != 0);
+
+		int tl = player->timeControl()->timeLeft(); // milliseconds
+		str += ", tl=";
+		if (tl == 0)
+			str += "00:00:00";
+		else {
+			int total = qFloor(tl / 1000.);
+			int hours = qFloor(total / 3600.) % 24; // should be ok, right?
+			int minutes = (total / 60) % 60;
+			int seconds = total % 60;
+			str +=	QString::number(hours).rightJustified(2, '0') + ":" +
+					QString::number(minutes).rightJustified(2, '0') + ":" +
+					QString::number(seconds).rightJustified(2, '0');
+		}
+
+		// speed 's' "%d kN/s"
+		int nps = eval.nps();
+		str += ", s=" + QString::number(qFloor(nps / 1000)) + " kN/s";
+	#else
+		// move time 'mt'
+		str += ", mt=" + QString::number(eval.time());
+
+		// time left 'tl'
+		ChessPlayer *player = m_player[m_board->sideToMove()];
+		Q_ASSERT(player != 0);
+		str += ", tl=" + QString::number(player->timeControl()->timeLeft());
+
+		// speed 's'
+		str += ", s=" + QString::number(eval.nps());
+	#endif
+
+		// nodes 'n' "%d"
+		str += ", n=" + QString::number(eval.nodeCount());
+
+		// pv 'pv' algebraic string
+		str += ", pv=" + sanPv;
+
+		// tbhits 'tb'
+		str += ", tb=" + QString::number(eval.tbHits());
+
+		// hash usage
+		str += ", h=" + QString::number(eval.hashUsage() / 10.0, 'f', 1);
+
+		// ponderhit rate
+		str += ", ph=" + QString::number(eval.ponderhitRate() / 10.0, 'f', 1);
+
+		// 50-move clock 'R50'
+		Chess::WesternBoard *wboard = dynamic_cast<Chess::WesternBoard *>(m_board);
+		if (wboard) {
+			str += ", R50=" + QString::number(qFloor(((100 - wboard->reversibleMoveCount()) / 2.) + 0.5));
+		}
+
+		// eval from white's perspective 'wv'
+		Chess::Side side = m_board->sideToMove();
+		str += ", wv=";
+		if (side == Chess::Side::Black && sScore != "0.00") {
+			if (sScore[0] == '-')
+				str += sScore.right(sScore.length() - 1);
+			else
+				str += "-" + sScore;
+		} else {
+			str += sScore;
+		}
 	}
 
 	// FEN
-	str += ", fen=" + m_board->fenString();
+	str += ", fen=" + evalFen(move);
 
 	str += ',';
 
 #else
+	if (eval.isBookEval())
+		return "book";
+
 	QString str = eval.scoreText();
 	if (eval.depth() > 0)
 		str += "/" + QString::number(eval.depth()) + " ";
@@ -219,6 +220,14 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	str += QString::number(double(t / 1000.0), 'f', precision) + 's';
 #endif
 	return str;
+}
+
+QString ChessGame::evalFen(const Chess::Move& move)
+{
+	m_board->makeMove(move);
+	QString result = m_board->fenString();
+	m_board->undoMove();
+	return result;
 }
 
 ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
@@ -433,7 +442,7 @@ void ChessGame::onMoveMade(const Chess::Move& move)
 
 	m_scores[m_moves.size()] = sender->evaluation().score();
 	m_moves.append(move);
-	addPgnMove(move, evalString(sender->evaluation()));
+	addPgnMove(move, evalString(sender->evaluation(), move));
 
 	// Get the result before sending the move to the opponent
 	m_board->makeMove(move);
@@ -921,7 +930,7 @@ void ChessGame::startGame()
 		Chess::Move move(m_moves.at(i));
 		Q_ASSERT(m_board->isLegalMove(move));
 		
-		addPgnMove(move, "book");
+		addPgnMove(move, "book, fen=" + evalFen(move) + ',');
 
 		playerToMove()->makeBookMove(move);
 		playerToWait()->makeMove(move);

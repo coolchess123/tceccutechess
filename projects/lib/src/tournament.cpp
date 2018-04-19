@@ -694,28 +694,29 @@ void Tournament::onPgnMove()
 
 		// Parse and assemble engine options
 		QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
-		for (const QString& engine : engines)
+		for (QString& engine : engines)
 		{
-			QStringList parts = engine.trimmed().split(':', QString::SkipEmptyParts);
-			QVariantList oList;
-			if (parts.length() > 1)
+			engine = engine.trimmed();
+			const int ePos = engine.indexOf(':');
+			if (ePos > 0)
 			{
-				QStringList options = parts.at(1).trimmed().split(';', QString::SkipEmptyParts);
+				QVariantList oList;
+				QStringList options = engine.mid(ePos + 1).trimmed().split(';', QString::SkipEmptyParts);
 				for (QString& option : options)
 				{
 					option = option.trimmed();
 					QVariantMap oMap;
-					const int pos = option.indexOf('=');
-					if(pos > 0)
+					const int oPos = option.indexOf('=');
+					if(oPos > 0)
 					{
-						oMap["Name"] = option.left(pos).trimmed();
-						oMap["Value"] = option.mid(pos + 1).trimmed();
+						oMap["Name"] = option.left(oPos).trimmed();
+						oMap["Value"] = option.mid(oPos + 1).trimmed();
 					} else
 						oMap["Name"] = option;
 					oList << oMap;
 				}
+				pMap[engine.left(ePos).trimmed()] = oList;
 			}
-			pMap[parts.at(0).trimmed()] = oList;
 		}
 
 		// Assemble tags
@@ -742,16 +743,15 @@ void Tournament::onPgnMove()
 			sq += static_cast<char>(move.move.targetSquare().rank() + '1');
 			mMap["to"] = sq;
 
-			if (move.comment == "book")
-				mMap["book"] = true;
-			else
-			{
-				mMap["book"] = false;
+			mMap["book"] = false;
 
-				QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
-				for(QString& stat : stats)
-				{
-					stat = stat.trimmed();
+			QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
+			for(QString& stat : stats)
+			{
+				stat = stat.trimmed();
+				if (stat == "book") {
+					mMap["book"] = true;
+				} else {
 					const int pos = stat.indexOf('=');
 					if (pos > 0)
 						mMap[stat.left(pos).trimmed()] = stat.mid(pos + 1).trimmed();
