@@ -78,17 +78,28 @@ QString ChessGame::evalString(const MoveEvaluation& eval)
 	QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
 	if (sanPv.isEmpty())
 	{
+		bool lanCheck = true;
+		QRegularExpression re;
+
 		sanPv = eval.pv();
 		if (sanPv.contains('.'))
 		{
 			QString probPv(sanPv);
-			QRegularExpression re("\\d+\\.\\h+");	// Remove numbering
+			re.setPattern("\\d+\\.\\h+");	// Remove numbering
 			probPv.remove(re);
-			re.setPattern("\\.\\.\\.\\h+");			// Remove ellipses
+			re.setPattern("\\.\\.\\.\\h+");	// Remove ellipses
 			probPv.remove(re);
 			sanPv = m_board->sanStringForPv(probPv, Chess::Board::StandardAlgebraic);
-			if (sanPv.isEmpty())
+			lanCheck = sanPv.isEmpty();
+			if (lanCheck)
 				sanPv = probPv;
+		}
+		re.setPattern("-|x");
+		if (lanCheck && sanPv.contains(re))				// LAN notation
+		{
+			re.setPattern("([NBRQK]?)([a-h][1-8])(-|x)([a-h][1-8])([NBRQ]?)");
+			sanPv = sanPv.replace(re, "\\2\\4\\5");
+			sanPv = m_board->sanStringForPv(sanPv, Chess::Board::StandardAlgebraic);
 		}
 	}
 #if 0
