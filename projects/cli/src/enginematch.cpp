@@ -132,12 +132,16 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 	if (pairings.isEmpty()) return;
 
 	QString scheduleFile(m_tournamentFile);
-	scheduleFile = scheduleFile.remove(".json") + "_schedule.";
+	scheduleFile = scheduleFile.remove(".json") + "_schedule";
 
 	if (m_jsonFormat) {
-		QFile output(scheduleFile + "json");
+		const QString tempName(scheduleFile + "_temp.json");
+		const QString finalName(scheduleFile + ".pgn");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile + "json"));
+			qWarning("cannot open schedule JSON file: %s", qPrintable(tempName));
 			return;
 		}
 		QTextStream out(&output);
@@ -198,12 +202,21 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 
 		JsonSerializer serializer(sList);
 		serializer.serialize(out);
+		output.close();
+		if (QFile::exists(finalName))
+			QFile::remove(finalName);
+		if (!QFile::rename(tempName, finalName))
+			qWarning("cannot rename schedule JSON file: %s to %s", qPrintable(tempName), qPrintable(finalName));
 	}
 
 	if (m_pgnFormat) {
-		QFile output(scheduleFile + "txt");
+		const QString tempName(scheduleFile + "_temp.txt");
+		const QString finalName(scheduleFile + ".txt");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open tournament configuration file: %s", qPrintable(scheduleFile + "txt"));
+			qWarning("cannot open schedule TXT file: %s", qPrintable(tempName));
 			return;
 		}
 		QTextStream out(&output);
@@ -327,6 +340,11 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 		}
 		out.setCodec("ISO 8859-1"); // output is converted to ASCII
 		out << scheduleText;
+		output.close();
+		if (QFile::exists(finalName))
+			QFile::remove(finalName);
+		if (!QFile::rename(tempName, finalName))
+			qWarning("cannot rename schedule TXT file: %s to %s", qPrintable(tempName), qPrintable(finalName));
 	}
 }
 
@@ -599,15 +617,24 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	QString crossTableText = crossTableHeaderText + "\n\n" + crossTableBodyText;
 
 	QString crossTableFile(m_tournamentFile);
-	crossTableFile = crossTableFile.remove(".json") + "_crosstable.txt";
+	crossTableFile = crossTableFile.remove(".json") + "_crosstable";
 
-	QFile output(crossTableFile);
+	const QString tempName(crossTableFile + "_temp.txt");
+	const QString finalName(crossTableFile + ".txt");
+	if (QFile::exists(tempName))
+		QFile::remove(tempName);
+	QFile output(tempName);
 	if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		qWarning("cannot open tournament configuration file: %s", qPrintable(crossTableFile));
+		qWarning("cannot open tournament crosstable file: %s", qPrintable(tempName));
 	} else {
 		QTextStream out(&output);
 		out.setCodec("UTF-8"); // otherwise output is converted to ASCII
 		out << crossTableText;
+		output.close();
+		if (QFile::exists(finalName))
+			QFile::remove(finalName);
+		if (!QFile::rename(tempName, finalName))
+			qWarning("cannot rename crosstable file: %s to %s", qPrintable(tempName), qPrintable(finalName));
 	}
 }
 

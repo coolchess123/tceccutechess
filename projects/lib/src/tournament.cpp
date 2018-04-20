@@ -684,8 +684,15 @@ void Tournament::onPgnMove()
 
 	if (m_pgnFormat)
 	{
-		QFile::resize(m_livePgnOut + ".pgn", 0);
-		pgn->write(m_livePgnOut + ".pgn", m_livePgnOutMode);
+		const QString tempName(m_livePgnOut + "_temp.pgn");
+		const QString finalName(m_livePgnOut + ".pgn");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		pgn->write(tempName, m_livePgnOutMode);
+		if (QFile::exists(finalName))
+			QFile::remove(finalName);
+		if (!QFile::rename(tempName, finalName))
+			qWarning("cannot rename live PGN output file: %s to %s", qPrintable(tempName), qPrintable(finalName));
 	}
 
 	if (m_jsonFormat)
@@ -764,14 +771,22 @@ void Tournament::onPgnMove()
 		}
 		pMap["Moves"] = mList;
 
-		QFile::resize(m_livePgnOut + ".json", 0);
-		QFile output(m_livePgnOut + ".json");
+		const QString tempName(m_livePgnOut + "_temp.json");
+		const QString finalName(m_livePgnOut + ".json");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open live PGN output file: %s", qPrintable(m_livePgnOut + ".json"));
+			qWarning("cannot open live JSON output file: %s", qPrintable(tempName));
 		} else {
 			QTextStream out(&output);
 			JsonSerializer serializer(pMap);
 			serializer.serialize(out);
+			output.close();
+			if (QFile::exists(finalName))
+				QFile::remove(finalName);
+			if (!QFile::rename(tempName, finalName))
+				qWarning("cannot rename live JSON output file: %s to %s", qPrintable(tempName), qPrintable(finalName));
 		}
 	}
 }
