@@ -136,7 +136,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 
 	if (m_jsonFormat) {
 		const QString tempName(scheduleFile + "_temp.json");
-		const QString finalName(scheduleFile + ".pgn");
+		const QString finalName(scheduleFile + ".json");
 		if (QFile::exists(tempName))
 			QFile::remove(tempName);
 		QFile output(tempName);
