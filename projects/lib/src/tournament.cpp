@@ -761,7 +761,23 @@ void Tournament::onPgnMove()
 				} else {
 					const int pos = stat.indexOf('=');
 					if (pos > 0)
-						mMap[stat.left(pos).trimmed()] = stat.mid(pos + 1).trimmed();
+					{
+						const QString name(stat.left(pos).trimmed());
+						const QString value(stat.mid(pos + 1).trimmed());
+						if (name == "mb")
+						{
+							QVariantMap mbMap;
+							int idx = 0;
+							for (const char* mstr : {"Pawns", "Knights", "Bishops", "Rooks", "Queens"})
+							{
+								mbMap[QString(mstr)] = value.mid(idx, 2).toInt();
+								idx += 2;
+							}
+							mMap["Material"] = mbMap;
+						}
+						else
+							mMap[name] = value;
+					}
 					else	// real comment
 						mMap["rem"] = stat;
 				}

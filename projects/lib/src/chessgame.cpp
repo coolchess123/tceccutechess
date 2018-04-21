@@ -193,10 +193,8 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		}
 	}
 
-	// FEN
-	str += ", fen=" + evalFen(move);
-
-	str += ',';
+	// FEN and material balance
+	str += statusString(move);
 
 #else
 	if (eval.isBookEval())
@@ -222,12 +220,41 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 	return str;
 }
 
-QString ChessGame::evalFen(const Chess::Move& move)
+QString ChessGame::statusString(const Chess::Move& move)
 {
 	m_board->makeMove(move);
-	QString result = m_board->fenString();
+
+	QMap<QString, int> pMap;
+	for (int file = 0; file < m_board->height(); file++)
+		for (int rank = 0; rank < m_board->width(); rank++)
+		{
+			const Chess::Square sq = Chess::Square(file, rank);
+			const Chess::Piece piece = m_board->pieceAt(sq);
+			if (!piece.isValid()) continue;
+			const QString sym(m_board->pieceSymbol(piece).toUpper());
+			if (!pMap.contains(sym))
+				pMap[sym] = 0;
+			if (piece.side() == Chess::Side::White)
+				++pMap[sym];
+			else
+				--pMap[sym];
+		}
+
+	QString str(", mb=");
+	for(const char* istr : {"P", "N", "B", "R", "Q"})
+	{
+		const int v(pMap[istr]);
+		if (v >= 0)
+			str += '+';
+		str += QString::number(v);
+	}
+
+	str += ", fen=" + m_board->fenString();
+
 	m_board->undoMove();
-	return result;
+
+	str += ',';
+	return str;
 }
 
 ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
@@ -930,7 +957,7 @@ void ChessGame::startGame()
 		Chess::Move move(m_moves.at(i));
 		Q_ASSERT(m_board->isLegalMove(move));
 		
-		addPgnMove(move, "book, fen=" + evalFen(move) + ',');
+		addPgnMove(move, "book" + statusString(move));
 
 		playerToMove()->makeBookMove(move);
 		playerToWait()->makeMove(move);

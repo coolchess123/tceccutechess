@@ -123,7 +123,7 @@ class LIB_EXPORT ChessGame : public QObject
 		void emitLastMove();
 
 		QString evalString(const MoveEvaluation& eval, const Chess::Move& move);
-		QString evalFen(const Chess::Move& move);
+		QString statusString(const Chess::Move& move);
 
 		Chess::Board* m_board;
 		ChessPlayer* m_player[2];
