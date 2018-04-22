@@ -768,12 +768,12 @@ void Tournament::onPgnMove()
 						{
 							QVariantMap mbMap;
 							int idx = 0;
-							for (const char* mstr : {"Pawns", "Knights", "Bishops", "Rooks", "Queens"})
+							for (const char* mstr : {"p", "n", "b", "r", "q"})
 							{
-								mbMap[QString(mstr)] = value.mid(idx, 2).toInt();
+								mbMap[mstr] = value.mid(idx, 2).toInt();
 								idx += 2;
 							}
-							mMap["Material"] = mbMap;
+							mMap["material"] = mbMap;
 						}
 						else
 							mMap[name] = value;
