@@ -525,116 +525,190 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		}
 	}
 
-	if (playerCount == 2) {
-		roundLength = 2;
-		QVariantMap pMap = pList.at(0).toMap();
-		if (pMap.contains("white") && pMap.contains("black")) {
-			QString whiteName = pMap["white"].toString();
-			QString blackName = pMap["black"].toString();
-			CrossTableData& whiteData = ctMap[whiteName];
-			CrossTableData& blackData = ctMap[blackName];
-			QString& whiteDataString = whiteData.m_tableData[blackName];
-			QString& blackDataString = blackData.m_tableData[whiteName];
-			int whiteWin = 0;
-			int whiteLose = 0;
-			int whiteDraw = 0;
-
-			for (int i = 0; i < whiteDataString.length(); i++) {
-				if (whiteDataString[i] == '1')
-					whiteWin++;
-				else if (whiteDataString[i] == '0')
-					whiteLose++;
-				else
-					whiteDraw++;
-			}
-			whiteDataString = QString("+ %1 = %2 - %3")
-				.arg(whiteWin)
-				.arg(whiteDraw)
-				.arg(whiteLose);
-			blackDataString = QString("+ %1 = %2 - %3")
-				.arg(whiteLose)
-				.arg(whiteDraw)
-				.arg(whiteWin);
-
-			if (whiteDataString.length() > roundLength) roundLength = whiteDataString.length();
-			if (blackDataString.length() > roundLength) roundLength = blackDataString.length();
-		}
-	}
-
-	int maxScore = qFloor(qLn(largestScore) * M_LOG10E) + 3;
-	if (maxScore < 3)
-		maxScore = 3;
-	int maxSB = qFloor(qLn(largestSB) * M_LOG10E) + 4;
-	if (maxSB < 4)
-		maxSB = 4;
-	maxGames = qFloor(qLn(maxGames) * M_LOG10E) + 1;
-	if (maxGames < 2)
-		maxGames = 2;
-	maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
-	if (maxElo < 3)
-		maxElo = 3;
-	QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7")
-		.arg("N", 2)
-		.arg("Engine", -maxName)
-		.arg("Rtng", 4)
-		.arg("Pts", maxScore)
-		.arg("Gm", maxGames)
-		.arg("SB", maxSB)
-		.arg("Elo", maxElo);
-
-	QString eloText;
-	QString crossTableBodyText;
+	QString crossTableFile(m_tournamentFile);
+	crossTableFile = crossTableFile.remove(".json") + "_crosstable";
 
 	QList<CrossTableData> list = ctMap.values();
 	qSort(list.begin(), list.end(), sortCrossTableDataByScore);
 	QList<CrossTableData>::iterator i;
-	int count = 1;
-	for (i = list.begin(); i != list.end(); ++i, ++count) {
-		crossTableHeaderText += QString(" %1").arg(i->m_engineAbbrev, -roundLength);
 
-		eloText = i->m_elo > 0 ? "+" : "";
-		eloText += QString::number(i->m_elo);
-		crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7")
-			.arg(count, 2)
-			.arg(i->m_engineName, -maxName)
-			.arg(i->m_rating, 4)
-			.arg(i->m_score, maxScore, 'f', 1)
-			.arg(i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack, maxGames)
-			.arg(i->m_neustadtlScore, maxSB, 'f', 2)
-			.arg(eloText, maxElo);
-
-		QList<CrossTableData>::iterator j;
-		for (j = list.begin(); j != list.end(); ++j) {
-			if (j->m_engineName == i->m_engineName) {
-				crossTableBodyText += " ";
-				int rl = roundLength;
-				while(rl--) crossTableBodyText += "\u00B7";
-			} else crossTableBodyText += QString(" %1").arg(i->m_tableData[j->m_engineName], -roundLength);
+	if (m_jsonFormat) {
+		const QString tempName(crossTableFile + "_temp.json");
+		const QString finalName(crossTableFile + ".json");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		QFile output(tempName);
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open crosstable JSON file: %s", qPrintable(tempName));
+			return;
 		}
-		crossTableBodyText += "\n";
-	}
-
-	QString crossTableText = crossTableHeaderText + "\n\n" + crossTableBodyText;
-
-	QString crossTableFile(m_tournamentFile);
-	crossTableFile = crossTableFile.remove(".json") + "_crosstable";
-
-	const QString tempName(crossTableFile + "_temp.txt");
-	const QString finalName(crossTableFile + ".txt");
-	if (QFile::exists(tempName))
-		QFile::remove(tempName);
-	QFile output(tempName);
-	if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		qWarning("cannot open tournament crosstable file: %s", qPrintable(tempName));
-	} else {
 		QTextStream out(&output);
-		out.setCodec("UTF-8"); // otherwise output is converted to ASCII
-		out << crossTableText;
+
+		QVariantMap cMap;
+		QVariantList order;
+		for (i = list.begin(); i != list.end(); ++i)
+			order << i->m_engineName;
+		cMap["Order"] = order;
+
+		QVariantMap	table;
+		int rank = 1;
+		for (i = list.begin(); i != list.end(); ++i, ++rank) {
+			QVariantMap obj;
+			QVariantMap results;
+			obj["Rank"] = rank;
+			obj["Abbreviation"] = i->m_engineAbbrev;
+			obj["Rating"] = i->m_rating;
+			obj["Score"] = i->m_score;
+			obj["GamesAsWhite"] = i->m_gamesPlayedAsWhite;
+			obj["GamesAsBlack"] = i->m_gamesPlayedAsBlack;
+			obj["Games"] = i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack;
+			obj["Neustadtl"] = i->m_neustadtlScore;
+			obj["Elo"] = i->m_elo;
+			for(const QVariant& eVar : order) {
+				const QString engineName(eVar.toString());
+				if (engineName == i->m_engineName)
+					continue;
+				QVariantMap result;
+				QVariantList scores;
+				for (const QChar& ch : i->m_tableData[engineName])
+					switch (ch.toLatin1()) {
+					case '1':
+						scores << 1.0;
+						break;
+					case '=':
+						scores << 0.5;
+						break;
+					case '0':
+						scores << 0.0;
+						break;
+					default:
+						break;
+					}
+				result["Text"] = i->m_tableData[engineName];
+				result["Scores"] = scores;
+				results[engineName] = result;
+			}
+
+			obj["Results"] = results;
+			table[i->m_engineName] = obj;
+		}
+		cMap["Table"] = table;
+
+		JsonSerializer serializer(cMap);
+		serializer.serialize(out);
 		output.close();
 		if (QFile::exists(finalName))
 			QFile::remove(finalName);
 		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename crosstable file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+			qWarning("cannot rename crosstable JSON file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+	}
+
+	if (m_pgnFormat) {
+		if (playerCount == 2) {
+			roundLength = 2;
+			QVariantMap pMap = pList.at(0).toMap();
+			if (pMap.contains("white") && pMap.contains("black")) {
+				QString whiteName = pMap["white"].toString();
+				QString blackName = pMap["black"].toString();
+				CrossTableData& whiteData = ctMap[whiteName];
+				CrossTableData& blackData = ctMap[blackName];
+				QString& whiteDataString = whiteData.m_tableData[blackName];
+				QString& blackDataString = blackData.m_tableData[whiteName];
+				int whiteWin = 0;
+				int whiteLose = 0;
+				int whiteDraw = 0;
+
+				for (int j = 0; j < whiteDataString.length(); j++) {
+					if (whiteDataString[j] == '1')
+						whiteWin++;
+					else if (whiteDataString[j] == '0')
+						whiteLose++;
+					else
+						whiteDraw++;
+				}
+				whiteDataString = QString("+ %1 = %2 - %3")
+					.arg(whiteWin)
+					.arg(whiteDraw)
+					.arg(whiteLose);
+				blackDataString = QString("+ %1 = %2 - %3")
+					.arg(whiteLose)
+					.arg(whiteDraw)
+					.arg(whiteWin);
+
+				if (whiteDataString.length() > roundLength) roundLength = whiteDataString.length();
+				if (blackDataString.length() > roundLength) roundLength = blackDataString.length();
+			}
+		}
+
+		int maxScore = qFloor(qLn(largestScore) * M_LOG10E) + 3;
+		if (maxScore < 3)
+			maxScore = 3;
+		int maxSB = qFloor(qLn(largestSB) * M_LOG10E) + 4;
+		if (maxSB < 4)
+			maxSB = 4;
+		maxGames = qFloor(qLn(maxGames) * M_LOG10E) + 1;
+		if (maxGames < 2)
+			maxGames = 2;
+		maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
+		if (maxElo < 3)
+			maxElo = 3;
+		QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7")
+			.arg("N", 2)
+			.arg("Engine", -maxName)
+			.arg("Rtng", 4)
+			.arg("Pts", maxScore)
+			.arg("Gm", maxGames)
+			.arg("SB", maxSB)
+			.arg("Elo", maxElo);
+
+		QString eloText;
+		QString crossTableBodyText;
+
+		int count = 1;
+		for (i = list.begin(); i != list.end(); ++i, ++count) {
+			crossTableHeaderText += QString(" %1").arg(i->m_engineAbbrev, -roundLength);
+
+			eloText = i->m_elo > 0 ? "+" : "";
+			eloText += QString::number(i->m_elo);
+			crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7")
+				.arg(count, 2)
+				.arg(i->m_engineName, -maxName)
+				.arg(i->m_rating, 4)
+				.arg(i->m_score, maxScore, 'f', 1)
+				.arg(i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack, maxGames)
+				.arg(i->m_neustadtlScore, maxSB, 'f', 2)
+				.arg(eloText, maxElo);
+
+			QList<CrossTableData>::iterator j;
+			for (j = list.begin(); j != list.end(); ++j) {
+				if (j->m_engineName == i->m_engineName) {
+					crossTableBodyText += " ";
+					int rl = roundLength;
+					while(rl--) crossTableBodyText += "\u00B7";
+				} else crossTableBodyText += QString(" %1").arg(i->m_tableData[j->m_engineName], -roundLength);
+			}
+			crossTableBodyText += "\n";
+		}
+
+		QString crossTableText = crossTableHeaderText + "\n\n" + crossTableBodyText;
+
+		const QString tempName(crossTableFile + "_temp.txt");
+		const QString finalName(crossTableFile + ".txt");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		QFile output(tempName);
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open tournament crosstable file: %s", qPrintable(tempName));
+		} else {
+			QTextStream out(&output);
+			out.setCodec("UTF-8"); // otherwise output is converted to ASCII
+			out << crossTableText;
+			output.close();
+			if (QFile::exists(finalName))
+				QFile::remove(finalName);
+			if (!QFile::rename(tempName, finalName))
+				qWarning("cannot rename crosstable file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+		}
 	}
 }
 
