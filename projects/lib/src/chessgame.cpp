@@ -99,6 +99,17 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 				sanPv = m_board->sanStringForPv(sanPv, Chess::Board::StandardAlgebraic);
 			}
 		}
+		QStringList lanPv;
+		int moveCnt = 0;
+		for (const QString& sanMove : sanPv.split(' ')) {
+			const Chess::Move& mv(m_board->moveFromString(sanMove.trimmed()));
+			if (mv.isNull()) break;
+			lanPv.append(m_board->moveString(mv, Chess::Board::LongAlgebraic));
+			m_board->makeMove(mv);
+			++moveCnt;
+		}
+		for ( ; moveCnt > 0; --moveCnt)
+			m_board->undoMove();
 	#if 0
 		QStringList sanList = sanPv.split(' ');
 		if (sanList.length() > 1) {
@@ -164,6 +175,9 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 
 		// pv 'pv' algebraic string
 		str += ", pv=" + sanPv;
+
+		// pvl 'pv' lan string
+		str += ", pvl=" + lanPv.join(' ');
 
 		// tbhits 'tb'
 		str += ", tb=" + QString::number(eval.tbHits());
