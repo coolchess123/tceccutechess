@@ -541,7 +541,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			tournament->setBergerSchedule(tMap["bergerSchedule"].toBool());
 		if (tMap.contains("reloadConfiguration"))
 			tournament->setReloadEngines(tMap["reloadConfiguration"].toBool());
-		if (tMap.contains("tcecAdjudiaction"))
+		if (tMap.contains("tcecAdjudication"))
 			adjudicator.setTcecAdjudication(tMap["reloadConfiguration"].toBool());
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
