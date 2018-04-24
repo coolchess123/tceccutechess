@@ -542,7 +542,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 		if (tMap.contains("reloadConfiguration"))
 			tournament->setReloadEngines(tMap["reloadConfiguration"].toBool());
 		if (tMap.contains("tcecAdjudication"))
-			adjudicator.setTcecAdjudication(tMap["reloadConfiguration"].toBool());
+			adjudicator.setTcecAdjudication(tMap["tcecAdjudication"].toBool());
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
 			for (int e = 0; e < eList.size(); e++) {
