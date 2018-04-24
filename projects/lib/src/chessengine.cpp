@@ -83,7 +83,7 @@ ChessEngine::ChessEngine(QObject* parent)
 	  m_restartMode(EngineConfiguration::RestartAuto)
 {
 	m_pingTimer->setSingleShot(true);
-	m_pingTimer->setInterval(10000);
+	m_pingTimer->setInterval(30000);
 	connect(m_pingTimer, SIGNAL(timeout()), this, SLOT(onPingTimeout()));
 
 	m_quitTimer->setSingleShot(true);
