@@ -120,7 +120,8 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	if (m_maxGameLength > 0
 	&&  board->plyCount() >= 2 * m_maxGameLength)
 	{
-		m_result = Chess::Result(Chess::Result::Adjudication, Chess::Side::NoSide);
+		m_result = Chess::Result(Chess::Result::Adjudication, Chess::Side::NoSide,
+								 "TCEC max moves rule");
 		return;
 	}
 }

@@ -180,7 +180,7 @@ TCEC options:
   			argument to omit writing FILE.pgn. Use the 'nojson'
   			argument to omit writing FILE.json. Please note that
   			these arguments also determine the output of the
-  			schedule files.
+  			schedule and crosstable files.
   -tournamentfile FILE	Set the FILE where to save tournament resumption data.
   -resume		Resume the tournament saved in 'tournamentfile'. Resume
   			mode uses tournament options and engine options saved
