@@ -27,10 +27,13 @@ GameAdjudicator::GameAdjudicator()
 	  m_resignMoveCount(0),
 	  m_resignScore(0),
 	  m_maxGameLength(0),
-	  m_tbEnabled(false)
+	  m_tbEnabled(false),
+	  m_tcecAdjudication(false)
 {
 	m_resignScoreCount[0] = 0;
 	m_resignScoreCount[1] = 0;
+    m_resignWinnerScoreCount[0] = 0;
+    m_resignWinnerScoreCount[1] = 0;
 }
 
 void GameAdjudicator::setDrawThreshold(int moveNumber, int moveCount, int score)
@@ -52,6 +55,8 @@ void GameAdjudicator::setResignThreshold(int moveCount, int score)
 	m_resignScore = score;
 	m_resignScoreCount[0] = 0;
 	m_resignScoreCount[1] = 0;
+    m_resignWinnerScoreCount[0] = 0;
+    m_resignWinnerScoreCount[1] = 0;
 }
 
 void GameAdjudicator::setMaximumGameLength(int moveCount)
@@ -63,6 +68,11 @@ void GameAdjudicator::setMaximumGameLength(int moveCount)
 void GameAdjudicator::setTablebaseAdjudication(bool enable)
 {
 	m_tbEnabled = enable;
+}
+
+void GameAdjudicator::setTcecAdjudication(bool enable)
+{
+	m_tcecAdjudication = enable;
 }
 
 void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& eval)
@@ -105,15 +115,41 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	// Resign adjudication
 	if (m_resignMoveCount > 0)
 	{
-		int& count = m_resignScoreCount[side];
-		if (eval.score() <= m_resignScore)
-			count++;
-		else
-			count = 0;
+		if (m_tcecAdjudication)
+		{
+            int& loserCount = m_resignScoreCount[side];
+            int& winnerCount = m_resignWinnerScoreCount[side];
 
-		if (count >= m_resignMoveCount)
-			m_result = Chess::Result(Chess::Result::Adjudication,
-						 side.opposite(), "TCEC win rule");
+            if (eval.score() <= m_resignScore) {
+                    loserCount++;
+                    winnerCount = 0;
+            } else if (eval.score() >= -m_resignScore) {
+                    winnerCount++;
+                    loserCount = 0;
+            } else
+                    loserCount = winnerCount = 0;
+
+            if (loserCount >= m_resignMoveCount
+            				&& m_resignWinnerScoreCount[side.opposite()] >= m_resignMoveCount)
+            	m_result = Chess::Result(Chess::Result::Adjudication,
+										 side.opposite(), "TCEC win rule");
+            else if (winnerCount >= m_resignMoveCount
+            				&& m_resignScoreCount[side.opposite()] >= m_resignMoveCount)
+            	m_result = Chess::Result(Chess::Result::Adjudication,
+										 side, "TCEC win rule");
+		}
+		else
+		{
+			int& count = m_resignScoreCount[side];
+			if (eval.score() <= m_resignScore)
+				count++;
+			else
+				count = 0;
+
+			if (count >= m_resignMoveCount)
+				m_result = Chess::Result(Chess::Result::Adjudication,
+							 side.opposite(), "TCEC resign rule");
+		}
 	}
 
 	// Limit game length

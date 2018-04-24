@@ -329,6 +329,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-bergerschedule", QVariant::Bool, 0, 0);
 	parser.addOption("-kfactor", QVariant::Double, 1, 1);
 	parser.addOption("-reloadconf", QVariant::Bool, 0, 0);
+	parser.addOption("-tcecadj", QVariant::Bool, 0, 0);
 
 	if (!parser.parse())
 		return nullptr;
@@ -540,6 +541,8 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			tournament->setBergerSchedule(tMap["bergerSchedule"].toBool());
 		if (tMap.contains("reloadConfiguration"))
 			tournament->setReloadEngines(tMap["reloadConfiguration"].toBool());
+		if (tMap.contains("tcecAdjudiaction"))
+			adjudicator.setTcecAdjudication(tMap["reloadConfiguration"].toBool());
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
 			for (int e = 0; e < eList.size(); e++) {
@@ -909,6 +912,12 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				bool flag = value.toBool();
 				tournament->setReloadEngines(flag);
 				tMap.insert("reloadConfiguration", flag);
+			}
+			else if(name == "-tcecadj") {
+				bool flag = value.toBool();
+				adjudicator.setTcecAdjudication(flag);
+				tournament->setReloadEngines(flag);
+				tMap.insert("tcecAdjudication", flag);
 			}
 			else
 				qFatal("Unknown argument: \"%s\"", qUtf8Printable(name));

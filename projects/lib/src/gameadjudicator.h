@@ -71,6 +71,13 @@ class LIB_EXPORT GameAdjudicator
 		 * latest position is found in the tablebases.
 		 */
 		void setTablebaseAdjudication(bool enable);
+		/*!
+		 * Sets TCEC adjudication to \a enable.
+		 *
+		 * If \a enable is true then the resign rule requires both player
+		 * evaluations to be below the setResignThreshold score.
+		 */
+		void setTcecAdjudication(bool enable);
 
 		/*!
 		 * Adds a new move evaluation to the adjudicator.
@@ -103,6 +110,8 @@ class LIB_EXPORT GameAdjudicator
 		int m_maxGameLength;
 		bool m_tbEnabled;
 		Chess::Result m_result;
+		int m_resignWinnerScoreCount[2];
+		bool m_tcecAdjudication;
 };
 
 #endif // GAMEADJUDICATOR_H
