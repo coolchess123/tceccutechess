@@ -449,12 +449,12 @@ void ChessGame::addPgnMove(const Chess::Move& move, const QString& comment)
 	md.comment = comment;
 
 	m_pgn->addMove(md);
-
-	emit pgnMove();
 }
 
 void ChessGame::emitLastMove()
 {
+	emit pgnMove();
+
 	int ply = m_moves.size() - 1;
 	if (m_scores.contains(ply))
 	{
