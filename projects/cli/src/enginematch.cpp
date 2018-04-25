@@ -502,7 +502,6 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		sumRatings += ctd.m_rating;
 	}
 	// calculate Elo
-	const qreal avgRating = qreal(sumRatings) / playerCount;
 	int maxElo = 1;
 	int maxGames = 1;
 	ct.toFront();
@@ -510,6 +509,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
 
+		const qreal avgRating = qreal(sumRatings - ctd.m_rating) / (playerCount - 1);
 		const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
 		if (totGames) {
 			const qreal real = ctd.m_score / totGames;
