@@ -413,6 +413,11 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	return s1.m_score > s2.m_score;
 }
 
+inline static int roundTowardsZero(qreal number)
+{
+	return number >= 0 ? qFloor(number) : -qFloor(-number);
+}
+
 void EngineMatch::generateCrossTable(QVariantList& pList)
 {
 	const int playerCount = m_tournament->playerCount();
@@ -514,7 +519,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		if (totGames) {
 			const qreal real = ctd.m_score / totGames;
 			const qreal expected = 1.0 / (1.0 + qPow(10.0, (avgRating - ctd.m_rating) / 400.0));
-			ctd.m_elo = qFloor(m_eloKfactor * (real - expected));
+			ctd.m_elo = roundTowardsZero(m_eloKfactor * (real - expected));
 
 			const int totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
 			if (totElo > maxElo)
