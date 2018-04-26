@@ -42,7 +42,6 @@ class EngineMatch : public QObject
 		void setRatingInterval(int interval);
 		void setBookMode(OpeningBook::AccessMode mode);
 		void setTournamentFile(QString &tournamentFile);
-		void setEloKfactor(qreal eloKfactor);
 		void setOutputFormats(bool pgnFormat, bool jsonFormat);
 
 		void start();
@@ -69,7 +68,6 @@ class EngineMatch : public QObject
 		QMap<QString, OpeningBook*> m_books;
 		QElapsedTimer m_startTime;
 		QString m_tournamentFile;
-		qreal m_eloKfactor;
 		bool m_pgnFormat;
 		bool m_jsonFormat;
 };

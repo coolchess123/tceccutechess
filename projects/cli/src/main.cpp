@@ -327,7 +327,6 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-resume", QVariant::Bool, 0, 0);
 	parser.addOption("-ecopgn", QVariant::String, 1, 1);
 	parser.addOption("-bergerschedule", QVariant::Bool, 0, 0);
-	parser.addOption("-kfactor", QVariant::Double, 1, 1);
 	parser.addOption("-reloadconf", QVariant::Bool, 0, 0);
 	parser.addOption("-tcecadj", QVariant::Bool, 0, 0);
 
@@ -900,14 +899,6 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				tournament->setBergerSchedule(flag);
 				tMap.insert("bergerSchedule", flag);
 			}
-			else if (name == "-kfactor") {
-				const qreal val = value.toDouble();
-				ok = val >= 1.0 && val <= 200.0;
-				if (ok)
-					tMap.insert("eloKfactor", val);
-				else
-					qWarning("Invalid K-factor %f", val);
-			}
 			else if(name == "-reloadconf") {
 				bool flag = value.toBool();
 				tournament->setReloadEngines(flag);
@@ -953,9 +944,6 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 		match->setDebugMode(true);
 
 	match->setOutputFormats(wantsPgnFormat, wantsJsonFormat);
-
-	if (tMap.contains("eloKfactor"))
-		match->setEloKfactor(tMap["eloKfactor"].toDouble());
 
 	if (!eachOptions.isEmpty())
 	{
