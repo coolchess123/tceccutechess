@@ -98,6 +98,14 @@ class LIB_EXPORT GameAdjudicator
 		 * game can't be adjudicated yet, a null result is returned.
 		 */
 		Chess::Result result() const;
+		/*!
+		 * Returns the number of plies left until draw rule adjudication.
+		 */
+		int drawClock(const Chess::Board* board, const MoveEvaluation& eval) const;
+		/*!
+		 * Returns the number of plies left until resign rule adjudication.
+		 */
+		int resignClock(const Chess::Board* board, const MoveEvaluation& eval) const;
 
 	private:
 		int m_drawMoveNum;

@@ -739,6 +739,7 @@ void Tournament::onPgnMove()
 		for (const PgnGame::MoveData& move : moves)
 		{
 			QVariantMap mMap;
+			QVariantMap aMap;
 
 			mMap["m"] = move.moveString;
 
@@ -775,6 +776,12 @@ void Tournament::onPgnMove()
 							}
 							mMap["material"] = mbMap;
 						}
+						else if (name == "R50")
+							aMap["FiftyMoves"] = value.toInt();
+						else if (name == "Rd")
+							aMap["Draw"] = value.toInt();
+						else if (name == "Rr")
+							aMap["ResignOrWin"] = value.toInt();
 						else
 							mMap[name] = value;
 					}
@@ -782,7 +789,8 @@ void Tournament::onPgnMove()
 						mMap["rem"] = stat;
 				}
 			}
-
+			if (!aMap.empty())
+				mMap["adjudication"] = aMap;
 			mList << mMap;
 		}
 		pMap["Moves"] = mList;

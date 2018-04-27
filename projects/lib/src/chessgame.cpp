@@ -188,12 +188,6 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		// ponderhit rate
 		str += ", ph=" + QString::number(eval.ponderhitRate() / 10.0, 'f', 1);
 
-		// 50-move clock 'R50'
-		Chess::WesternBoard *wboard = dynamic_cast<Chess::WesternBoard *>(m_board);
-		if (wboard) {
-			str += ", R50=" + QString::number(qFloor(((100 - wboard->reversibleMoveCount()) / 2.) + 0.5));
-		}
-
 		// eval from white's perspective 'wv'
 		Chess::Side side = m_board->sideToMove();
 		str += ", wv=";
@@ -207,8 +201,21 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		}
 	}
 
+	m_board->makeMove(move);
+
+	// 50-move clock 'R50'
+	str += ", R50=" + QString::number((100 - m_board->reversibleMoveCount()) / 2);
+
+	// draw rule clock 'Rd'
+	str += ", Rd=" + QString::number(m_adjudicator.drawClock(m_board, eval));
+
+	// resign rule clock 'Rr'
+	str += ", Rr=" + QString::number(m_adjudicator.resignClock(m_board, eval));
+
 	// FEN and material balance
-	str += statusString(move);
+	str += statusString(move, false);
+
+	m_board->undoMove();
 
 #else
 	if (eval.isBookEval())
@@ -234,10 +241,12 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 	return str;
 }
 
-QString ChessGame::statusString(const Chess::Move& move)
+QString ChessGame::statusString(const Chess::Move& move, bool doMove)
 {
-	m_board->makeMove(move);
+	if (doMove)
+		m_board->makeMove(move);
 
+	// Material balance 'mb'
 	QMap<QString, int> pMap;
 	for (int file = 0; file < m_board->height(); file++)
 		for (int rank = 0; rank < m_board->width(); rank++)
@@ -263,9 +272,11 @@ QString ChessGame::statusString(const Chess::Move& move)
 		str += QString::number(v);
 	}
 
+	// FEN
 	str += ", fen=" + m_board->fenString();
 
-	m_board->undoMove();
+	if (doMove)
+		m_board->undoMove();
 
 	str += ',';
 	return str;
@@ -971,7 +982,7 @@ void ChessGame::startGame()
 		Chess::Move move(m_moves.at(i));
 		Q_ASSERT(m_board->isLegalMove(move));
 		
-		addPgnMove(move, "book" + statusString(move));
+		addPgnMove(move, "book" + statusString(move, true));
 
 		playerToMove()->makeBookMove(move);
 		playerToWait()->makeMove(move);
