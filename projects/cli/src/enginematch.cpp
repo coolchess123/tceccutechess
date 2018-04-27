@@ -508,7 +508,8 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
 		if (totGames) {
 			ctd.m_performance = ctd.m_score / totGames;
-			ctd.m_elo = -400.0 * (qLn(1.0 / ctd.m_performance - 1.0) * M_LOG10E);
+			const qreal tournPerf = (ctd.m_score + 0.5) / (totGames + 1);
+			ctd.m_elo = -400.0 * (qLn(1.0 / tournPerf - 1.0) * M_LOG10E);
 
 			if (ctd.m_performance > largestPerf)
 				largestPerf = ctd.m_performance;
