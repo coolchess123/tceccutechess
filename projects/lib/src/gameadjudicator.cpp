@@ -171,3 +171,74 @@ Chess::Result GameAdjudicator::result() const
 {
 	return m_result;
 }
+
+int GameAdjudicator::drawClock(const Chess::Board* board, const MoveEvaluation& eval) const
+{
+	if (m_drawMoveNum <= 0)
+		return -1000;
+
+	const int drawMoveLimit = m_drawMoveCount * 2;
+	int count = m_drawScoreCount;
+
+	if (qAbs(eval.score()) <= m_drawScore && board->reversibleMoveCount() != 0)
+		count++;
+	else
+		count = 0;
+
+	count = count >= drawMoveLimit ? 0 : (drawMoveLimit - count);
+
+	if (board->plyCount() / 2 < m_drawMoveNum) count = -count - 1;
+
+	return count;
+}
+
+int GameAdjudicator::resignClock(const Chess::Board* board, const MoveEvaluation& eval) const
+{
+	if (m_resignMoveCount <= 0)
+		return -1000;
+
+	const Chess::Side side = board->sideToMove().opposite();
+	int count = m_resignScoreCount[side];
+
+	if (m_tcecAdjudication)
+	{
+		int winnerCount = m_resignWinnerScoreCount[side];
+        if (eval.score() <= m_resignScore) {
+        	count++;
+        	winnerCount = 0;
+        } else if (eval.score() >= -m_resignScore) {
+        	winnerCount++;
+        	count = 0;
+        } else
+        	count = winnerCount = 0;
+
+		count = count >=  m_resignMoveCount? 0 : ( m_resignMoveCount - count);
+		winnerCount = winnerCount >=  m_resignMoveCount? 0 : ( m_resignMoveCount - winnerCount);
+
+		if (m_resignWinnerScoreCount[side.opposite()] < m_resignMoveCount)
+			count = -count - 1;
+		if (m_resignScoreCount[side.opposite()] < m_resignMoveCount)
+			winnerCount = -winnerCount - 1;
+
+		if (count < 0)
+		{
+			if (winnerCount >= 0)
+				count = winnerCount;
+			else if(winnerCount > count)
+				count = winnerCount;
+		}
+		else if (winnerCount >= 0 && winnerCount < count)
+			count = winnerCount;
+	}
+	else
+	{
+		if (eval.score() <= m_resignScore)
+			count++;
+		else
+			count = 0;
+
+		count = count >=  m_resignMoveCount? 0 : ( m_resignMoveCount - count);
+	}
+
+	return count;
+}
