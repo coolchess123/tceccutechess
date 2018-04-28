@@ -200,7 +200,9 @@ TCEC options:
   			aren't applied to the engines after reloading, meaning
   			you have to specify every engine option in the
   			'engines.json' if you use this option.
-  -tcecadj		Use TCEC adjudication rules for the '-resign' option:
-  			the opponent's evaluation must also be at least the
-  			given number of centipawns below zero for the resign
-  			rule to take effect.  			
+  -tcecadj		Use TCEC adjudication rules. Changes to the '-resign'
+  			option: the opponent's evaluation must also be at least
+  			the given number of centipawns below zero for the
+  			resign rule to take effect. Changes to the -draw option:
+  			the counter skips a ply after a reset by a capture or a
+  			pawn move.  			
