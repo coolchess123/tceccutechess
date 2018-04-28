@@ -126,13 +126,13 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
             int& winnerCount = m_resignWinnerScoreCount[side];
 
             if (eval.score() <= m_resignScore) {
-                    loserCount++;
-                    winnerCount = 0;
+            	loserCount++;
+            	winnerCount = 0;
             } else if (eval.score() >= -m_resignScore) {
-                    winnerCount++;
-                    loserCount = 0;
+            	winnerCount++;
+            	loserCount = 0;
             } else
-                    loserCount = winnerCount = 0;
+            	loserCount = winnerCount = 0;
 
             if (loserCount >= m_resignMoveCount
             				&& m_resignWinnerScoreCount[side.opposite()] >= m_resignMoveCount)
@@ -210,14 +210,14 @@ int GameAdjudicator::resignClock(const Chess::Board* board, const MoveEvaluation
 	if (m_tcecAdjudication)
 	{
 		int winnerCount = m_resignWinnerScoreCount[side];
-        if (eval.score() <= m_resignScore) {
-        	count++;
+		if (eval.score() <= m_resignScore) {
+			count++;
         	winnerCount = 0;
-        } else if (eval.score() >= -m_resignScore) {
-        	winnerCount++;
+		} else if (eval.score() >= -m_resignScore) {
+			winnerCount++;
         	count = 0;
-        } else
-        	count = winnerCount = 0;
+		} else
+			count = winnerCount = 0;
 
 		count = count >=  m_resignMoveCount? 0 : ( m_resignMoveCount - count);
 		winnerCount = winnerCount >=  m_resignMoveCount? 0 : ( m_resignMoveCount - winnerCount);
