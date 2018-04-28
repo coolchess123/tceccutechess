@@ -98,17 +98,22 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	// Draw adjudication
 	if (m_drawMoveNum > 0)
 	{
-		if (qAbs(eval.score()) <= m_drawScore)
-			m_drawScoreCount++;
+		if (m_tcecAdjudication && board->reversibleMoveCount() == 0)
+		{} // m_drawScoreCount == 0;
 		else
-			m_drawScoreCount = 0;
-
-		if (board->plyCount() / 2 >= m_drawMoveNum
-		&&  m_drawScoreCount >= m_drawMoveCount * 2)
 		{
-			m_result = Chess::Result(Chess::Result::Adjudication,
-						Chess::Side::NoSide, "TCEC draw rule");
-			return;
+			if (qAbs(eval.score()) <= m_drawScore)
+				m_drawScoreCount++;
+			else
+				m_drawScoreCount = 0;
+
+			if (board->plyCount() / 2 >= m_drawMoveNum
+			&&  m_drawScoreCount >= m_drawMoveCount * 2)
+			{
+				m_result = Chess::Result(Chess::Result::Adjudication,
+							Chess::Side::NoSide, "TCEC draw rule");
+				return;
+			}
 		}
 	}
 
@@ -180,7 +185,9 @@ int GameAdjudicator::drawClock(const Chess::Board* board, const MoveEvaluation& 
 	const int drawMoveLimit = m_drawMoveCount * 2;
 	int count = m_drawScoreCount;
 
-	if (qAbs(eval.score()) <= m_drawScore && board->reversibleMoveCount() != 0)
+	if (m_tcecAdjudication && board->reversibleMoveCount() == 0)
+		count = 0;
+	else if (qAbs(eval.score()) <= m_drawScore && board->reversibleMoveCount() != 0)
 		count++;
 	else
 		count = 0;
