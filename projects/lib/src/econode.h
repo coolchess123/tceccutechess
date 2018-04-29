@@ -18,23 +18,23 @@
 #ifndef ECONODE_H
 #define ECONODE_H
 
-#include <QString>
+#include <QStringList>
 #include <QMap>
 #include "pgngame.h"
 class QDataStream;
 class PgnStream;
 
 /*!
- * \brief A node in the ECO tree (Encyclopaedia of Chess Openings)
+ * \brief A node in the ECO catalog (Encyclopaedia of Chess Openings)
  *
- * The EcoNode class can be used to generate and query a database (a tree) of
+ * The EcoNode class can be used to generate and query a database (a map) of
  * known chess openings that belong to the Encyclopaedia of Chess Openings.
  * More about ECO: http://en.wikipedia.org/wiki/Encyclopaedia_of_Chess_Openings
  *
- * The ECO tree can be generated from a PGN collection or from a binary file
+ * The ECO catalog can be generated from a PGN collection or from a binary file
  * that's part of the cutechess library (the default). A node corresponding
- * to a PgnGame can be found by traversing the ECO tree as new moves are added
- * to the game, or by passing all the moves at once to the find() function.
+ * to a PgnGame can be found by the game's moves Zobrist keys to the find()
+ * function.
  *
  * \note The Encyclopaedia of Chess Openings only applies to games of standard
  * chess that start from the default starting position.
@@ -42,33 +42,14 @@ class PgnStream;
 class LIB_EXPORT EcoNode
 {
 	public:
-		/*! Destroys the node and its subtree. */
-		~EcoNode();
-
-		/*!
-		 * Returns true if the node is a leaf node; otherwise returns false.
-		 * A leaf node is a node that counts as an opening and has an ECO
-		 * code and a name.
-		 */
-		bool isLeaf() const;
-		/*!
-		 * Returns the node's child node corresponding to \a sanMove, or 0
-		 * if no match is found.
-		 */
-		EcoNode* child(const QString& sanMove) const;
-		/*!
-		 * Returns the node's ECO code, or an empty string if the node is
-		 * an inner node.
-		 */
+		EcoNode();
+		/*! Returns the node's ECO code. */
 		QString ecoCode() const;
-		/*!
-		 * Returns the node's opening name, or an empty string if the node
-		 * is an inner node.
-		 */
+		/*! Returns the node's opening name. */
 		QString opening() const;
 		/*!
 		 * Returns the node's variation name, or an empty string if the node
-		 * is an inner node or doesn't have a variation name.
+		 * doesn't have a variation name.
 		 */
 		QString variation() const;
 
@@ -77,38 +58,31 @@ class LIB_EXPORT EcoNode
 		/*! Initializes the ECO tree by parsing the PGN games in \a in. */
 		static void initialize(PgnStream& in);
 		/*!
-		 * Returns the root node of the ECO tree.
+		 * Returns a pointer to the EcoNode with Zobrist key \a key or
+		 * nullptr if no EcoNode is present for the key.
 		 * initialize() is called first if the tree is uninitialized.
 		 */
-		static const EcoNode* root();
-		/*!
-		 * Returns the deepest node (closest to the leaves) that matches the
-		 * opening sequence in \a moves.
-		 */
-		static const EcoNode* find(const QVector<PgnGame::MoveData>& moves);
-		/*! Writes the ECO tree in binary format to \a fileName. */
+		static const EcoNode* find(quint64 key);
+		/*! Writes the ECO catalog in binary format to \a fileName. */
 		static void write(const QString& fileName);
 
 	private:
-		friend LIB_EXPORT QDataStream& operator<<(QDataStream& out, const EcoNode* node);
-		friend LIB_EXPORT QDataStream& operator>>(QDataStream& in, EcoNode*& node);
+		friend LIB_EXPORT QDataStream& operator<<(QDataStream& out, const EcoNode& node);
+		friend LIB_EXPORT QDataStream& operator>>(QDataStream& in, EcoNode& node);
 
-		EcoNode();
-		void addChild(const QString& sanMove, EcoNode* child);
+		EcoNode(int opening, const QString& variation, const QString& eco);
+
+		static QStringList s_openings;
+		static QMap<quint64, EcoNode> s_catalog;
 
 		qint16 m_ecoCode;
 		qint32 m_opening;
 		QString m_variation;
-
-		QMap<QString, EcoNode*> m_children;
 };
 
 /*! Writes the node \a node to stream \a out. */
-extern LIB_EXPORT QDataStream& operator<<(QDataStream& out, const EcoNode* node);
-/*!
- * Reads a node from stream \a in into \a node.
- * \a node should be a null or uninitialized pointer.
- */
-extern LIB_EXPORT QDataStream& operator>>(QDataStream& in, EcoNode*& node);
+extern LIB_EXPORT QDataStream& operator<<(QDataStream& out, const EcoNode& node);
+/*! Reads a node from stream \a in into \a node. */
+extern LIB_EXPORT QDataStream& operator>>(QDataStream& in, EcoNode& node);
 
 #endif // ECONODE_H

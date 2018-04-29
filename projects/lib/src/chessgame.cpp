@@ -229,7 +229,9 @@ void ChessGame::addPgnMove(const Chess::Move& move, const QString& comment)
 	md.moveString = m_board->moveString(move, Chess::Board::StandardAlgebraic);
 	md.comment = comment;
 
-	m_pgn->addMove(md);
+	m_board->makeMove(move);
+	m_pgn->addMove(md, m_board->key());
+	m_board->undoMove();
 }
 
 void ChessGame::emitLastMove()

@@ -51,8 +51,8 @@ QTextStream& operator<<(QTextStream& out, const PgnGame& game)
 
 PgnGame::PgnGame()
 	: m_startingSide(Chess::Side::White),
-	  m_eco(EcoNode::root()),
-	  m_tagReceiver(nullptr)
+	  m_tagReceiver(nullptr),
+	  m_key(0)
 {
 }
 
@@ -64,7 +64,6 @@ bool PgnGame::isNull() const
 void PgnGame::clear()
 {
 	m_startingSide = Chess::Side();
-	m_eco = EcoNode::root();
 	m_tags.clear();
 	m_moves.clear();
 }
@@ -99,18 +98,19 @@ const QVector<PgnGame::MoveData>& PgnGame::moves() const
 	return m_moves;
 }
 
-void PgnGame::addMove(const MoveData& data, bool addEco)
+void PgnGame::addMove(const MoveData& data, quint64 key, bool addEco)
 {
 	m_moves.append(data);
+	m_key = key;
 
-	if (addEco) {
-		m_eco = (m_eco && isStandard()) ? m_eco->child(data.moveString)
-						: nullptr;
-		if (m_eco && m_eco->isLeaf())
+	if (addEco && isStandard())
+	{
+		const EcoNode* eco = EcoNode::find(key);
+		if (eco)
 		{
-			setTag("ECO", m_eco->ecoCode());
-			setTag("Opening", m_eco->opening());
-			setTag("Variation", m_eco->variation());
+			setTag("ECO", eco->ecoCode());
+			setTag("Opening", eco->opening());
+			setTag("Variation", eco->variation());
 		}
 	}
 }
@@ -201,9 +201,9 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 
 	MoveData md = { board->key(), board->genericMove(move),
 			str, QString() };
-	addMove(md, addEco);
-
 	board->makeMove(move);
+	addMove(md, board->key(), addEco);
+
 	return true;
 }
 
@@ -412,6 +412,11 @@ Chess::Side PgnGame::startingSide() const
 QString PgnGame::startingFenString() const
 {
 	return m_tags.value("FEN");
+}
+
+quint64 PgnGame::key() const
+{
+	return m_key;
 }
 
 void PgnGame::setTag(const QString& tag, const QString& value)
