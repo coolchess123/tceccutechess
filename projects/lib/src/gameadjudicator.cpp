@@ -227,14 +227,7 @@ int GameAdjudicator::resignClock(const Chess::Board* board, const MoveEvaluation
 		if (m_resignScoreCount[side.opposite()] < m_resignMoveCount)
 			winnerCount = -winnerCount - 1;
 
-		if (count < 0)
-		{
-			if (winnerCount >= 0)
-				count = winnerCount;
-			else if(winnerCount > count)
-				count = winnerCount;
-		}
-		else if (winnerCount >= 0 && winnerCount < count)
+		if ((count < 0 && winnerCount > count) || (winnerCount >= 0 && winnerCount < count))
 			count = winnerCount;
 	}
 	else
