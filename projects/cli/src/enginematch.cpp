@@ -39,7 +39,7 @@ EngineMatch::EngineMatch(Tournament* tournament, QObject* parent)
 	  m_debug(false),
 	  m_ratingInterval(0),
 	  m_bookMode(OpeningBook::Ram),
-	  m_eloKfactor(25.0),
+	  m_eloKfactor(32.0),
 	  m_pgnFormat(true),
 	  m_jsonFormat(true)
 {
@@ -482,11 +482,10 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			blackData.m_gamesPlayedAsBlack++;
 		}
 	}
-	// calculate SB and ratings sum
+	// calculate SB
 	QMapIterator<QString, CrossTableData> ct(ctMap);
 	qreal largestSB = 1.0;
 	qreal largestScore = 1.0;
-	int sumRatings = 0;
 	while (ct.hasNext()) {
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
@@ -507,7 +506,6 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ctd.m_neustadtlScore = sb;
 		if (ctd.m_neustadtlScore > largestSB) largestSB = ctd.m_neustadtlScore;
 		if (ctd.m_score > largestScore) largestScore = ctd.m_score;
-		sumRatings += ctd.m_rating;
 	}
 	// calculate Elo and point rate
 	qreal maxElo = 1;
@@ -518,12 +516,44 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
 
-		const qreal avgRating = qreal(sumRatings - ctd.m_rating) / (playerCount - 1);
+		QMapIterator<QString, CrossTableData> ot(ct);
+		while (ot.hasNext()) {
+			ot.next();
+			CrossTableData& otd = ctMap[ot.key()];
+			const QString& tds = ctd.m_tableData[ot.key()];
+
+			int score = 0;
+			int games = 0;
+			for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
+				switch(c->toLatin1()) {
+				case '1':
+					score += 2;
+					++games;
+					break;
+				case '=':
+					++score;
+					++games;
+					break;
+				case '0':
+					++games;
+					break;
+				default:
+					break;
+				}
+
+			if (games > 0) {
+				const qreal real = static_cast<qreal>(score) / (games * 2);
+				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
+				const qreal elo =  m_eloKfactor * (real - expected) * games;
+
+				ctd.m_elo += elo;
+				otd.m_elo -= elo;
+			}
+		}
+
 		const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
-		if (totGames) {
+		if (totGames > 0) {
 			ctd.m_performance = ctd.m_score / totGames;
-			const qreal expected = 1.0 / (1.0 + qPow(10.0, (avgRating - ctd.m_rating) / 400.0));
-			ctd.m_elo = m_eloKfactor * (ctd.m_performance - expected) * totGames;
 
 			if (ctd.m_performance > largestPerf)
 				largestPerf = ctd.m_performance;
