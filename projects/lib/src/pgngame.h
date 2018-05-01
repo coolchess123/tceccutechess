@@ -86,9 +86,10 @@ class LIB_EXPORT PgnGame
 		const QVector<MoveData>& moves() const;
 		/*! Adds a new move to the game.
 		 * \param data The move to add.
+		 * \param key The Zobrist key of the actual board position.
 		 * \param addEco Adds opening information if true.
 		 */
-		void addMove(const MoveData& data, bool addEco = true);
+		void addMove(const MoveData& data, quint64 key, bool addEco = true);
 		void setMove(int ply, const MoveData& data);
 
 		/*!
@@ -161,6 +162,12 @@ class LIB_EXPORT PgnGame
 		const QTime& gameDuration() const;
 		/*! Returns the initial comment. */
 		QString initialComment() const;
+		/*!
+		 * Returns the game's Zobrist key.
+		 * \note The returned key is only valid if at least one move was added
+		 * to the game.
+		 */
+		quint64 key() const;
 
 		/*!
 		 * Sets \a tag's value to \a value.
@@ -212,7 +219,6 @@ class LIB_EXPORT PgnGame
 		bool parseMove(PgnStream& in, bool addEco);
 		
 		Chess::Side m_startingSide;
-		const EcoNode* m_eco;
 		QMap<QString, QString> m_tags;
 		QVector<MoveData> m_moves;
 		QObject* m_tagReceiver;
@@ -220,6 +226,7 @@ class LIB_EXPORT PgnGame
 		static QString timeStamp(const QDateTime& dateTime);
 		QDateTime m_gameStartTime;
 		QTime m_gameDuration;
+		quint64 m_key;
 };
 
 /*! Reads a PGN game from a PGN stream. */
