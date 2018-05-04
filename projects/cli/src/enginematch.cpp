@@ -416,11 +416,6 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	return s1.m_score > s2.m_score;
 }
 
-inline static int roundTowardsZero(qreal number)
-{
-	return number >= 0 ? qFloor(number) : -qFloor(-number);
-}
-
 void EngineMatch::generateCrossTable(QVariantList& pList)
 {
 	const int playerCount = m_tournament->playerCount();
@@ -890,8 +885,10 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					int score = eval.score();
 					int absScore = qAbs(score);
 
-					// Detect mate-in-n scores
-					if (absScore > 9900
+					// Detect out-of-range scores
+					if (absScore > 99999)
+						sScore = score < 0 ? "-999.99" : "999.99";
+					else if (absScore > 9900	// Detect mate-in-n scores
 						&& (absScore = 1000 - (absScore % 1000)) < 100)
 					{
 						sScore = score < 0 ? "-" : "";
