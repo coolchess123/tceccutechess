@@ -129,10 +129,14 @@ class LIB_EXPORT Tournament : public QObject
 		bool swapSides() const;
 		/*! Returns true if the tournament wants Berger/Schurig scheduling. */
 		bool bergerSchedule() const;
-		/*! Returns true if the tournament wants Berger/Schurig scheduling
+		/*!
+		 * Returns true if the tournament wants Berger/Schurig scheduling
 		 * and the tournament type is "round-robin".
 		 */
 		bool usesBergerSchedule() const;
+		/*! Returns the number of strikes that disqualifies a player.
+		 */
+		int strikes() const;
 
 		/*! Sets the tournament's name to \a name. */
 		void setName(const QString& name);
@@ -228,10 +232,13 @@ class LIB_EXPORT Tournament : public QObject
 		void setLivePgnOutput(const QString& fileName,
 				  PgnGame::PgnMode mode = PgnGame::Verbose);
 
- 		/*!
- 		 * Sets the output formatting for the live output.
+ 		/*! Sets the output formatting for the live output.
  		 */
 		void setLivePgnFormats(bool pgnFormat, bool jsonFormat);
+
+ 		/*! Sets the number of \a strikes at which a player is disqualified.
+ 		 */
+		void setStrikes(int strikes);
 
 		/*!
 		 * Sets the number of opening repetitions to \a count.
@@ -518,6 +525,7 @@ class LIB_EXPORT Tournament : public QObject
 		bool m_bergerSchedule;
 		QVector<QPair<QVector<Chess::Move>, QString> > m_cycleOpenings;
 		bool m_reloadEngines;
+		int m_strikes;
 };
 
 #endif // TOURNAMENT_H

@@ -55,6 +55,10 @@ class LIB_EXPORT PlayerBuilder
 		int rating() const;
 		/*! Sets the player's rating to \a rating. */
 		void setRating(const int rating);
+		/*! Returns the player's mandated strikes. */
+		int strikes() const;
+		/*! Sets the player's mandated strikes to \a strikes. */
+		void setStrikes(const int strikes);
 		/*!
 		 * Creates a new player and sets its parent to \a parent.
 		 *
@@ -73,6 +77,7 @@ class LIB_EXPORT PlayerBuilder
 	private:
 		QString m_name;
 		int m_rating;
+		int m_strikes;
 };
 
 #endif // PLAYERBUILDER_H

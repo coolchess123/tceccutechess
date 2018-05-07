@@ -19,7 +19,8 @@
 
 PlayerBuilder::PlayerBuilder(const QString& name)
 	: m_name(name),
-	  m_rating(0)
+	  m_rating(0),
+	  m_strikes(0)
 {
 }
 
@@ -45,4 +46,14 @@ int PlayerBuilder::rating() const
 void PlayerBuilder::setRating(const int rating)
 {
 	m_rating = rating;
+}
+
+int PlayerBuilder::strikes() const
+{
+	return m_strikes;
+}
+
+void PlayerBuilder::setStrikes(const int strikes)
+{
+	m_strikes = strikes;
 }

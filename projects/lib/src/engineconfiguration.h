@@ -104,9 +104,15 @@ class LIB_EXPORT EngineConfiguration
 		/*!
 		 * Sets the engine's rating.
 		 *
-		 * \sa name()
+		 * \sa rating(()
 		 */
 		void setRating(const int rating);
+		/*!
+		 * Sets the engine's strikes.
+		 *
+		 * \sa strikes(()
+		 */
+		void setStrikes(const int strikes);
 
 		/*!
 		 * Returns the engine's name.
@@ -142,9 +148,15 @@ class LIB_EXPORT EngineConfiguration
 		/*!
 		 * Returns the engine's rating.
 		 *
-		 * \sa setName()
+		 * \sa setRating()
 		 */
 		int rating() const;
+		/*!
+		 * Returns the engine's strikes.
+		 *
+		 * \sa setStrikes()
+		 */
+		int strikes() const;
 
 		/*! Returns the command line arguments sent to the engine. */
 		QStringList arguments() const;
@@ -241,6 +253,7 @@ class LIB_EXPORT EngineConfiguration
 		bool m_validateClaims;
 		RestartMode m_restartMode;
 		int m_rating;
+		int m_strikes;
 };
 
 #endif // ENGINE_CONFIGURATION_H

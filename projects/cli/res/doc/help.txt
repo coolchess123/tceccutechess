@@ -207,4 +207,6 @@ TCEC options:
   			the given number of centipawns below zero for the
   			resign rule to take effect. Changes to the -draw option:
   			the counter skips a ply after a reset by a capture or a
-  			pawn move.  			
+  			pawn move.
+  -strikes N	Set the number of strikes at which an engine is disqualified.
+  			The default is 3.  			

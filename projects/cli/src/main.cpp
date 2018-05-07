@@ -330,6 +330,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-kfactor", QVariant::Double, 1, 1);
 	parser.addOption("-reloadconf", QVariant::Bool, 0, 0);
 	parser.addOption("-tcecadj", QVariant::Bool, 0, 0);
+	parser.addOption("-strikes", QVariant::Int, 1, 1);
 
 	if (!parser.parse())
 		return nullptr;
@@ -477,6 +478,8 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				wantsJsonFormat = tMap["jsonFormat"].toBool();
 			tournament->setLivePgnFormats(wantsPgnFormat, wantsJsonFormat);
 		}
+		if (tMap.contains("Strikes"))
+			tournament->setStrikes(tMap["Strikes"].toInt());
 		if (tMap.contains("epdOutput"))
 			tournament->setEpdOutput(tMap["epdOutput"].toString());
 		if (tMap.contains("pgnCleanupEnabled"))
@@ -822,6 +825,15 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					tMap.insert("livePgnOutMode", mode);
 					tMap.insert("pgnFormat", wantsPgnFormat);
 					tMap.insert("jsonFormat", wantsJsonFormat);
+				}
+			}
+			else if (name == "-strikes")
+			{
+				const int st = value.toInt();
+				ok = st >= 1;
+				if (ok) {
+					tournament->setStrikes(st);
+					tMap.insert("Strikes", st);
 				}
 			}
 			// FEN/EPD output file to save positions

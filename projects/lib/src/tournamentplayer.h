@@ -61,6 +61,11 @@ class LIB_EXPORT TournamentPlayer
 		 * tournament.
 		 */
 		int losses() const;
+		/*!
+		 * Returns the total number of disconnections and stalls the
+		 * player has in the tournament.
+		 */
+		int crashes() const;
 		/*! Returns the player's total score in the tournament. */
 		int score() const;
 		/*! Adds \a score to the player's score in the tournament. */
@@ -79,6 +84,7 @@ class LIB_EXPORT TournamentPlayer
 		int m_wins;
 		int m_draws;
 		int m_losses;
+		int m_crashes;
 };
 
 #endif // TOURNAMENTPLAYER_H

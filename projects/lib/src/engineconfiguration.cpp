@@ -27,7 +27,8 @@ EngineConfiguration::EngineConfiguration()
 	  m_pondering(false),
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
-	  m_rating(0)
+	  m_rating(0),
+	  m_strikes(0)
 {
 }
 
@@ -42,7 +43,8 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_pondering(false),
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
-	  m_rating(0)
+	  m_rating(0),
+	  m_strikes(0)
 {
 }
 
@@ -52,7 +54,8 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_pondering(false),
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
-	  m_rating(0)
+	  m_rating(0),
+	  m_strikes(0)
 {
 	const QVariantMap map = variant.toMap();
 
@@ -100,6 +103,9 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 
 	if (map.contains("rating"))
 		setRating(map["rating"].toInt());
+
+	if (map.contains("strikes"))
+		setStrikes(map["strikes"].toInt());
 }
 
 EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
@@ -115,7 +121,8 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_pondering(other.m_pondering),
 	  m_validateClaims(other.m_validateClaims),
 	  m_restartMode(other.m_restartMode),
-	  m_rating(other.m_rating)
+	  m_rating(other.m_rating),
+	  m_strikes(other.m_strikes)
 {
 	const auto options = other.options();
 	for (const EngineOption* option : options)
@@ -143,6 +150,7 @@ EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 	m_restartMode = other.m_restartMode;
 	m_options = other.m_options;
 	m_rating = other.m_rating;
+	m_strikes = other.m_strikes;
 
 	// other's destructor will cause a mess if its m_options isn't cleared
 	other.m_options.clear();
@@ -195,6 +203,9 @@ QVariant EngineConfiguration::toVariant() const
 	if (m_rating)
 		map.insert("rating", m_rating);
 
+	if (m_strikes > 0)
+		map.insert("strikes", m_strikes);
+
 	return map;
 }
 
@@ -228,6 +239,11 @@ void EngineConfiguration::setRating(const int rating)
 	m_rating = rating > 0 ? rating : 0;
 }
 
+void EngineConfiguration::setStrikes(const int strikes)
+{
+	m_strikes = strikes > 0 ? strikes : 0;
+}
+
 QString EngineConfiguration::name() const
 {
 	return m_name;
@@ -256,6 +272,11 @@ QString EngineConfiguration::protocol() const
 int EngineConfiguration::rating() const
 {
 	return m_rating;
+}
+
+int EngineConfiguration::strikes() const
+{
+	return m_strikes;
 }
 
 QStringList EngineConfiguration::arguments() const
@@ -401,6 +422,7 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 		m_validateClaims = other.m_validateClaims;
 		m_restartMode = other.m_restartMode;
 		m_rating = other.m_rating;
+		m_strikes = other.m_strikes;
 
 		qDeleteAll(m_options);
 		m_options.clear();
@@ -435,6 +457,7 @@ bool EngineConfiguration::operator==(const EngineConfiguration& other) const
 		|| m_validateClaims != other.m_validateClaims
 		|| m_restartMode != other.m_restartMode
 		|| m_rating != other.m_rating
+		|| m_strikes != other.m_strikes
 		|| m_name != other.m_name
 		|| m_command != other.m_command
 		|| m_workingDirectory != other.m_workingDirectory

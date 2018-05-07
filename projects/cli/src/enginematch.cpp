@@ -352,7 +352,7 @@ struct CrossTableData
 {
 public:
 
-	CrossTableData(QString engineName, int elo = 0) :
+	CrossTableData(QString engineName, int elo = 0, int strikes = 0) :
 		m_score(0),
 		m_neustadtlScore(0),
 		m_rating(elo),
@@ -360,6 +360,8 @@ public:
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
 		m_winsAsBlack(0),
+		m_strikes(strikes),
+		m_disqualified(false),
 		m_performance(0),
 		m_elo(0)
 	{
@@ -374,6 +376,8 @@ public:
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
 		m_winsAsBlack(0),
+		m_strikes(0),
+		m_disqualified(false),
 		m_performance(0),
 		m_elo(0)
 	{
@@ -391,6 +395,8 @@ public:
 	int m_gamesPlayedAsBlack;
 	int m_winsAsWhite;
 	int m_winsAsBlack;
+	int m_strikes;
+	bool m_disqualified;
 	double m_performance;
 	double m_elo;
 	QMap<QString, QString> m_tableData;
@@ -398,22 +404,30 @@ public:
 
 bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s2)
 {
-	if (s1.m_score == s2.m_score) {
-		if (s1.m_neustadtlScore == s2.m_neustadtlScore) {
-			if (s1.m_gamesPlayedAsBlack == s2.m_gamesPlayedAsBlack) {
-				if ((s1.m_winsAsWhite + s1.m_winsAsBlack) == (s2.m_winsAsWhite + s2.m_winsAsBlack)) {
-					return (s1.m_winsAsBlack > s2.m_winsAsBlack);
+	if (s1.m_disqualified == s2.m_disqualified) {
+		if (s1.m_score == s2.m_score) {
+			if (s1.m_strikes == s2.m_strikes) {
+				if (s1.m_neustadtlScore == s2.m_neustadtlScore) {
+					if (s1.m_gamesPlayedAsBlack == s2.m_gamesPlayedAsBlack) {
+						if ((s1.m_winsAsWhite + s1.m_winsAsBlack) == (s2.m_winsAsWhite + s2.m_winsAsBlack)) {
+							return (s1.m_winsAsBlack > s2.m_winsAsBlack);
+						} else {
+							return (s1.m_winsAsWhite + s1.m_winsAsBlack) > (s2.m_winsAsWhite + s2.m_winsAsBlack);
+						}
+					} else {
+						return s1.m_gamesPlayedAsBlack > s2.m_gamesPlayedAsBlack;
+					}
 				} else {
-					return (s1.m_winsAsWhite + s1.m_winsAsBlack) > (s2.m_winsAsWhite + s2.m_winsAsBlack);
+					return s1.m_neustadtlScore > s2.m_neustadtlScore;
 				}
 			} else {
-				return s1.m_gamesPlayedAsBlack > s2.m_gamesPlayedAsBlack;
+				return s1.m_strikes < s2.m_strikes;
 			}
 		} else {
-			return s1.m_neustadtlScore > s2.m_neustadtlScore;
+			return s1.m_score > s2.m_score;
 		}
 	}
-	return s1.m_score > s2.m_score;
+	return s2.m_disqualified;
 }
 
 void EngineMatch::generateCrossTable(QVariantList& pList)
@@ -423,11 +437,16 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	QStringList abbrevList;
 	int roundLength = 2;
 	int maxName = 6;
+	int maxStrikes = 0;
 
 	// ensure names and abbreviations
 	for (int i = 0; i < playerCount; i++) {
-		CrossTableData ctd(m_tournament->playerAt(i).builder()->name(), m_tournament->playerAt(i).builder()->rating());
+		CrossTableData ctd(m_tournament->playerAt(i).builder()->name(),
+						   m_tournament->playerAt(i).builder()->rating(),
+						   m_tournament->playerAt(i).crashes() + m_tournament->playerAt(i).builder()->strikes());
 		if (ctd.m_engineName.length() > maxName) maxName = ctd.m_engineName.length();
+		if (ctd.m_strikes > maxStrikes) maxStrikes = ctd.m_strikes;
+		ctd.m_disqualified = ctd.m_strikes >= m_tournament->strikes();
 
 		int n = 1;
 		QString abbrev;
@@ -484,23 +503,28 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	while (ct.hasNext()) {
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
-		QMapIterator<QString, QString> td(ctd.m_tableData);
-		qreal sb = 0.0;
-		while (td.hasNext()) {
-			td.next();
-			QString::ConstIterator c = td.value().begin();
-			while (c != td.value().end()) {
-				if (*c == QChar('1')) {
-					sb += ctMap[td.key()].m_score;
-				} else if (*c == QChar('=')) {
-					sb += ctMap[td.key()].m_score / 2.;
+		if (!ctd.m_disqualified) {
+			QMapIterator<QString, QString> td(ctd.m_tableData);
+			qreal sb = 0.0;
+			while (td.hasNext()) {
+				td.next();
+				CrossTableData& otd = ctMap[td.key()];
+				if (!otd.m_disqualified) {
+					QString::ConstIterator c = td.value().begin();
+					while (c != td.value().end()) {
+						if (*c == QChar('1')) {
+							sb += otd.m_score;
+						} else if (*c == QChar('=')) {
+							sb += otd.m_score / 2.;
+						}
+						c++;
+					}
 				}
-				c++;
 			}
+			ctd.m_neustadtlScore = sb;
+			if (ctd.m_neustadtlScore > largestSB) largestSB = ctd.m_neustadtlScore;
+			if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 		}
-		ctd.m_neustadtlScore = sb;
-		if (ctd.m_neustadtlScore > largestSB) largestSB = ctd.m_neustadtlScore;
-		if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 	}
 	// calculate Elo and point rate
 	qreal maxElo = 1;
@@ -600,6 +624,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			obj["GamesAsBlack"] = i->m_gamesPlayedAsBlack;
 			obj["Games"] = i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack;
 			obj["Neustadtl"] = i->m_neustadtlScore;
+			obj["Strikes"] = i->m_strikes;
 			obj["Performance"] = i->m_performance * 100.0;
 			obj["Elo"] = i->m_elo;
 			for(const QVariant& eVar : order) {
@@ -687,19 +712,23 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		maxGames = qFloor(qLn(maxGames) * M_LOG10E) + 1;
 		if (maxGames < 2)
 			maxGames = 2;
+		maxStrikes = qFloor(qLn(maxStrikes) * M_LOG10E) + 1;
+		if (maxStrikes < 1)
+			maxStrikes = 1;
 		int maxPerf = qFloor(qLn(largestPerf * 100.0) * M_LOG10E) + 3;
 		if (maxPerf < 4)
 			maxPerf = 4;
 		maxElo = qFloor(qLn(maxElo) * M_LOG10E) + 2;
 		if (maxElo < 3)
 			maxElo = 3;
-		QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7 %8")
+		QString crossTableHeaderText = QString("%1 %2 %3 %4 %5 %6 %7 %8 %9")
 			.arg("N", 2)
 			.arg("Engine", -maxName)
 			.arg("Rtng", 4)
 			.arg("Pts", maxScore)
 			.arg("Gm", maxGames)
 			.arg("SB", maxSB)
+			.arg("X", maxStrikes)
 			.arg("Elo", maxElo)
 			.arg("Perf", maxPerf);
 
@@ -712,13 +741,14 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 
 			eloText = i->m_elo > 0 ? "+" : "";
 			eloText += QString::number(i->m_elo, 'f', 0);
-			crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7 %8")
+			crossTableBodyText += QString("%1 %2 %3 %4 %5 %6 %7 %8 %9")
 				.arg(count, 2)
 				.arg(i->m_engineName, -maxName)
 				.arg(i->m_rating, 4)
 				.arg(i->m_score, maxScore, 'f', 1)
 				.arg(i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack, maxGames)
 				.arg(i->m_neustadtlScore, maxSB, 'f', 2)
+				.arg(i->m_strikes, maxStrikes)
 				.arg(eloText, maxElo)
 				.arg(i->m_performance * 100.0, maxPerf, 'f', 1);
 

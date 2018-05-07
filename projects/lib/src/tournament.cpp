@@ -67,7 +67,8 @@ Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 	  m_jsonFormat(true),
 	  m_resumeGameNumber(0),
 	  m_bergerSchedule(false),
-	  m_reloadEngines(false)
+	  m_reloadEngines(false),
+	  m_strikes(3)
 {
 	Q_ASSERT(gameManager != nullptr);
 	Q_ASSERT(engineManager != nullptr);
@@ -200,6 +201,11 @@ bool Tournament::usesBergerSchedule() const
 	return m_bergerSchedule && type() == "round-robin";
 }
 
+int Tournament::strikes() const
+{
+	return m_strikes;
+}
+
 bool Tournament::canSetRoundMultiplier() const
 {
 	return true;
@@ -311,10 +317,16 @@ void Tournament::setLivePgnOutput(const QString& fileName, PgnGame::PgnMode mode
 	m_livePgnOut = fileName;
 	m_livePgnOutMode = mode;
 }
+
 void Tournament::setLivePgnFormats(bool pgnFormat, bool jsonFormat)
 {
 	m_pgnFormat = pgnFormat;
 	m_jsonFormat = jsonFormat;
+}
+
+void Tournament::setStrikes(int strikes)
+{
+	m_strikes = strikes;
 }
 
 void Tournament::setOpeningRepetitions(int count)
@@ -904,16 +916,34 @@ void Tournament::onGameFinished(ChessGame* game)
 	if (!blackName.isEmpty())
 		m_players[iBlack].setName(blackName);
 
-	switch (game->result().winner())
+	switch (result.winner())
 	{
 	case Chess::Side::White:
 		addScore(iWhite, 2);
-		addScore(iBlack, 0);
+		switch (result.type())
+		{
+		case Chess::Result::Disconnection:
+		case Chess::Result::StalledConnection:
+			addScore(iBlack, -1);
+			break;
+		default:
+			addScore(iBlack, 0);
+			break;
+		}
 		sprtResult = (iWhite == 0) ? Sprt::Win : Sprt::Loss;
 		break;
 	case Chess::Side::Black:
 		addScore(iBlack, 2);
-		addScore(iWhite, 0);
+		switch (result.type())
+		{
+		case Chess::Result::Disconnection:
+		case Chess::Result::StalledConnection:
+			addScore(iWhite, -1);
+			break;
+		default:
+			addScore(iWhite, 0);
+			break;
+		}
 		sprtResult = (iBlack == 0) ? Sprt::Win : Sprt::Loss;
 		break;
 	default:
