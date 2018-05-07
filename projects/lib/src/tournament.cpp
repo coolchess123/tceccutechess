@@ -697,6 +697,11 @@ void Tournament::onPgnMove()
 
 	if (m_jsonFormat)
 	{
+		Chess::Board* board(sender->board());
+		Q_ASSERT(board != 0);
+		board = board->copy();
+		board->setFenString(board->startingFenString());
+
 		QVariantMap pMap;
 
 		// Parse and assemble engine options
@@ -765,7 +770,47 @@ void Tournament::onPgnMove()
 					{
 						const QString name(stat.left(pos).trimmed());
 						const QString value(stat.mid(pos + 1).trimmed());
-						if (name == "mb")
+						if (name == "pv")
+						{
+							QVariantMap pvMap;
+							QVariantList pvList;
+
+							pvMap["San"] = value;
+
+							int pvmCnt = 0;
+							QStringList pvMoves = value.split(' ', QString::SkipEmptyParts);
+							for (const QString& pvMoveStr : pvMoves)
+							{
+								QVariantMap pvMove;
+
+								const Chess::Move& pvbm(board->moveFromString(pvMoveStr));
+								if (pvbm.isNull())
+									break;
+								const Chess::GenericMove& gm(board->genericMove(pvbm));
+
+								board->makeMove(pvbm);
+								++pvmCnt;
+
+								pvMove["m"] = pvMoveStr;
+								pvMove["fen"] = board->fenString();
+
+								sq = static_cast<char>(gm.sourceSquare().file() + 'a');
+								sq += static_cast<char>(gm.sourceSquare().rank() + '1');
+								pvMove["from"] = sq;
+
+								sq = static_cast<char>(gm.targetSquare().file() + 'a');
+								sq += static_cast<char>(gm.targetSquare().rank() + '1');
+								pvMove["to"] = sq;
+
+								pvList << pvMove;
+							}
+							for(; pvmCnt > 0; --pvmCnt)
+								board->undoMove();
+
+							pvMap["Moves"] = pvList;
+							mMap["pv"] = pvMap;
+						}
+						else if (name == "mb")
 						{
 							QVariantMap mbMap;
 							int idx = 0;
@@ -791,9 +836,16 @@ void Tournament::onPgnMove()
 			}
 			if (!aMap.empty())
 				mMap["adjudication"] = aMap;
+
+			board->makeMove(board->moveFromGenericMove(move.move));
+
+			mMap["fen"] = board->fenString();
+
 			mList << mMap;
 		}
 		pMap["Moves"] = mList;
+
+		delete board;
 
 		const QString tempName(m_livePgnOut + "_temp.json");
 		const QString finalName(m_livePgnOut + ".json");

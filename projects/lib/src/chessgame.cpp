@@ -71,7 +71,7 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		else
 			str += QString::number(depth);
 
-		// ponder move 'pd' algebraic move
+		// pv parser / san converter
 		QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
 		if (sanPv.isEmpty())
 		{
@@ -99,17 +99,7 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 				sanPv = m_board->sanStringForPv(sanPv, Chess::Board::StandardAlgebraic);
 			}
 		}
-		QStringList lanPv;
-		int moveCnt = 0;
-		for (const QString& sanMove : sanPv.split(' ')) {
-			const Chess::Move& mv(m_board->moveFromString(sanMove.trimmed()));
-			if (mv.isNull()) break;
-			lanPv.append(m_board->moveString(mv, Chess::Board::LongAlgebraic));
-			m_board->makeMove(mv);
-			++moveCnt;
-		}
-		for ( ; moveCnt > 0; --moveCnt)
-			m_board->undoMove();
+		// ponder move 'pd' algebraic move
 	#if 0
 		QStringList sanList = sanPv.split(' ');
 		if (sanList.length() > 1) {
@@ -176,9 +166,6 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		// pv 'pv' algebraic string
 		str += ", pv=" + sanPv;
 
-		// pvl 'pv' lan string
-		str += ", pvl=" + lanPv.join(' ');
-
 		// tbhits 'tb'
 		str += ", tb=" + QString::number(eval.tbHits());
 
@@ -212,7 +199,7 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 	// resign rule clock 'Rr'
 	str += ", Rr=" + QString::number(m_adjudicator.resignClock(m_board, eval));
 
-	// FEN and material balance
+	// material balance
 	str += statusString(move, false);
 
 	m_board->undoMove();
@@ -271,9 +258,6 @@ QString ChessGame::statusString(const Chess::Move& move, bool doMove)
 			str += '+';
 		str += QString::number(v);
 	}
-
-	// FEN
-	str += ", fen=" + m_board->fenString();
 
 	if (doMove)
 		m_board->undoMove();
