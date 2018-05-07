@@ -352,7 +352,7 @@ struct CrossTableData
 {
 public:
 
-	CrossTableData(QString engineName, int elo = 0, int strikes = 0) :
+	CrossTableData(QString engineName, int elo = 0, int crashes = 0, int strikes = 0) :
 		m_score(0),
 		m_neustadtlScore(0),
 		m_rating(elo),
@@ -360,7 +360,8 @@ public:
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
 		m_winsAsBlack(0),
-		m_strikes(strikes),
+		m_crashes(crashes),
+		m_strikes(crashes + strikes),
 		m_disqualified(false),
 		m_performance(0),
 		m_elo(0)
@@ -376,6 +377,7 @@ public:
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
 		m_winsAsBlack(0),
+		m_crashes(0),
 		m_strikes(0),
 		m_disqualified(false),
 		m_performance(0),
@@ -395,6 +397,7 @@ public:
 	int m_gamesPlayedAsBlack;
 	int m_winsAsWhite;
 	int m_winsAsBlack;
+	int m_crashes;
 	int m_strikes;
 	bool m_disqualified;
 	double m_performance;
@@ -443,7 +446,8 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 	for (int i = 0; i < playerCount; i++) {
 		CrossTableData ctd(m_tournament->playerAt(i).builder()->name(),
 						   m_tournament->playerAt(i).builder()->rating(),
-						   m_tournament->playerAt(i).crashes() + m_tournament->playerAt(i).builder()->strikes());
+						   m_tournament->playerAt(i).crashes(),
+						   m_tournament->playerAt(i).builder()->strikes());
 		if (ctd.m_engineName.length() > maxName) maxName = ctd.m_engineName.length();
 		if (ctd.m_strikes > maxStrikes) maxStrikes = ctd.m_strikes;
 		ctd.m_disqualified = ctd.m_strikes >= m_tournament->strikes();
@@ -560,6 +564,8 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 					break;
 				}
 
+			games -= ctd.m_crashes + otd.m_crashes;
+			score -= otd.m_crashes * 2;
 			if (games > 0) {
 				const qreal real = static_cast<qreal>(score) / (games * 2);
 				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
