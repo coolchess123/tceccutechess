@@ -576,8 +576,6 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 					break;
 				}
 
-			games -= ctd.m_crashes + otd.m_crashes;
-			score -= otd.m_crashes * 2;
 			if (games > 0) {
 				const qreal real = static_cast<qreal>(score) / (games * 2);
 				const qreal expected = 1.0 / (1.0 + qPow(10.0, (otd.m_rating - ctd.m_rating) / 400.0));
