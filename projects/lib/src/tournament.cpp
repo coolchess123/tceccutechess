@@ -548,6 +548,112 @@ void Tournament::startGame(TournamentPair* pair)
 			       GameManager::ReusePlayers);
 }
 
+void Tournament::skipGame(TournamentPair* pair)
+{
+	Q_ASSERT(pair->isValid());
+
+	// Reload the engines
+	if (m_reloadEngines)
+	{
+		QString configFile("engines.json");
+		m_engineManager->reloadEngines(configFile);
+	}
+
+	m_pair = pair;
+	m_pair->addStartedGame();
+	const bool usesBerger = usesBergerSchedule();
+	if (m_swapSides && usesBerger
+			&& (m_nextGameNumber / gamesPerCycle()) % 2
+				== m_pair->hasOriginalOrder())
+		m_pair->swapPlayers();
+
+	const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
+	const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
+
+	Chess::Board* board = Chess::BoardFactory::create(m_variant);
+	Q_ASSERT(board != nullptr);
+	ChessGame* game = new ChessGame(board, new PgnGame());
+
+	game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
+	game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
+
+	if (usesBerger)
+	{
+		QPair<QVector<Chess::Move>, QString>& cycleGame =
+						m_cycleOpenings[m_nextGameNumber % gamesPerCycle()];
+		if (m_nextGameNumber / gamesPerCycle() % m_openingRepetitions)
+		{
+			game->setStartingFen(cycleGame.second);
+			game->setMoves(cycleGame.first);
+
+			game->generateOpening();
+		}
+		else
+		{
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+
+			game->generateOpening();
+			cycleGame.first = game->moves();
+			cycleGame.second = game->startingFen();
+			if (cycleGame.second.isEmpty() && board->isRandomVariant())
+			{
+				cycleGame.second = board->defaultFenString();
+				game->setStartingFen(cycleGame.second);
+			}
+		}
+	}
+	else
+	{
+		if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
+		{
+			game->setStartingFen(m_startFen);
+			game->setMoves(m_openingMoves);
+			m_startFen.clear();
+			m_openingMoves.clear();
+			m_repetitionCounter++;
+		}
+		else
+		{
+			m_repetitionCounter = 1;
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+		}
+
+		game->generateOpening();
+		if (m_repetitionCounter < m_openingRepetitions)
+		{
+			m_startFen = game->startingFen();
+			if (m_startFen.isEmpty() && board->isRandomVariant())
+			{
+				m_startFen = board->defaultFenString();
+				game->setStartingFen(m_startFen);
+			}
+			m_openingMoves = game->moves();
+		}
+	}
+
+	++m_nextGameNumber;
+	++m_finishedGameCount;
+	++m_savedGameCount;
+
+	if (m_nextGameNumber > m_finalGameCount)
+		m_finalGameCount = m_nextGameNumber;
+
+	if (m_swapSides && !usesBerger)
+		m_pair->swapPlayers();
+
+	delete game;
+}
+
 void Tournament::onGameAboutToStart(ChessGame *game,
 				    const PlayerBuilder* white,
 				    const PlayerBuilder* black)
@@ -568,17 +674,33 @@ void Tournament::startNextGame()
 	if (m_stopping)
 		return;
 
-	TournamentPair* pair(nextPair(m_nextGameNumber));
-	if (!pair || !pair->isValid())
-		return;
-
-	if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+	for (;;)
 	{
-		m_startFen.clear();
-		m_openingMoves.clear();
-	}
+		TournamentPair* pair(nextPair(m_nextGameNumber));
+		if (!pair || !pair->isValid())
+		{
+			stop();
+			break;
+		}
 
-	startGame(pair);
+		if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+		{
+			m_startFen.clear();
+			m_openingMoves.clear();
+		}
+
+		const int iWhite = pair->firstPlayer();
+		const int iBlack = pair->secondPlayer();
+		if (m_players.at(iWhite).crashes() + m_players.at(iWhite).builder()->strikes() < m_strikes
+			&& m_players.at(iBlack).crashes() + m_players.at(iBlack).builder()->strikes() < m_strikes)
+		{
+			startGame(pair);
+			break;
+		}
+
+		skipGame(pair);
+		emit gameSkipped(m_nextGameNumber, iWhite, iBlack);
+	}
 }
 
 bool Tournament::writePgn(PgnGame* pgn, int gameNumber)
@@ -947,7 +1069,7 @@ void Tournament::onGameFinished(ChessGame* game)
 		sprtResult = (iBlack == 0) ? Sprt::Win : Sprt::Loss;
 		break;
 	default:
-		if (game->result().isDraw())
+		if (result.isDraw())
 		{
 			addScore(iWhite, 1);
 			addScore(iBlack, 1);
@@ -959,7 +1081,7 @@ void Tournament::onGameFinished(ChessGame* game)
 	writeEpd(game);
 	writePgn(pgn, gameNumber);
 
-	Chess::Result::Type resultType(game->result().type());
+	Chess::Result::Type resultType(result.type());
 	bool crashed = (resultType == Chess::Result::Disconnection ||
 			resultType == Chess::Result::StalledConnection);
 	if (!m_recover && crashed)
@@ -1057,101 +1179,8 @@ void Tournament::start()
 				m_openingMoves.clear();
 			}
 
-			m_pair = pair;
-			m_pair->addStartedGame();
-
-			if (m_swapSides && usesBerger
-					&& (m_nextGameNumber / gamesPerCycle()) % 2
-						== m_pair->hasOriginalOrder())
-				m_pair->swapPlayers();
-
-			const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
-			const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
-
-			Chess::Board* board = Chess::BoardFactory::create(m_variant);
-			Q_ASSERT(board != nullptr);
-			ChessGame* game = new ChessGame(board, new PgnGame());
-
-			game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
-			game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
-
-			if (usesBerger)
-			{
-				QPair<QVector<Chess::Move>, QString>& cycleGame =
-								m_cycleOpenings[m_nextGameNumber % gamesPerCycle()];
-				if (m_nextGameNumber / gamesPerCycle() % m_openingRepetitions)
-				{
-					game->setStartingFen(cycleGame.second);
-					game->setMoves(cycleGame.first);
-
-					game->generateOpening();
-				}
-				else
-				{
-					if (m_openingSuite != nullptr)
-					{
-						if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
-							qWarning("The opening suite is incompatible with the "
-							"current chess variant");
-					}
-
-					game->generateOpening();
-					cycleGame.first = game->moves();
-					cycleGame.second = game->startingFen();
-					if (cycleGame.second.isEmpty() && board->isRandomVariant())
-					{
-						cycleGame.second = board->defaultFenString();
-						game->setStartingFen(cycleGame.second);
-					}
-				}
-			}
-			else
-			{
-				if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
-				{
-					game->setStartingFen(m_startFen);
-					game->setMoves(m_openingMoves);
-					m_startFen.clear();
-					m_openingMoves.clear();
-					m_repetitionCounter++;
-				}
-				else
-				{
-					m_repetitionCounter = 1;
-					if (m_openingSuite != nullptr)
-					{
-						if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
-							qWarning("The opening suite is incompatible with the "
-							"current chess variant");
-					}
-				}
-
-				game->generateOpening();
-				if (m_repetitionCounter < m_openingRepetitions)
-				{
-					m_startFen = game->startingFen();
-					if (m_startFen.isEmpty() && board->isRandomVariant())
-					{
-						m_startFen = board->defaultFenString();
-						game->setStartingFen(m_startFen);
-					}
-					m_openingMoves = game->moves();
-				}
-			}
-
-			++m_nextGameNumber;
-			++m_finishedGameCount;
-
-			if (m_nextGameNumber > m_finalGameCount)
-				m_finalGameCount = m_nextGameNumber;
-
-			if (m_swapSides && !usesBerger)
-				m_pair->swapPlayers();
-
-			delete game;
+			skipGame(pair);
 		}
-		// Assume all games were saved to the pgn before the stoppage
-		m_savedGameCount = m_finishedGameCount;
 	}
 
 	startNextGame();

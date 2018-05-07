@@ -54,6 +54,7 @@ class EngineMatch : public QObject
 	private slots:
 		void onGameStarted(ChessGame* game, int number);
 		void onGameFinished(ChessGame* game, int number);
+		void onGameSkipped(int number, int white, int black);
 		void onTournamentFinished();
 		void print(const QString& msg);
 

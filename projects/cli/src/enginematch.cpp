@@ -81,6 +81,8 @@ void EngineMatch::start()
 		this, SLOT(onGameStarted(ChessGame*, int)));
 	connect(m_tournament, SIGNAL(gameFinished(ChessGame*, int, int, int)),
 		this, SLOT(onGameFinished(ChessGame*, int)));
+	connect(m_tournament, SIGNAL(gameSkipped(int, int, int)),
+		this, SLOT(onGameSkipped(int, int, int)));
 
 	if (m_debug)
 		connect(m_tournament->gameManager(), SIGNAL(debugMessage(QString)),
@@ -130,6 +132,14 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 {
 	QList< QPair<QString, QString> > pairings = m_tournament->getPairings();
 	if (pairings.isEmpty()) return;
+
+	const int playerCount = m_tournament->playerCount();
+	QMap<QString, bool> disqualifications;
+	for (int i = 0; i < playerCount; i++) {
+		const TournamentPlayer& plr(m_tournament->playerAt(i));
+		const int strikes = plr.crashes() + plr.builder()->strikes();
+		disqualifications[plr.builder()->name()] = strikes >= m_tournament->strikes();
+	}
 
 	QString scheduleFile(m_tournamentFile);
 	scheduleFile = scheduleFile.remove(".json") + "_schedule";
@@ -195,6 +205,8 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 			} else {
 				sMap["White"] = i->first;
 				sMap["Black"] = i->second;
+				if (disqualifications[i->first] || disqualifications[i->second])
+					sMap["Termination"] = "Canceled";
 			}
 			sMap["Game"] = count + 1;
 			sList.append(sMap);
@@ -236,7 +248,6 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 		}
 
 		// now check the player list for maxName
-		int playerCount = m_tournament->playerCount();
 		for (int i = 0; i < playerCount; i++) {
 			int len = m_tournament->playerAt(i).builder()->name().length();
 			if (len > maxName) maxName = len;
@@ -321,7 +332,9 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 						}
 					}
 				}
-			}
+			} else if (disqualifications[whiteName] || disqualifications[blackName])
+				termination = "Canceled";
+
 			scheduleText += QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14\n")
 				.arg(QString::number(count+1), pairings.size() >= 100 ? 3 : 2)
 				.arg(whiteName, maxName)
@@ -444,10 +457,9 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 
 	// ensure names and abbreviations
 	for (int i = 0; i < playerCount; i++) {
-		CrossTableData ctd(m_tournament->playerAt(i).builder()->name(),
-						   m_tournament->playerAt(i).builder()->rating(),
-						   m_tournament->playerAt(i).crashes(),
-						   m_tournament->playerAt(i).builder()->strikes());
+		const TournamentPlayer& plr(m_tournament->playerAt(i));
+		CrossTableData ctd(plr.builder()->name(), plr.builder()->rating(),
+						   plr.crashes(), plr.builder()->strikes());
 		if (ctd.m_engineName.length() > maxName) maxName = ctd.m_engineName.length();
 		if (ctd.m_strikes > maxStrikes) maxStrikes = ctd.m_strikes;
 		ctd.m_disqualified = ctd.m_strikes >= m_tournament->strikes();
@@ -954,6 +966,82 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 				generateCrossTable(pList);
 			}
 		}
+	}
+
+	if (m_tournament->playerCount() == 2)
+	{
+		TournamentPlayer fcp = m_tournament->playerAt(0);
+		TournamentPlayer scp = m_tournament->playerAt(1);
+		int totalResults = fcp.gamesFinished();
+		qInfo("Score of %s vs %s: %d - %d - %d  [%.3f] %d",
+		      qUtf8Printable(fcp.name()),
+		      qUtf8Printable(scp.name()),
+		      fcp.wins(), scp.wins(), fcp.draws(),
+		      double(fcp.score()) / (totalResults * 2),
+		      totalResults);
+	}
+
+	if (m_ratingInterval != 0
+	&&  (m_tournament->finishedGameCount() % m_ratingInterval) == 0)
+		printRanking();
+}
+
+void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
+{
+	qInfo("Skipped game %d (%s vs %s)",
+	      number,
+	      qUtf8Printable(m_tournament->playerAt(iWhite).name()),
+	      qUtf8Printable(m_tournament->playerAt(iBlack).name()));
+
+	if (!m_tournamentFile.isEmpty()) {
+		QVariantMap tfMap;
+		if (QFile::exists(m_tournamentFile)) {
+			QFile input(m_tournamentFile);
+			if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
+				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				return;
+			}
+
+			QTextStream stream(&input);
+			JsonParser jsonParser(stream);
+			tfMap = jsonParser.parse().toMap();
+		}
+
+		QVariantList pList;
+		if (!tfMap.isEmpty()) {
+			if (tfMap.contains("matchProgress")) {
+				pList = tfMap["matchProgress"].toList();
+				int length = pList.length();
+				if (length >= number) {
+					qWarning("game %d already exists, deleting", number);
+					while(length-- >= number) {
+						pList.removeLast();
+					}
+				}
+			}
+		}
+
+		QVariantMap pMap;
+		pMap.insert("index", number);
+		pMap.insert("white", m_tournament->playerAt(iWhite).name());
+		pMap.insert("black", m_tournament->playerAt(iBlack).name());
+		QDateTime qdt = QDateTime::currentDateTime();
+		// pMap.insert("result", "*");
+		pMap.insert("terminationDetails", "Skipped");
+		pList.append(pMap);
+		tfMap.insert("matchProgress", pList);
+		{
+			QFile output(m_tournamentFile);
+			if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+			} else {
+				QTextStream out(&output);
+				JsonSerializer serializer(tfMap);
+				serializer.serialize(out);
+			}
+		}
+		generateSchedule(pList);
+		generateCrossTable(pList);
 	}
 
 	if (m_tournament->playerCount() == 2)

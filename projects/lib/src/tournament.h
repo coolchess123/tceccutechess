@@ -345,6 +345,17 @@ class LIB_EXPORT Tournament : public QObject
 				  int whiteIndex,
 				  int blackIndex);
 		/*!
+		 * This signal is emitted when game \a game with ordering
+		 * number \a number is skipped.
+		 *
+		 * \a whiteIndex is the index to the white player's data
+		 * \a blackIndex is the index to the black player's data
+		 * \note The game numbers start at 1.
+		 */
+		void gameSkipped(int number,
+				 int whiteIndex,
+				 int blackIndex);
+		/*!
 		 * This signal is emitted when all of the tournament's games
 		 * have been played or after the tournament was stopped.
 		 *
@@ -374,6 +385,13 @@ class LIB_EXPORT Tournament : public QObject
 		 * Reimplementations should call the base implementation.
 		 */
 		void startGame(TournamentPair* pair);
+		/*!
+		 * This member function is called by \a startNextGame() to
+		 * skip a tournament game between \a pair.
+		 *
+		 * Reimplementations should call the base implementation.
+		 */
+		void skipGame(TournamentPair* pair);
 		/*!
 		 * This member function is called by \a startGame() right
 		 * before the game is actually started.
