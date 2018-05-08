@@ -138,7 +138,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 	for (int i = 0; i < playerCount; i++) {
 		const TournamentPlayer& plr(m_tournament->playerAt(i));
 		const int strikes = plr.crashes() + plr.builder()->strikes();
-		disqualifications[plr.builder()->name()] = strikes >= m_tournament->strikes();
+		disqualifications[plr.builder()->name()] = m_tournament->strikes() > 0 && strikes >= m_tournament->strikes();
 	}
 
 	QString scheduleFile(m_tournamentFile);
