@@ -194,7 +194,8 @@ int GameAdjudicator::drawClock(const Chess::Board* board, const MoveEvaluation& 
 
 	count = count >= drawMoveLimit ? 0 : (drawMoveLimit - count);
 
-	if (board->plyCount() / 2 < m_drawMoveNum) count = -count - 1;
+	if ( count >= drawMoveLimit || (board->plyCount() + count) / 2 < m_drawMoveNum)
+		count = -count - 1;
 
 	return count;
 }
@@ -205,41 +206,39 @@ int GameAdjudicator::resignClock(const Chess::Board* board, const MoveEvaluation
 		return -1000;
 
 	const Chess::Side side = board->sideToMove().opposite();
-	int count = m_resignScoreCount[side];
+	int count;
 
 	if (m_tcecAdjudication)
 	{
+		const int resignMoveLimit = m_resignMoveCount * 2;
+		int loserCount = m_resignScoreCount[side];
 		int winnerCount = m_resignWinnerScoreCount[side];
 		if (eval.score() <= m_resignScore) {
-			count++;
+			loserCount++;
         	winnerCount = 0;
 		} else if (eval.score() >= -m_resignScore) {
 			winnerCount++;
-        	count = 0;
+        	loserCount = 0;
 		} else
-			count = winnerCount = 0;
+			loserCount = winnerCount = 0;
 
-		count = count >=  m_resignMoveCount ? 0 : (m_resignMoveCount - count);
-		winnerCount = winnerCount >=  m_resignMoveCount ? 0 : (m_resignMoveCount - winnerCount);
+		count = loserCount > m_resignWinnerScoreCount[side.opposite()]
+				? m_resignWinnerScoreCount[side.opposite()] : loserCount;
+        loserCount = 2 * count + (loserCount > m_resignWinnerScoreCount[side.opposite()]);
+        count =  winnerCount > m_resignScoreCount[side.opposite()]
+				? m_resignScoreCount[side.opposite()] : winnerCount;
+        winnerCount = 2 * count + (winnerCount > m_resignScoreCount[side.opposite()]);
 
-#if 0
-		if (m_resignWinnerScoreCount[side.opposite()] < m_resignMoveCount)
-			count = -count - 1;
-		if (m_resignScoreCount[side.opposite()] < m_resignMoveCount)
-			winnerCount = -winnerCount - 1;
+        count = winnerCount > loserCount ? winnerCount : loserCount;
 
-		if ((count < 0 && winnerCount > count) || (winnerCount >= 0 && winnerCount < count))
-			count = winnerCount;
-#else
-		if (winnerCount < count)
-			count = winnerCount;
+        count = count >= resignMoveLimit ? 0 : (resignMoveLimit - count);
 
-		if (count >= m_resignMoveCount)
-			count = -count - 1;
-#endif
+        if (count >= resignMoveLimit)
+        	count = -count - 1;
 	}
 	else
 	{
+		count = m_resignScoreCount[side];
 		if (eval.score() <= m_resignScore)
 			count++;
 		else
