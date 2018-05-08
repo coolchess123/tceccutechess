@@ -135,13 +135,16 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
             	loserCount = winnerCount = 0;
 
             if (loserCount >= m_resignMoveCount
-            				&& m_resignWinnerScoreCount[side.opposite()] >= m_resignMoveCount)
+            				&& m_resignWinnerScoreCount[side.opposite()] >= m_resignMoveCount) {
             	m_result = Chess::Result(Chess::Result::Adjudication,
 										 side.opposite(), "TCEC win rule");
-            else if (winnerCount >= m_resignMoveCount
-            				&& m_resignScoreCount[side.opposite()] >= m_resignMoveCount)
+            	return;
+            } else if (winnerCount >= m_resignMoveCount
+            				&& m_resignScoreCount[side.opposite()] >= m_resignMoveCount) {
             	m_result = Chess::Result(Chess::Result::Adjudication,
 										 side, "TCEC win rule");
+            	return;
+            }
 		}
 		else
 		{
@@ -151,9 +154,11 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 			else
 				count = 0;
 
-			if (count >= m_resignMoveCount)
+			if (count >= m_resignMoveCount) {
 				m_result = Chess::Result(Chess::Result::Adjudication,
 							 side.opposite(), "TCEC resign rule");
+				return;
+			}
 		}
 	}
 
