@@ -830,7 +830,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			else if (name == "-strikes")
 			{
 				const int st = value.toInt();
-				ok = st >= 1;
+				ok = st >= 0;
 				if (ok) {
 					tournament->setStrikes(st);
 					tMap.insert("Strikes", st);

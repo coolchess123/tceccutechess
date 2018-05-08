@@ -209,4 +209,5 @@ TCEC options:
   			the counter skips a ply after a reset by a capture or a
   			pawn move.
   -strikes N		Set the number of strikes at which an engine is
-  			disqualified. The default is 3.  			
+  			disqualified, 0 means no disqualification. The default
+  			is 0.  			

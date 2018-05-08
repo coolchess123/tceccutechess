@@ -462,7 +462,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 						   plr.crashes(), plr.builder()->strikes());
 		if (ctd.m_engineName.length() > maxName) maxName = ctd.m_engineName.length();
 		if (ctd.m_strikes > maxStrikes) maxStrikes = ctd.m_strikes;
-		ctd.m_disqualified = ctd.m_strikes >= m_tournament->strikes();
+		ctd.m_disqualified = m_tournament->strikes() > 0 && ctd.m_strikes >= m_tournament->strikes();
 
 		int n = 1;
 		QString abbrev;

@@ -68,7 +68,7 @@ Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 	  m_resumeGameNumber(0),
 	  m_bergerSchedule(false),
 	  m_reloadEngines(false),
-	  m_strikes(3)
+	  m_strikes(0)
 {
 	Q_ASSERT(gameManager != nullptr);
 	Q_ASSERT(engineManager != nullptr);
@@ -687,6 +687,12 @@ void Tournament::startNextGame()
 		{
 			m_startFen.clear();
 			m_openingMoves.clear();
+		}
+
+		if (m_strikes == 0)
+		{
+			startGame(pair);
+			break;
 		}
 
 		const int iWhite = pair->firstPlayer();
