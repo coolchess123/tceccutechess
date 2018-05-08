@@ -475,7 +475,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ctMap.insert(ctd.m_engineName, ctd);
 	}
 
-	// calculate scores and crosstable strings
+	// calculate scores (nullified by disqualification) and crosstable strings
 	for (int i = 0; i < pList.size(); i++) {
 		QVariantMap pMap = pList.at(i).toMap();
 		if (pMap.contains("white") && pMap.contains("black") && pMap.contains("result")) {
@@ -486,33 +486,42 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			CrossTableData& blackData = ctMap[blackName];
 			QString& whiteDataString = whiteData.m_tableData[blackName];
 			QString& blackDataString = blackData.m_tableData[whiteName];
+			const bool disqualified = whiteData.m_disqualified || blackData.m_disqualified;
 
 			if (result == "*") {
 				continue; // game in progress or invalid or something
 			}
 			if (result == "1-0") {
-				whiteData.m_score += 1;
-				whiteData.m_winsAsWhite++;
+				if (!disqualified) {
+					whiteData.m_score += 1;
+					whiteData.m_winsAsWhite++;
+				}
 				whiteDataString += "1";
 				blackDataString += "0";
 			} else if (result == "0-1") {
-				blackData.m_score += 1;
-				blackData.m_winsAsBlack++;
+				if (!disqualified) {
+					blackData.m_score += 1;
+					blackData.m_winsAsBlack++;
+				}
 				whiteDataString += "0";
 				blackDataString += "1";
 			} else if (result == "1/2-1/2") {
-				whiteData.m_score += 0.5;
-				blackData.m_score += 0.5;
+				if (!disqualified) {
+					whiteData.m_score += 0.5;
+					blackData.m_score += 0.5;
+				}
 				whiteDataString += "=";
 				blackDataString += "=";
 			}
 			if (whiteDataString.length() > roundLength) roundLength = whiteDataString.length();
 			if (blackDataString.length() > roundLength) roundLength = blackDataString.length();
-			whiteData.m_gamesPlayedAsWhite++;
-			blackData.m_gamesPlayedAsBlack++;
+			if (!disqualified) {
+				whiteData.m_gamesPlayedAsWhite++;
+				blackData.m_gamesPlayedAsBlack++;
+			}
 		}
 	}
-	// calculate SB
+	// calculate SB (nullified by disqualification)
 	QMapIterator<QString, CrossTableData> ct(ctMap);
 	qreal largestSB = 1.0;
 	qreal largestScore = 1.0;
@@ -542,7 +551,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 		}
 	}
-	// calculate Elo and point rate
+	// calculate Elo and point rate  (not nullified by disqualification)
 	qreal maxElo = 1;
 	qreal largestPerf = 0.0001;
 	int maxGames = 1;
@@ -551,6 +560,8 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
 
+		int totScore = 0;
+		int totGames = 0;
 		QMapIterator<QString, CrossTableData> ot(ct);
 		while (ot.hasNext()) {
 			ot.next();
@@ -583,12 +594,14 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
+
+				totScore += score;
+				totGames += games;
 			}
 		}
 
-		const int totGames = ctd.m_gamesPlayedAsWhite + ctd.m_gamesPlayedAsBlack;
 		if (totGames > 0) {
-			ctd.m_performance = ctd.m_score / totGames;
+			ctd.m_performance = static_cast<qreal>(totScore) / (totGames * 2);
 
 			if (ctd.m_performance > largestPerf)
 				largestPerf = ctd.m_performance;
