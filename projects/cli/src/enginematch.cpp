@@ -551,17 +551,13 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			if (ctd.m_score > largestScore) largestScore = ctd.m_score;
 		}
 	}
-	// calculate Elo and point rate  (not nullified by disqualification)
+	// calculate Elo (not nullified by disqualification)
 	qreal maxElo = 1;
-	qreal largestPerf = 0.0001;
-	int maxGames = 1;
 	ct.toFront();
 	while (ct.hasNext()) {
 		ct.next();
 		CrossTableData& ctd = ctMap[ct.key()];
 
-		int totScore = 0;
-		int totGames = 0;
 		QMapIterator<QString, CrossTableData> ot(ct);
 		while (ot.hasNext()) {
 			ot.next();
@@ -594,10 +590,52 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 
 				ctd.m_elo += elo;
 				otd.m_elo -= elo;
-
-				totScore += score;
-				totGames += games;
 			}
+		}
+
+		const qreal totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
+		if (totElo > maxElo)
+			maxElo = totElo;
+	}
+
+	// calculate point rate (not nullified by disqualification)
+	qreal largestPerf = 0.0001;
+	int maxGames = 1;
+	ct.toFront();
+	while (ct.hasNext()) {
+		ct.next();
+		CrossTableData& ctd = ctMap[ct.key()];
+
+		int totScore = 0;
+		int totGames = 0;
+		QMapIterator<QString, CrossTableData> ot(ctMap);
+		while (ot.hasNext()) {
+			ot.next();
+			if (ot.key() == ct.key()) continue;
+
+			const QString& tds = ctd.m_tableData[ot.key()];
+
+			int score = 0;
+			int games = 0;
+			for (QString::ConstIterator c = tds.begin(); c != tds.end(); ++c)
+				switch(c->toLatin1()) {
+				case '1':
+					score += 2;
+					++games;
+					break;
+				case '=':
+					++score;
+					++games;
+					break;
+				case '0':
+					++games;
+					break;
+				default:
+					break;
+				}
+
+			totScore += score;
+			totGames += games;
 		}
 
 		if (totGames > 0) {
@@ -605,10 +643,6 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 
 			if (ctd.m_performance > largestPerf)
 				largestPerf = ctd.m_performance;
-
-			const qreal totElo = ctd.m_elo < 0 ? -ctd.m_elo : ctd.m_elo;
-			if (totElo > maxElo)
-				maxElo = totElo;
 
 			if (totGames > maxGames)
 				maxGames = totGames;
