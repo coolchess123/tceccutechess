@@ -91,7 +91,7 @@ ChessEngine::ChessEngine(QObject* parent)
 	connect(m_quitTimer, SIGNAL(timeout()), this, SLOT(onQuitTimeout()));
 
 	m_idleTimer->setSingleShot(true);
-	m_idleTimer->setInterval(10000);
+	m_idleTimer->setInterval(30000);
 	connect(m_idleTimer, SIGNAL(timeout()), this, SLOT(onIdleTimeout()));
 
 	m_protocolStartTimer->setSingleShot(true);
