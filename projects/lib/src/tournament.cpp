@@ -674,12 +674,14 @@ void Tournament::startNextGame()
 	if (m_stopping)
 		return;
 
+	bool needToStop = false;
 	for (;;)
 	{
 		TournamentPair* pair(nextPair(m_nextGameNumber));
 		if (!pair || !pair->isValid())
 		{
-			stop();
+			if (needToStop)
+				stop();
 			break;
 		}
 
@@ -706,6 +708,7 @@ void Tournament::startNextGame()
 
 		skipGame(pair);
 		emit gameSkipped(m_nextGameNumber, iWhite, iBlack);
+		needToStop = true;
 	}
 }
 
