@@ -311,7 +311,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-rounds", QVariant::Int, 1, 1);
 	parser.addOption("-sprt", QVariant::StringList);
 	parser.addOption("-ratinginterval", QVariant::Int, 1, 1);
-	parser.addOption("-debug", QVariant::Bool, 0, 0);
+	parser.addOption("-debug", QVariant::String, 0, 1);
 	parser.addOption("-openings", QVariant::StringList);
 	parser.addOption("-bookmode", QVariant::String);
 	parser.addOption("-pgnout", QVariant::StringList, 1, 2);
@@ -342,7 +342,8 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	bool wantsResume = false;
 	bool wantsPgnFormat = true;
 	bool wantsJsonFormat = true;
-	bool wantsDebug = parser.takeOption("-debug").toBool();
+
+	const QVariant& debugOption = parser.takeOption("-debug");
 
 	QString ecoPgn = parser.takeOption("-ecopgn").toString();
 	if (!ecoPgn.isEmpty())
@@ -961,8 +962,13 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	bool ok = true;
 
 	// Debugging mode. Prints all engine input and output.
-	if (wantsDebug)
+	if (!debugOption.isNull())
+	{
 		match->setDebugMode(true);
+
+		if (debugOption.type() == QVariant::String)
+			match->setDebugFile(debugOption.toString());
+	}
 
 	match->setOutputFormats(wantsPgnFormat, wantsJsonFormat);
 

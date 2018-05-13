@@ -51,6 +51,9 @@ EngineMatch::EngineMatch(Tournament* tournament, QObject* parent)
 EngineMatch::~EngineMatch()
 {
 	qDeleteAll(m_books);
+
+	if (m_debugFile.isOpen())
+		m_debugFile.close();
 }
 
 OpeningBook* EngineMatch::addOpeningBook(const QString& fileName)
@@ -126,6 +129,15 @@ void EngineMatch::setOutputFormats(bool pgnFormat, bool jsonFormat)
 {
 	m_pgnFormat = pgnFormat;
 	m_jsonFormat = jsonFormat;
+}
+
+void EngineMatch::setDebugFile(const QString& debugFile)
+{
+	if (debugFile != m_debugFile.fileName())
+	{
+		m_debugFile.close();
+		m_debugFile.setFileName(debugFile);
+	}
 }
 
 void EngineMatch::generateSchedule(QVariantList& pList)
@@ -1125,7 +1137,33 @@ void EngineMatch::onTournamentFinished()
 
 void EngineMatch::print(const QString& msg)
 {
-	qInfo("%lld %s", m_startTime.elapsed(), qUtf8Printable(msg));
+	const qint64 ticks = m_startTime.elapsed();
+
+	if (m_debugFile.fileName().isEmpty())
+	{
+		qInfo("%lld %s", ticks, qUtf8Printable(msg));
+		return;
+	}
+
+	bool isOpen = m_debugFile.isOpen();
+	if (!isOpen || !m_debugFile.exists())
+	{
+		if (isOpen)
+		{
+			qWarning("Debug file %s does not exist. Reopening...",
+				 qUtf8Printable(m_debugFile.fileName()));
+			m_debugFile.close();
+		}
+
+		if (!m_debugFile.open(QIODevice::WriteOnly | QIODevice::Append))
+		{
+			qWarning("Could not open debug file %s",
+				 qUtf8Printable(m_debugFile.fileName()));
+		}
+		m_debugOut.setDevice(&m_debugFile);
+	}
+
+	m_debugOut << ticks << ' ' << msg << '\n';
 }
 
 void EngineMatch::printRanking()

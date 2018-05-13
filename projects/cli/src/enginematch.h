@@ -21,6 +21,8 @@
 #include <QObject>
 #include <QMap>
 #include <QString>
+#include <QFile>
+#include <QTextStream>
 #include <QElapsedTimer>
 #include <openingbook.h>
 
@@ -44,6 +46,7 @@ class EngineMatch : public QObject
 		void setTournamentFile(QString &tournamentFile);
 		void setEloKfactor(qreal eloKfactor);
 		void setOutputFormats(bool pgnFormat, bool jsonFormat);
+		void setDebugFile(const QString& debugFile);
 
 		void start();
 		void stop();
@@ -73,6 +76,8 @@ class EngineMatch : public QObject
 		qreal m_eloKfactor;
 		bool m_pgnFormat;
 		bool m_jsonFormat;
+		QFile m_debugFile;
+		QTextStream m_debugOut;
 };
 
 #endif // ENGINEMATCH_H

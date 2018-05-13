@@ -210,4 +210,6 @@ TCEC options:
   			pawn move.
   -strikes N		Set the number of strikes at which an engine is
   			disqualified, 0 means no disqualification. The default
-  			is 0.  			
+  			is 0.
+  -debug [FILE]		Write the engine input and output to the console or to
+  			FILE if specified.
