@@ -835,7 +835,7 @@ void Tournament::onPgnMove()
 		if (QFile::exists(finalName))
 			QFile::remove(finalName);
 		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename live PGN output file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+			qWarning("cannot rename live PGN output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 	}
 
 	if (m_jsonFormat)
@@ -996,7 +996,7 @@ void Tournament::onPgnMove()
 			QFile::remove(tempName);
 		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open live JSON output file: %s", qPrintable(tempName));
+			qWarning("cannot open live JSON output file: %s", qUtf8Printable(tempName));
 		} else {
 			QTextStream out(&output);
 			JsonSerializer serializer(pMap);
@@ -1005,7 +1005,7 @@ void Tournament::onPgnMove()
 			if (QFile::exists(finalName))
 				QFile::remove(finalName);
 			if (!QFile::rename(tempName, finalName))
-				qWarning("cannot rename live JSON output file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+				qWarning("cannot rename live JSON output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 		}
 	}
 }

@@ -65,7 +65,7 @@ OpeningBook* EngineMatch::addOpeningBook(const QString& fileName)
 	if (!book->read(fileName))
 	{
 		delete book;
-		qWarning("Can't read opening book file %s", qPrintable(fileName));
+		qWarning("Can't read opening book file %s", qUtf8Printable(fileName));
 		return nullptr;
 	}
 
@@ -151,7 +151,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 			QFile::remove(tempName);
 		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open schedule JSON file: %s", qPrintable(tempName));
+			qWarning("cannot open schedule JSON file: %s", qUtf8Printable(tempName));
 			return;
 		}
 		QTextStream out(&output);
@@ -218,7 +218,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 		if (QFile::exists(finalName))
 			QFile::remove(finalName);
 		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename schedule JSON file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+			qWarning("cannot rename schedule JSON file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 	}
 
 	if (m_pgnFormat) {
@@ -228,7 +228,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 			QFile::remove(tempName);
 		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open schedule TXT file: %s", qPrintable(tempName));
+			qWarning("cannot open schedule TXT file: %s", qUtf8Printable(tempName));
 			return;
 		}
 		QTextStream out(&output);
@@ -357,7 +357,7 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 		if (QFile::exists(finalName))
 			QFile::remove(finalName);
 		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename schedule TXT file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+			qWarning("cannot rename schedule TXT file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 	}
 }
 
@@ -663,7 +663,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			QFile::remove(tempName);
 		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open crosstable JSON file: %s", qPrintable(tempName));
+			qWarning("cannot open crosstable JSON file: %s", qUtf8Printable(tempName));
 			return;
 		}
 		QTextStream out(&output);
@@ -726,7 +726,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		if (QFile::exists(finalName))
 			QFile::remove(finalName);
 		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename crosstable JSON file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+			qWarning("cannot rename crosstable JSON file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 	}
 
 	if (m_pgnFormat) {
@@ -834,7 +834,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			QFile::remove(tempName);
 		QFile output(tempName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open tournament crosstable file: %s", qPrintable(tempName));
+			qWarning("cannot open tournament crosstable file: %s", qUtf8Printable(tempName));
 		} else {
 			QTextStream out(&output);
 			out.setCodec("UTF-8"); // otherwise output is converted to ASCII
@@ -843,7 +843,7 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 			if (QFile::exists(finalName))
 				QFile::remove(finalName);
 			if (!QFile::rename(tempName, finalName))
-				qWarning("cannot rename crosstable file: %s to %s", qPrintable(tempName), qPrintable(finalName));
+				qWarning("cannot rename crosstable file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 		}
 	}
 }
@@ -863,7 +863,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 		if (QFile::exists(m_tournamentFile)) {
 			QFile input(m_tournamentFile);
 			if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
-				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				qWarning("cannot open tournament configuration file: %s", qUtf8Printable(m_tournamentFile));
 				return;
 			}
 
@@ -899,7 +899,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 		{
 			QFile output(m_tournamentFile);
 			if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				qWarning("cannot open tournament configuration file: %s", qUtf8Printable(m_tournamentFile));
 			} else {
 				QTextStream out(&output);
 				JsonSerializer serializer(tfMap);
@@ -928,7 +928,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 		if (QFile::exists(m_tournamentFile)) {
 			QFile input(m_tournamentFile);
 			if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
-				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				qWarning("cannot open tournament configuration file: %s", qUtf8Printable(m_tournamentFile));
 			} else {
 				QTextStream stream(&input);
 				JsonParser jsonParser(stream);
@@ -1001,7 +1001,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 
 				QFile output(m_tournamentFile);
 				if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-					qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+					qWarning("cannot open tournament configuration file: %s", qUtf8Printable(m_tournamentFile));
 				} else {
 					QTextStream out(&output);
 					JsonSerializer serializer(tfMap);
@@ -1043,7 +1043,7 @@ void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
 		if (QFile::exists(m_tournamentFile)) {
 			QFile input(m_tournamentFile);
 			if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
-				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				qWarning("cannot open tournament configuration file: %s", qUtf8Printable(m_tournamentFile));
 				return;
 			}
 
@@ -1078,7 +1078,7 @@ void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
 		{
 			QFile output(m_tournamentFile);
 			if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-				qWarning("cannot open tournament configuration file: %s", qPrintable(m_tournamentFile));
+				qWarning("cannot open tournament configuration file: %s", qUtf8Printable(m_tournamentFile));
 			} else {
 				QTextStream out(&output);
 				JsonSerializer serializer(tfMap);
