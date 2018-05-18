@@ -234,16 +234,6 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 	}
 
 	if (m_pgnFormat) {
-		const QString tempName(scheduleFile + "_temp.txt");
-		const QString finalName(scheduleFile + ".txt");
-		if (QFile::exists(tempName))
-			QFile::remove(tempName);
-		QFile output(tempName);
-		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open schedule TXT file: %s", qUtf8Printable(tempName));
-			return;
-		}
-		QTextStream out(&output);
 		QVariantMap pMap;
 		int maxName = 5, maxTerm = 11, maxFen = 9;
 		for (int i = 0; i < pList.size(); i++) {
@@ -363,13 +353,16 @@ void EngineMatch::generateSchedule(QVariantList& pList)
 				.arg(finalFen, -maxFen)
 				.arg(opening);
 		}
-		out.setCodec("ISO 8859-1"); // output is converted to ASCII
-		out << scheduleText;
-		output.close();
-		if (QFile::exists(finalName))
-			QFile::remove(finalName);
-		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename schedule TXT file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
+		const QString fileName(scheduleFile + ".txt");
+		QFile output(fileName);
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open schedule TXT file: %s", qUtf8Printable(fileName));
+		} else {
+			QTextStream out(&output);
+
+			out.setCodec("ISO 8859-1"); // output is converted to ASCII
+			out << scheduleText;
+		}
 	}
 }
 
@@ -840,22 +833,14 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 
 		QString crossTableText = crossTableHeaderText + "\n\n" + crossTableBodyText;
 
-		const QString tempName(crossTableFile + "_temp.txt");
-		const QString finalName(crossTableFile + ".txt");
-		if (QFile::exists(tempName))
-			QFile::remove(tempName);
-		QFile output(tempName);
+		const QString fileName(crossTableFile + ".txt");
+		QFile output(fileName);
 		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open tournament crosstable file: %s", qUtf8Printable(tempName));
+			qWarning("cannot open tournament crosstable file: %s", qUtf8Printable(fileName));
 		} else {
 			QTextStream out(&output);
 			out.setCodec("UTF-8"); // otherwise output is converted to ASCII
 			out << crossTableText;
-			output.close();
-			if (QFile::exists(finalName))
-				QFile::remove(finalName);
-			if (!QFile::rename(tempName, finalName))
-				qWarning("cannot rename crosstable file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
 		}
 	}
 }

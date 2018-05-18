@@ -827,15 +827,9 @@ void Tournament::onPgnMove()
 
 	if (m_pgnFormat)
 	{
-		const QString tempName(m_livePgnOut + "_temp.pgn");
-		const QString finalName(m_livePgnOut + ".pgn");
-		if (QFile::exists(tempName))
-			QFile::remove(tempName);
-		pgn->write(tempName, m_livePgnOutMode);
-		if (QFile::exists(finalName))
-			QFile::remove(finalName);
-		if (!QFile::rename(tempName, finalName))
-			qWarning("cannot rename live PGN output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
+		const QString fileName(m_livePgnOut + ".pgn");
+		QFile::resize(fileName, 0);
+		pgn->write(fileName, m_livePgnOutMode);
 	}
 
 	if (m_jsonFormat)
