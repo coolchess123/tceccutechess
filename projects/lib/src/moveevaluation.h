@@ -36,6 +36,8 @@ class LIB_EXPORT MoveEvaluation
 	public:
 		/*! A value for a null or empty score. */
 		static const int NULL_SCORE = 0xFFFFFFF;
+		/*! A value for no tbhits reported. */
+		static const quint64 NULL_TBHITS = 0xFFFFFFFFFFFFFFFFULL;
 
 		/*! Constructs an empty MoveEvaluation object. */
 		MoveEvaluation();

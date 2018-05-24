@@ -167,7 +167,11 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		str += ", pv=" + sanPv;
 
 		// tbhits 'tb'
-		str += ", tb=" + QString::number(eval.tbHits());
+		str += ", tb=";
+		if (eval.tbHits() == MoveEvaluation::NULL_TBHITS)
+			str += "null";
+		else
+			str += QString::number(eval.tbHits());
 
 		// hash usage
 		str += ", h=" + QString::number(eval.hashUsage() / 10.0, 'f', 1);
