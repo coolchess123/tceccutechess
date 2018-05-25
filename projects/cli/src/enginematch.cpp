@@ -140,8 +140,10 @@ void EngineMatch::setDebugFile(const QString& debugFile)
 	}
 }
 
-void EngineMatch::generateSchedule(QVariantList& pList)
+void EngineMatch::generateSchedule(QVariantMap& eMap)
 {
+	QVariantList pList = eMap["matchProgress"].toList();
+	QVariantMap tsMap = eMap["tournamentSettings"].toMap();
 	QList< QPair<QString, QString> > pairings = m_tournament->getPairings();
 	if (pairings.isEmpty()) return;
 
@@ -451,8 +453,10 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	return s2.m_disqualified;
 }
 
-void EngineMatch::generateCrossTable(QVariantList& pList)
+void EngineMatch::generateCrossTable(QVariantMap& eMap)
 {
+	QVariantList pList = eMap["matchProgress"].toList();
+	QVariantMap tsMap = eMap["tournamentSettings"].toMap();
 	const int playerCount = m_tournament->playerCount();
 	QMap<QString, CrossTableData> ctMap;
 	QStringList abbrevList;
@@ -725,6 +729,9 @@ void EngineMatch::generateCrossTable(QVariantList& pList)
 		}
 		cMap["Table"] = table;
 
+		if (tsMap.contains("name"))
+			cMap["Event"] = tsMap["name"].toString();
+
 		JsonSerializer serializer(cMap);
 		serializer.serialize(out);
 		output.close();
@@ -870,6 +877,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 		}
 
 		QVariantList pList;
+		QVariantMap tsMap;
 		if (!tfMap.isEmpty()) {
 			if (tfMap.contains("matchProgress")) {
 				pList = tfMap["matchProgress"].toList();
@@ -881,6 +889,8 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 					}
 				}
 			}
+			if (tfMap.contains("tournamentSettings"))
+				tsMap = tfMap["tournamentSettings"].toMap();
 		}
 
 		QVariantMap pMap;
@@ -903,8 +913,12 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 				serializer.serialize(out);
 			}
 		}
-		generateSchedule(pList);
-		generateCrossTable(pList);
+		QVariantMap eMap;
+		eMap.insert("matchProgress", pList);
+		eMap.insert("tournamentSettings", tsMap);
+
+		generateSchedule(eMap);
+		generateCrossTable(eMap);
 	}
 }
 
@@ -934,7 +948,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 
 			QVariantMap pMap;
 			QVariantList pList;
-
+			QVariantMap tsMap;
 			if (!tfMap.isEmpty()) {
 				if (tfMap.contains("matchProgress")) {
 					pList = tfMap["matchProgress"].toList();
@@ -944,7 +958,9 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					} else
 						pMap = pList.at(number-1).toMap();
 				}
-			}
+				if (tfMap.contains("tournamentSettings"))
+					tsMap = tfMap["tournamentSettings"].toMap();
+		}
 
 			if (!pMap.isEmpty()) {
 				pMap.insert("result", result.toShortString());
@@ -1004,8 +1020,12 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					JsonSerializer serializer(tfMap);
 					serializer.serialize(out);
 				}
-				generateSchedule(pList);
-				generateCrossTable(pList);
+				QVariantMap eMap;
+				eMap.insert("matchProgress", pList);
+				eMap.insert("tournamentSettings", tsMap);
+
+				generateSchedule(eMap);
+				generateCrossTable(eMap);
 			}
 		}
 	}
@@ -1050,6 +1070,7 @@ void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
 		}
 
 		QVariantList pList;
+		QVariantMap tsMap;
 		if (!tfMap.isEmpty()) {
 			if (tfMap.contains("matchProgress")) {
 				pList = tfMap["matchProgress"].toList();
@@ -1061,6 +1082,8 @@ void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
 					}
 				}
 			}
+			if (tfMap.contains("tournamentSettings"))
+				tsMap = tfMap["tournamentSettings"].toMap();
 		}
 
 		QVariantMap pMap;
@@ -1082,8 +1105,12 @@ void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
 				serializer.serialize(out);
 			}
 		}
-		generateSchedule(pList);
-		generateCrossTable(pList);
+		QVariantMap eMap;
+		eMap.insert("matchProgress", pList);
+		eMap.insert("tournamentSettings", tsMap);
+
+		generateSchedule(eMap);
+		generateCrossTable(eMap);
 	}
 
 	if (m_tournament->playerCount() == 2)
