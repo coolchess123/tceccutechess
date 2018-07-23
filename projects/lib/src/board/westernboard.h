@@ -261,12 +261,14 @@ class LIB_EXPORT WesternBoard : public Board
 		int m_kingSquare[2];
 		int m_enpassantSquare;
 		int m_enpassantTarget;
+		int m_plyOffset;
 		int m_reversibleMoveCount;
 		bool m_kingCanCapture;
 		bool m_hasCastling;
 		bool m_pawnHasDoubleStep;
 		bool m_hasEnPassantCaptures;
 		bool m_pawnAmbiguous;
+		bool m_multiDigitNotation;
 		QVector<MoveData> m_history;
 		CastlingRights m_castlingRights;
 		int m_castleTarget[2][2];

@@ -20,6 +20,7 @@
 
 #include <QtGlobal>
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QTextStream>
 #include <QStringList>
 #include <QFile>
@@ -964,6 +965,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	// Debugging mode. Prints all engine input and output.
 	if (!debugOption.isNull())
 	{
+		QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
 		match->setDebugMode(true);
 
 		if (debugOption.type() == QVariant::String)

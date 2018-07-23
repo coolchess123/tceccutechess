@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -131,8 +132,7 @@ QString CaparandomBoard::defaultFenString() const
 	QString fen;
 
 	// Black pieces
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (int pieceType, pieces)
+	for (int pieceType : qAsConst(pieces))
 		fen += pieceSymbol(Piece(Side::Black, pieceType));
 	fen += '/';
 	// Black pawns
@@ -149,8 +149,7 @@ QString CaparandomBoard::defaultFenString() const
 		fen += pieceSymbol(Piece(Side::White, Pawn));
 	fen += '/';
 	// White pieces
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (int pieceType, pieces)
+	for (int pieceType : qAsConst(pieces))
 		fen += pieceSymbol(Piece(Side::White, pieceType));
 
 	// Side to move, castling rights, enpassant square, etc.

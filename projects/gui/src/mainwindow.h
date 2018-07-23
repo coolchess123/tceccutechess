@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -80,6 +81,7 @@ class MainWindow : public QMainWindow
 		void onGameFinished(ChessGame* game);
 		void editMoveComment(int ply, const QString& comment);
 		void copyFen();
+		void pasteFen();
 		void copyPgn();
 		void showAboutDialog();
 		void closeAllGames();
@@ -143,6 +145,7 @@ class MainWindow : public QMainWindow
 		QAction* m_saveGameAct;
 		QAction* m_saveGameAsAct;
 		QAction* m_copyFenAct;
+		QAction* m_pasteFenAct;
 		QAction* m_copyPgnAct;
 		QAction* m_flipBoardAct;
 		QAction* m_newTournamentAct;

@@ -84,6 +84,7 @@ QStringRef joinTokens(const QVarLengthArray<QStringRef>& tokens)
 
 UciEngine::UciEngine(QObject* parent)
 	: ChessEngine(parent),
+	  m_useDirectPv(false),
 	  m_sendOpponentsName(false),
 	  m_canPonder(false),
 	  m_ponderState(NotPondering),
@@ -430,6 +431,9 @@ void UciEngine::parseInfo(const QVarLengthArray<QStringRef>& tokens,
 			eval->setScore(score);
 		}
 		break;
+	case InfoNps:
+		eval->setNps(tokens[0].toString().toULongLong());
+		break;
 	case InfoTbHits:
 		eval->setTbHits(tokens[0].toString().toULongLong());
 		break;
@@ -606,7 +610,6 @@ void UciEngine::parseLine(const QString& line)
 			m_ignoreThinking = false;
 			if (!m_bmBuffer.isEmpty())
 			{
-				// TODO: use qAsConst() from Qt 5.7
 				const auto buf = m_bmBuffer;
 				for (const auto& l : buf)
 					write(l, Unbuffered);

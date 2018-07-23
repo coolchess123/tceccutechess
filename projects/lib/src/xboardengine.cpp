@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -285,6 +286,31 @@ QString XboardEngine::moveString(const Chess::Move& move)
 	return board()->moveString(move, m_notation);
 }
 
+// compensation: xboard protocol shifts ranks one down if board height equals ten
+const QString XboardEngine::transformMove(const QString& str, int height, int shift) const
+{
+	if (height != 10)
+	      return str;
+
+	QString ret, num;
+	for (const auto c: str)
+	{
+		if (c.isDigit())
+			num.append(c);
+		else
+		{
+			if (!num.isEmpty())
+				ret.append(QString::number(shift + num.toInt()));
+			num.clear();
+			ret.append(c);
+		}
+	}
+	if (!num.isEmpty())
+		ret.append(QString::number(shift + num.toInt()));
+
+	return ret;
+}
+
 void XboardEngine::makeMove(const Chess::Move& move)
 {
 	Q_ASSERT(!move.isNull());
@@ -308,6 +334,8 @@ void XboardEngine::makeMove(const Chess::Move& move)
 		else if (move != m_nextMove)
 			setForceMode(true);
 	}
+
+	moveString = transformMove(moveString, board()->height(), -1);
 
 	if (m_ftUsermove)
 		write("usermove " + moveString);
@@ -675,12 +703,13 @@ void XboardEngine::parseLine(const QString& line)
 
 		// remove "..." of old format if necessary
 		int mark = (args.indexOf("..."));
-		const QString movestr = mark < 0 ? args : args.mid(4);
+		const QString& movestr = mark < 0 ? args : args.mid(4);
+		const QString& newMovestr = transformMove(movestr, board()->height(), +1);
 
-		Chess::Move move = board()->moveFromString(movestr);
+		Chess::Move move = board()->moveFromString(newMovestr);
 		if (move.isNull())
 		{
-			forfeit(Chess::Result::IllegalMove, movestr);
+			forfeit(Chess::Result::IllegalMove, newMovestr);
 			return;
 		}
 

@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +18,7 @@
 
 #include "cutechessapp.h"
 
+#include <QLoggingCategory>
 #include <QTextStream>
 #include <QStringList>
 #include <QMetaType>
@@ -36,6 +38,8 @@ int main(int argc, char* argv[])
 	qRegisterMetaType<Chess::Side>("Chess::Side");
 	qRegisterMetaType<Chess::Result>("Chess::Result");
 	qRegisterMetaType<MoveEvaluation>("MoveEvaluation");
+
+	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
 
 	CuteChessApplication app(argc, argv);
 

@@ -29,12 +29,14 @@ WesternBoard::WesternBoard(WesternZobrist* zobrist)
 	  m_sign(1),
 	  m_enpassantSquare(0),
 	  m_enpassantTarget(0),
+	  m_plyOffset(0),
 	  m_reversibleMoveCount(0),
 	  m_kingCanCapture(true),
 	  m_hasCastling(true),
 	  m_pawnHasDoubleStep(true),
 	  m_hasEnPassantCaptures(true),
 	  m_pawnAmbiguous(false),
+	  m_multiDigitNotation(false),
 	  m_zobrist(zobrist)
 {
 	setPieceType(Pawn, tr("pawn"), "P");
@@ -134,6 +136,8 @@ void WesternBoard::vInitialize()
 	m_rookOffsets[3] = m_arwidth;
 
 	m_pawnAmbiguous = (pawnAmbiguity(FreeStep) > 1);
+	m_multiDigitNotation =  (height() > 9 && coordinateSystem() == NormalCoordinates)
+			     || (width() > 9 && coordinateSystem() == InvertedCoordinates);
 }
 
 inline int WesternBoard::pawnPushOffset(const PawnStep& ps, int sign) const
@@ -182,6 +186,9 @@ QString WesternBoard::sanMoveString(const Move& move)
 	Piece piece = pieceAt(source);
 	Piece capture = pieceAt(target);
 	Square square = chessSquare(source);
+
+	if (source == target)
+		capture = Piece::NoPiece;
 
 	char checkOrMate = 0;
 	makeMove(move);
@@ -260,7 +267,7 @@ QString WesternBoard::sanMoveString(const Move& move)
 	if (needFile)
 		str += 'a' + square.file();
 	if (needRank)
-		str += '1' + square.rank();
+		str += QString::number(1 + square.rank());
 
 	if (capture.isValid())
 		str += 'x';
@@ -339,6 +346,26 @@ Move WesternBoard::moveFromSanString(const QString& str)
 			return Move();
 	}
 
+	// number of digits in notation of squares
+	int digits = 1;
+
+	// only for tall boards: find maximum number of sequential digits
+	if (m_multiDigitNotation)
+	{
+		int count = 0;
+		for (const QChar& ch : qAsConst(mstr))
+		{
+			if (ch.isDigit())
+			{
+				count++;
+				if (count > digits)
+					digits = count;
+			}
+			else
+				count = 0;
+		}
+	}
+
 	Square sourceSq;
 	Square targetSq;
 	QString::const_iterator it = mstr.cbegin();
@@ -358,9 +385,9 @@ Move WesternBoard::moveFromSanString(const QString& str)
 	if (piece.isEmpty())
 	{
 		piece = Piece(side, Pawn);
-		targetSq = chessSquare(mstr.mid(0, 2));
+		targetSq = chessSquare(mstr.mid(0, 1 + digits));
 		if (isValidSquare(targetSq))
-			it += 2;
+			it += 1 + digits;
 	}
 	else
 	{
@@ -369,7 +396,7 @@ Move WesternBoard::moveFromSanString(const QString& str)
 		// Drop moves
 		if (*it == '@')
 		{
-			targetSq = chessSquare(mstr.right(2));
+			targetSq = chessSquare(mstr.right(1 + digits));
 			if (!isValidSquare(targetSq))
 				return Move();
 
@@ -394,10 +421,12 @@ Move WesternBoard::moveFromSanString(const QString& str)
 		// Source square's rank
 		if (it->isDigit())
 		{
-			sourceSq.setRank(it->toLatin1() - '1');
+			const QString tmp(mstr.mid(it - mstr.constBegin(),
+						   digits));
+			sourceSq.setRank(-1 + tmp.toInt());
 			if (sourceSq.rank() < 0 || sourceSq.rank() >= height())
 				return Move();
-			++it;
+			it += digits;
 		}
 		if (it == mstr.cend())
 		{
@@ -423,10 +452,11 @@ Move WesternBoard::moveFromSanString(const QString& str)
 		// Target square
 		if (!isValidSquare(targetSq))
 		{
-			if (it + 1 == mstr.cend())
+			if (it + 1 >= mstr.cend())
 				return Move();
-			targetSq = chessSquare(mstr.mid(it - mstr.cbegin(), 2));
-			it += 2;
+			QString tmp(mstr.mid(it - mstr.cbegin(), 1 + digits));
+			targetSq = chessSquare(tmp);
+			it += tmp.size();
 		}
 	}
 	if (!isValidSquare(targetSq))
@@ -584,7 +614,7 @@ QString WesternBoard::vFenString(FenNotation notation) const
 
 	// Full move number
 	fen += ' ';
-	fen += QString::number(m_history.size() / 2 + 1);
+	fen += QString::number((m_history.size() + m_plyOffset) / 2 + 1);
 
 	return fen;
 }
@@ -770,11 +800,25 @@ bool WesternBoard::vSetFenString(const QStringList& fen)
 		if (!ok || tmp < 0)
 			return false;
 		m_reversibleMoveCount = tmp;
+		++token;
 	}
 	else
 		m_reversibleMoveCount = 0;
 
-	// The full move number is ignored. It's rarely useful
+	// Read the full move number and calculate m_plyOffset
+	if (token != fen.end())
+	{
+		bool ok;
+		int tmp = token->toInt(&ok);
+		if (!ok || tmp < 1)
+			return false;
+		m_plyOffset = 2 * (tmp - 1);
+	}
+	else
+		m_plyOffset = 0;
+
+	if (m_sign != 1)
+		m_plyOffset++;
 
 	m_history.clear();
 	return true;
@@ -866,6 +910,9 @@ void WesternBoard::vMakeMove(const Move& move, BoardTransition* transition)
 		isReversible = false;
 		epSq = 0;
 	}
+
+	if (source == target)
+		clearSource = 0;
 
 	setEnpassantSquare(0);
 
@@ -1158,7 +1205,7 @@ bool WesternBoard::isLegalPosition()
 		{
 			offset = (cside == KingSide) ? 1 : -1;
 			int i = target - offset;
-			forever
+			for (;;)
 			{
 				i -= offset;
 				Piece piece(pieceAt(i));

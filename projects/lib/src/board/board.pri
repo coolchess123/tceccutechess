@@ -35,6 +35,7 @@ SOURCES += $$PWD/board.cpp \
     $$PWD/giveawayboard.cpp \
     $$PWD/suicideboard.cpp \
     $$PWD/gothicboard.cpp \
+    $$PWD/grandboard.cpp \
     $$PWD/crazyhouseboard.cpp \
     $$PWD/loopboard.cpp \
     $$PWD/chessgiboard.cpp \
@@ -43,6 +44,12 @@ SOURCES += $$PWD/board.cpp \
     $$PWD/modernboard.cpp \
     $$PWD/shatranjboard.cpp \
     $$PWD/courierboard.cpp \
+    $$PWD/makrukboard.cpp \
+    $$PWD/oukboard.cpp \
+    $$PWD/aseanboard.cpp \
+    $$PWD/aiwokboard.cpp \
+    $$PWD/sittuyinboard.cpp \
+    $$PWD/losalamosboard.cpp \
     $$PWD/boardfactory.cpp \
     $$PWD/boardtransition.cpp \
     $$PWD/syzygytablebase.cpp
@@ -84,6 +91,7 @@ HEADERS += $$PWD/board.h \
     $$PWD/giveawayboard.h \
     $$PWD/suicideboard.h \
     $$PWD/gothicboard.h \
+    $$PWD/grandboard.h \
     $$PWD/crazyhouseboard.h \
     $$PWD/loopboard.h \
     $$PWD/chessgiboard.h \
@@ -92,6 +100,12 @@ HEADERS += $$PWD/board.h \
     $$PWD/modernboard.h \
     $$PWD/shatranjboard.h \
     $$PWD/courierboard.h \
+    $$PWD/makrukboard.h \
+    $$PWD/oukboard.h \
+    $$PWD/aseanboard.h \
+    $$PWD/aiwokboard.h \
+    $$PWD/sittuyinboard.h \
+    $$PWD/losalamosboard.h \
     $$PWD/boardfactory.h \
     $$PWD/boardtransition.h \
     $$PWD/syzygytablebase.h

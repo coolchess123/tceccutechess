@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,8 +55,7 @@ QLayoutItem* TileLayout::itemAt(int index) const
 QSize TileLayout::minimumSize() const
 {
 	QSize size;
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (const QLayoutItem* item, m_items)
+	for (const QLayoutItem* item : qAsConst(m_items))
 		size = size.expandedTo(item->minimumSize());
 
 	if (!size.isValid())
@@ -73,8 +73,7 @@ void TileLayout::setGeometry(const QRect& rect)
 QSize TileLayout::sizeHint() const
 {
 	QSize size;
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (const QLayoutItem* item, m_items)
+	for (const QLayoutItem* item : qAsConst(m_items))
 		size = size.expandedTo(item->sizeHint());
 
 	return size;
@@ -160,8 +159,7 @@ void TileLayout::doLayout(const QRect& rect) const
 	int itemHeight = (effectiveRect.height() - (rows - 1) * spaceY) / rows;
 
 	int col = 0;
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (QLayoutItem* item, m_items)
+	for (QLayoutItem* item : qAsConst(m_items))
 	{
 		int nextX = x + itemWidth + spaceX;
 		if (++col > cols)

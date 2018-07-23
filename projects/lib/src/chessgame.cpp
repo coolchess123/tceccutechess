@@ -712,7 +712,7 @@ void ChessGame::generateOpening()
 
 	// First play moves that are already in the opening
 	// TODO: use qAsConst() from Qt 5.7
-	foreach (const Chess::Move& move, m_moves)
+	for (const Chess::Move& move : qAsConst(m_moves))
 	{
 		Q_ASSERT(m_board->isLegalMove(move));
 
@@ -722,7 +722,7 @@ void ChessGame::generateOpening()
 	}
 
 	// Then play the opening book moves
-	forever
+	for (;;)
 	{
 		Chess::Move move = bookMove(m_board->sideToMove());
 		if (move.isNull())
@@ -862,6 +862,14 @@ void ChessGame::start()
 	// Start the game in the correct thread
 	connect(this, SIGNAL(playersReady()), this, SLOT(startGame()));
 	QMetaObject::invokeMethod(this, "syncPlayers", Qt::QueuedConnection);
+
+
+	m_result = Chess::Result();
+	emit humanEnabled(false);
+	resetBoard();
+	initializePgn();
+	emit initialized(this);
+	emit fenChanged(m_board->startingFenString());
 }
 
 void ChessGame::pause()
@@ -923,9 +931,6 @@ void ChessGame::initializePgn()
 
 void ChessGame::startGame()
 {
-	m_result = Chess::Result();
-	emit humanEnabled(false);
-
 	disconnect(this, SIGNAL(playersReady()), this, SLOT(startGame()));
 	if (m_finished)
 		return;
@@ -938,7 +943,14 @@ void ChessGame::startGame()
 		Q_ASSERT(player->isReady());
 
 		if (player->state() == ChessPlayer::Disconnected)
+		{
+			setError(tr("Could not initialize player %1: %2")
+			         .arg(player->name()).arg(player->errorString()));
+			m_result = Chess::Result(Chess::Result::ResultError);
+			stop();
+			emitStartFailed();
 			return;
+		}
 		if (!player->supportsVariant(m_board->variant()))
 		{
 			qWarning("%s doesn't support variant %s",
@@ -950,10 +962,7 @@ void ChessGame::startGame()
 		}
 	}
 
-	resetBoard();
-	initializePgn();
 	emit started(this);
-	emit fenChanged(m_board->startingFenString());
 	QDateTime gameStartTime = QDateTime::currentDateTime();
 	m_pgn->setGameStartTime(gameStartTime);
 

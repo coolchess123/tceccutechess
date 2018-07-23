@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -300,7 +301,7 @@ Move SeirawanBoard::moveFromSanString(const QString& str)
 
 	// castling with channeling onto rook square
 	if (move.sourceSquare() == kingSquare(sideToMove())
-	&&  str.mid(index + 2, 1) == squareString(target).left(1))
+	&&  str.mid(index + 2, 1) == squareString(target).at(0))
 		promotion = rookSquareChanneling(promotion);
 
 	// channeling moves

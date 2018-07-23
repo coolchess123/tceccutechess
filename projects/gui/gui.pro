@@ -1,5 +1,5 @@
 macx {
-    TARGET = CuteChess
+    TARGET = "Cute Chess"
 } else {
     TARGET = cutechess
 }
@@ -9,7 +9,7 @@ DESTDIR = $$PWD
 include(../lib/lib.pri)
 include(../lib/libexport.pri)
 
-CUTECHESS_VERSION = 1.0.0
+CUTECHESS_VERSION = 1.1.0
 
 macx-xcode {
     DEFINES += CUTECHESS_VERSION=\"$$CUTECHESS_VERSION\"

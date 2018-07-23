@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -68,8 +69,13 @@ class MoveList : public QWidget
 			     const QString& comment);
 
 	signals:
-		/*! Emitted when the user clicks move \a num. */
-		void moveClicked(int num);
+		/*!
+		 * Emitted when the user selects move \a num.
+		 *
+		 * If \a keyLeft is true, the current move's reverse animation
+		 * is shown; otherwise the previous move's animation is shown.
+		 */
+		void moveClicked(int num, bool keyLeft);
 		/*! Emitted when the user clicks comment \a num. */
 		void commentClicked(int num, const QString& comment);
 

@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -139,6 +140,7 @@ class GraphicsBoard : public QGraphicsItem
 		int m_files;
 		int m_ranks;
 		qreal m_squareSize;
+		qreal m_coordSize;
 		QRectF m_rect;
 		QColor m_lightColor;
 		QColor m_darkColor;

@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -67,6 +68,7 @@ class LIB_EXPORT XboardEngine : public ChessEngine
 		void finishGame();
 		QString moveString(const Chess::Move& move);
 		int adaptScore(int score) const;
+		const QString transformMove(const QString& str, int height, int shift) const;
 		
 		bool m_forceMode;
 		bool m_drawOnNextMove;

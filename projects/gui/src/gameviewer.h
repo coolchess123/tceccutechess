@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -52,7 +53,7 @@ class GameViewer : public QWidget
 		ChessClock* chessClock(Chess::Side side);
 
 	public slots:
-		void viewMove(int index);
+		void viewMove(int index, bool keyLeft = false);
 
 	signals:
 		void moveSelected(int moveNumber);

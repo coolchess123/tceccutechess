@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -158,8 +159,7 @@ void ChessEngine::addOption(EngineOption* option)
 
 EngineOption* ChessEngine::getOption(const QString& name) const
 {
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (EngineOption* option, m_options)
+	for (EngineOption* option : qAsConst(m_options))
 	{
 		if (option->alias() == name || option->name() == name)
 			return option;
@@ -410,8 +410,10 @@ void ChessEngine::pong(bool emitReady)
 
 void ChessEngine::onPingTimeout()
 {
-	qWarning("Engine %s(%d) failed to respond to ping",
-		 qUtf8Printable(name()), m_id);
+	setError(tr("no response to ping"));
+	qWarning("Engine %s(%d): %s",
+	         qUtf8Printable(name()), m_id,
+	         qUtf8Printable(errorString()));
 
 	m_pinging = false;
 	m_writeBuffer.clear();
@@ -475,8 +477,7 @@ void ChessEngine::flushWriteBuffer()
 	if (m_pinging || state() == NotStarted)
 		return;
 
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (const QString& line, m_writeBuffer)
+	for (const QString& line : qAsConst(m_writeBuffer))
 		write(line);
 	m_writeBuffer.clear();
 }
@@ -491,8 +492,10 @@ void ChessEngine::onProtocolStartTimeout()
 	if (state() != Starting)
 		return;
 
-	qWarning("Engine %s(%d) did not start the chess protocol in time",
-		 qUtf8Printable(name()), m_id);
+	setError(tr("Chess protocol was not started in time"));
+	qWarning("Engine %s(%d): %s",
+	         qUtf8Printable(name()), m_id,
+	         qUtf8Printable(errorString()));
 	onCrashed();
 }
 

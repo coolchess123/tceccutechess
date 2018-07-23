@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,7 +23,6 @@
 #include <QSet>
 #include <engineconfiguration.h>
 
-class QTimer;
 class EngineOption;
 class EngineOptionModel;
 class ChessEngine;
@@ -83,6 +83,7 @@ class EngineConfigurationDialog : public QDialog
 		void browseWorkingDir();
 		void detectEngineOptions();
 		void restoreDefaults();
+		void onDetectionFinished();
 		void onEngineReady();
 		void onEngineQuit();
 		void onTabChanged(int index);
@@ -91,13 +92,13 @@ class EngineConfigurationDialog : public QDialog
 		void resizeColumns();
 
 	private:
+		bool m_hasError;
 		EngineOptionModel* m_engineOptionModel;
 		QString m_oldCommand;
 		QString m_oldPath;
 		QString m_oldProtocol;
 		QList<EngineOption*> m_options;
 		QStringList m_variants;
-		QTimer* m_optionDetectionTimer;
 		ChessEngine* m_engine;
 		Ui::EngineConfigurationDialog* ui;
 		QSet<QString> m_reservedNames;

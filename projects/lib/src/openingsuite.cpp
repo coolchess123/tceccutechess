@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -117,7 +118,7 @@ bool OpeningSuite::initialize()
 	if (m_order == RandomOrder)
 	{
 		// Create a shuffled vector of file positions
-		forever
+		for (;;)
 		{
 			FilePosition pos;
 			if (m_format == EpdFormat)

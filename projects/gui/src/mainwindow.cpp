@@ -40,6 +40,7 @@
 #include <gamemanager.h>
 #include <playerbuilder.h>
 #include <chessplayer.h>
+#include <humanbuilder.h>
 #include <tournament.h>
 
 #include "cutechessapp.h"
@@ -114,8 +115,8 @@ MainWindow::MainWindow(ChessGame* game)
 	createToolBars();
 	createDockWindows();
 
-	connect(m_moveList, SIGNAL(moveClicked(int)),
-		m_gameViewer, SLOT(viewMove(int)));
+	connect(m_moveList, SIGNAL(moveClicked(int,bool)),
+	        m_gameViewer, SLOT(viewMove(int,bool)));
 	connect(m_moveList, SIGNAL(commentClicked(int, QString)),
 		this, SLOT(editMoveComment(int, QString)));
 	connect(m_gameViewer, SIGNAL(moveSelected(int)),
@@ -156,6 +157,9 @@ void MainWindow::createActions()
 	copyFenSequence->setShortcut(QKeySequence::Copy);
 	copyFenSequence->setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	m_gameViewer->addAction(copyFenSequence);
+
+	m_pasteFenAct = new QAction(tr("&Paste FEN"), this);
+	m_pasteFenAct->setShortcut(QKeySequence(QKeySequence::Paste));
 
 	m_copyPgnAct = new QAction(tr("Copy PG&N"), this);
 
@@ -208,6 +212,7 @@ void MainWindow::createActions()
 
 	connect(m_newGameAct, SIGNAL(triggered()), this, SLOT(newGame()));
 	connect(m_copyFenAct, SIGNAL(triggered()), this, SLOT(copyFen()));
+	connect(m_pasteFenAct, SIGNAL(triggered()), this, SLOT(pasteFen()));
 	connect(copyFenSequence, SIGNAL(triggered()), this, SLOT(copyFen()));
 	connect(m_copyPgnAct, SIGNAL(triggered()), this, SLOT(copyPgn()));
 	connect(m_flipBoardAct, SIGNAL(triggered()),
@@ -276,8 +281,10 @@ void MainWindow::createMenus()
 	m_gameMenu->addAction(m_closeGameAct);
 	m_gameMenu->addAction(m_saveGameAct);
 	m_gameMenu->addAction(m_saveGameAsAct);
+	m_gameMenu->addSeparator();
 	m_gameMenu->addAction(m_copyFenAct);
 	m_gameMenu->addAction(m_copyPgnAct);
+	m_gameMenu->addAction(m_pasteFenAct);
 	m_gameMenu->addSeparator();
 	m_gameMenu->addAction(m_adjudicateDrawAct);
 	m_gameMenu->addAction(m_adjudicateWhiteWinAct);
@@ -721,7 +728,7 @@ void MainWindow::newGame()
 		game->pause();
 
 	// Start the game in a new tab
-	connect(game, SIGNAL(started(ChessGame*)),
+	connect(game, SIGNAL(initialized(ChessGame*)),
 		this, SLOT(addGame(ChessGame*)));
 	connect(game, SIGNAL(startFailed(ChessGame*)),
 		this, SLOT(onGameStartFailed(ChessGame*)));
@@ -732,8 +739,6 @@ void MainWindow::newGame()
 void MainWindow::onGameStartFailed(ChessGame* game)
 {
 	QMessageBox::critical(this, tr("Game Error"), game->errorString());
-	delete game->pgn();
-	game->deleteLater();
 }
 
 void MainWindow::onGameFinished(ChessGame* game)
@@ -964,6 +969,42 @@ void MainWindow::copyFen()
 		cb->setText(fen);
 }
 
+void MainWindow::pasteFen()
+{
+	auto cb = CuteChessApplication::clipboard();
+	if (cb->text().isEmpty())
+		return;
+
+	QString variant = m_game.isNull() || m_game->board() == nullptr ?
+				"standard" : m_game->board()->variant();
+
+	auto board = Chess::BoardFactory::create(variant);
+	if (!board->setFenString(cb->text()))
+	{
+		QMessageBox msgBox(QMessageBox::Critical,
+				   tr("FEN error"),
+				   tr("Invalid FEN string for the \"%1\" variant:")
+				   .arg(variant),
+				   QMessageBox::Ok, this);
+		msgBox.setInformativeText(cb->text());
+		msgBox.exec();
+
+		delete board;
+		return;
+	}
+	auto game = new ChessGame(board, new PgnGame());
+	game->setTimeControl(TimeControl("inf"));
+	game->setStartingFen(cb->text());
+	game->pause();
+
+	connect(game, &ChessGame::initialized, this, &MainWindow::addGame);
+	connect(game, &ChessGame::startFailed, this, &MainWindow::onGameStartFailed);
+
+	CuteChessApplication::instance()->gameManager()->newGame(game,
+		new HumanBuilder(CuteChessApplication::userName()),
+		new HumanBuilder(CuteChessApplication::userName()));
+}
+
 void MainWindow::showAboutDialog()
 {
 	QString html;
@@ -971,7 +1012,7 @@ void MainWindow::showAboutDialog()
 		.arg(CuteChessApplication::applicationVersion()) + "</h3>";
 	html += "<p>" + tr("Using Qt version %1").arg(qVersion()) + "</p>";
 	html += "<p>" + tr("Copyright 2008-2018 "
-			   "Ilari Pihlajisto and Arto Jonsson") + "</p>";
+			   "Cute Chess authors") + "</p>";
 	html += "<p>" + tr("This is free software; see the source for copying "
 			   "conditions. There is NO warranty; not even for "
 			   "MERCHANTABILITY or FITNESS FOR A PARTICULAR "

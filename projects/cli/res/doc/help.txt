@@ -12,11 +12,14 @@ Options:
   -variant VARIANT	Set the chess variant to VARIANT, which can be one of:
 			'3check': Three-check Chess
 			'5check': Five-check Chess
+			'aiwok': Ai-Wok (Makruk variant)
 			'andernach': Andernach Chess
 			'antiandernach': Anti-Andernach Chess
 			'antichess': Antichess (Losing Chess)
+			'asean': ASEAN-Chess
 			'atomic': Atomic Chess
 			'berolina': Berolina Chess
+			'cambodian': Ouk Chatrang (Cambodian Chess)
 			'capablanca': Capablanca Chess
 			'caparandom': Capablanca Random Chess
 			'chancellor': Chancellor Chess (9x9)
@@ -33,16 +36,20 @@ Options:
 			'fischerandom': Fischer Random Chess/Chess 960
 			'giveaway': Giveaway Chess (Losing Chess)
 			'gothic': Gothic Chess
+			'grand': Grand Chess
 			'grid': Grid Chess
 			'gridolina': Berolina Grid Chess
 			'gryphon': Gryphon Chess
 			'horde': Horde Chess (v2)
 			'janus': Janus Chess
+			'karouk': Kar Ouk (One-check Ouk)
 			'kinglet': Kinglet Chess
 			'kingofthehill': King of the Hill Chess
 			'knightmate': Knightmate
 			'loop': Loop Chess (Drop Chess)
+			'losalamos': Los Alamos Chess
 			'losers': Loser's Chess
+			'makruk': Makruk (Thai Chess)
 			'modern': Modern Chess (9x9)
 			'pocketknight': Pocket Knight Chess
 			'racingkings': Racing Kings Chess
@@ -50,6 +57,7 @@ Options:
 			'shatranj': Shatranj
 			'slippedgrid': Slipped Grid Chess
 			'simplifiedgryphon': Simplified Gryphon Chess
+			'sittuyin': Sittuyin (Myanmar Chess)
 			'suicide': Suicide Chess (Losing Chess)
 			'superandernach': Super-Andernach Chess
 			'threekings': Three Kings Chess

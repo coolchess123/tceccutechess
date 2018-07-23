@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,8 +17,10 @@
 */
 
 #include "boardfactory.h"
+#include "aiwokboard.h"
 #include "andernachboard.h"
 #include "antiboard.h"
+#include "aseanboard.h"
 #include "atomicboard.h"
 #include "berolinaboard.h"
 #include "capablancaboard.h"
@@ -33,6 +36,7 @@
 #include "frcboard.h"
 #include "giveawayboard.h"
 #include "gothicboard.h"
+#include "grandboard.h"
 #include "gridboard.h"
 #include "gryphonboard.h"
 #include "hordeboard.h"
@@ -40,13 +44,17 @@
 #include "kingofthehillboard.h"
 #include "knightmateboard.h"
 #include "loopboard.h"
+#include "losalamosboard.h"
 #include "losersboard.h"
 #include "ncheckboard.h"
+#include "makrukboard.h"
 #include "modernboard.h"
+#include "oukboard.h"
 #include "pocketknightboard.h"
 #include "racingkingsboard.h"
 #include "seirawanboard.h"
 #include "shatranjboard.h"
+#include "sittuyinboard.h"
 #include "standardboard.h"
 #include "suicideboard.h"
 #include "threekingsboard.h"
@@ -56,11 +64,14 @@ namespace Chess {
 
 REGISTER_BOARD(ThreeCheckBoard, "3check")
 REGISTER_BOARD(FiveCheckBoard, "5check")
+REGISTER_BOARD(AiWokBoard, "ai-wok")
 REGISTER_BOARD(AndernachBoard, "andernach")
 REGISTER_BOARD(AntiAndernachBoard, "antiandernach")
 REGISTER_BOARD(AntiBoard, "antichess")
+REGISTER_BOARD(AseanBoard, "asean")
 REGISTER_BOARD(AtomicBoard, "atomic")
 REGISTER_BOARD(BerolinaBoard, "berolina")
+REGISTER_BOARD(OukBoard, "cambodian")
 REGISTER_BOARD(CapablancaBoard, "capablanca")
 REGISTER_BOARD(CaparandomBoard, "caparandom")
 REGISTER_BOARD(ChancellorBoard, "chancellor")
@@ -78,21 +89,26 @@ REGISTER_BOARD(KingletBoard, "kinglet")
 REGISTER_BOARD(FrcBoard, "fischerandom")
 REGISTER_BOARD(GiveawayBoard, "giveaway")
 REGISTER_BOARD(GothicBoard, "gothic")
+REGISTER_BOARD(GrandBoard, "grand")
 REGISTER_BOARD(GridBoard, "grid")
 REGISTER_BOARD(BerolinaGridBoard, "gridolina")
 REGISTER_BOARD(GryphonBoard, "gryphon")
 REGISTER_BOARD(HordeBoard, "horde")
 REGISTER_BOARD(JanusBoard, "janus")
+REGISTER_BOARD(KarOukBoard,"karouk")
 REGISTER_BOARD(KingOfTheHillBoard, "kingofthehill")
 REGISTER_BOARD(KnightMateBoard, "knightmate")
 REGISTER_BOARD(LoopBoard, "loop")
+REGISTER_BOARD(LosAlamosBoard, "losalamos")
 REGISTER_BOARD(LosersBoard, "losers")
+REGISTER_BOARD(MakrukBoard, "makruk")
 REGISTER_BOARD(ModernBoard, "modern")
 REGISTER_BOARD(PocketKnightBoard, "pocketknight")
 REGISTER_BOARD(RacingKingsBoard, "racingkings")
 REGISTER_BOARD(SeirawanBoard, "seirawan")
 REGISTER_BOARD(ShatranjBoard, "shatranj")
 REGISTER_BOARD(SimplifiedGryphonBoard, "simplifiedgryphon")
+REGISTER_BOARD(SittuyinBoard, "sittuyin")
 REGISTER_BOARD(SlippedGridBoard, "slippedgrid")
 REGISTER_BOARD(StandardBoard, "standard")
 REGISTER_BOARD(SuicideBoard, "suicide")

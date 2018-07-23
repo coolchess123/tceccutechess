@@ -1,5 +1,6 @@
 /*
     This file is part of Cute Chess.
+    Copyright (C) 2008-2018 Cute Chess authors
 
     Cute Chess is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -224,8 +225,7 @@ TournamentPair* KnockoutTournament::nextPair(int gameNumber)
 	m_rounds << nextRound;
 	setCurrentRound(currentRound() + 1);
 
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (TournamentPair* pair, nextRound)
+	for (TournamentPair* pair : qAsConst(nextRound))
 	{
 		if (pair->isValid())
 			return pair;

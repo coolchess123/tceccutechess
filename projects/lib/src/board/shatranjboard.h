@@ -96,10 +96,8 @@ class LIB_EXPORT ShatranjBoard : public WesternBoard
 		 */
 		virtual bool canBareOpponentKing();
 	private:
-		int m_arwidth;
 		QVarLengthArray<int> m_ferzOffsets;
 		QVarLengthArray<int> m_alfilOffsets;
-		int pieceCount(Side side) const;
 		bool bareKing(Side side, int count = 0) const;
 };
 

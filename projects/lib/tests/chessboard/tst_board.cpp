@@ -94,8 +94,7 @@ static quint64 smpPerft(Chess::Board* board, int depth)
 		futures << QtConcurrent::run(perftRoot, board, move, depth);
 
 	quint64 nodeCount = 0;
-	// TODO: use qAsConst() from Qt 5.7
-	foreach (const QFuture<quint64>& future, futures)
+	for (const QFuture<quint64>& future : qAsConst(futures))
 		nodeCount += future.result();
 
 	return nodeCount;
@@ -183,27 +182,27 @@ void tst_Board::moveStrings_data() const
 		<< "standard"
 		<< "Qd4"
 		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K b - - 2 1"
-		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 1";
+		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 2";
 	QTest::newRow("coord2")
 		<< "standard"
 		<< "g7d4"
 		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K b - - 2 1"
-		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 1";
+		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 2";
 	QTest::newRow("san3")
 		<< "standard"
 		<< "Qf6"
 		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K b - - 2 1"
-		<< "3r1rk1/8/1p1pbq1p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 1";
+		<< "3r1rk1/8/1p1pbq1p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 2";
 	QTest::newRow("coord3")
 		<< "standard"
 		<< "g7f6"
-		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K b - - 2 1"
-		<< "3r1rk1/8/1p1pbq1p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 1";
+		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K b - - 2 11"
+		<< "3r1rk1/8/1p1pbq1p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 12";
 	QTest::newRow("fifty moves draw")
 		<< "standard"
 		<< "h2a2"
-		<< "8/k7/2K5/8/8/8/7R/8 w - - 99 1"
-		<< "8/k7/2K5/8/8/8/R7/8 b - - 100 1";
+		<< "8/k7/2K5/8/8/8/7R/8 w - - 99 61"
+		<< "8/k7/2K5/8/8/8/R7/8 b - - 100 61";
 	QTest::newRow("fifty moves mate")
 		<< "standard"
 		<< "h2a2"
@@ -218,7 +217,7 @@ void tst_Board::moveStrings_data() const
 		<< "crazyhouse"
 		<< "Qd4"
 		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K[-] b - - 2 1"
-		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K[-] w - - 3 1";
+		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K[-] w - - 3 2";
 	QTest::newRow("crazyhouse2")
 		<< "crazyhouse"
 		<< "d4 h6 Bxh6 gxh6 g4 h5 gxh5"
@@ -263,7 +262,7 @@ void tst_Board::moveStrings_data() const
 		<< "berolina"
 		<< "Qd4"
 		<< "3r1rk1/6q1/1p1pb2p/p1p2np1/P1P2p2/1PNP4/1Q2PPBP/1R2R2K b - - 2 1"
-		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 1";
+		<< "3r1rk1/8/1p1pb2p/p1p2np1/P1Pq1p2/1PNP4/1Q2PPBP/1R2R2K w - - 3 2";
 	QTest::newRow("3check san1")
 		<< "3check"
 		<< "e4 e5 Nf3 Nc6 d4 exd4"
@@ -278,7 +277,7 @@ void tst_Board::moveStrings_data() const
 		<< "embassy"
 		<< "O-O-O O-O-O Ng4"
 		<< "r3kcab1r/pppq1p1ppp/2np2pn2/4pb4/4B5/2NPB1PN2/PPPQPP1PPP/R3KCA2R b KQkq - 3 1"
-		<< "1kr2cab1r/pppq1p1ppp/2np2p3/4pb4/4B1n3/2NPB1PN2/PPPQPP1PPP/1KR2CA2R w - - 6 2";
+		<< "1kr2cab1r/pppq1p1ppp/2np2p3/4pb4/4B1n3/2NPB1PN2/PPPQPP1PPP/1KR2CA2R w - - 6 3";
 	QTest::newRow("embassy castling san2")
 		<< "embassy"
 		<< "Cf1 O-O g3"
@@ -288,7 +287,7 @@ void tst_Board::moveStrings_data() const
 		<< "embassy"
 		<< "e8b8 e1b1 h6g4"
 		<< "r3kcab1r/pppq1p1ppp/2np2pn2/4pb4/4B5/2NPB1PN2/PPPQPP1PPP/R3KCA2R b KQkq - 3 1"
-		<< "1kr2cab1r/pppq1p1ppp/2np2p3/4pb4/4B1n3/2NPB1PN2/PPPQPP1PPP/1KR2CA2R w - - 6 2";
+		<< "1kr2cab1r/pppq1p1ppp/2np2p3/4pb4/4B1n3/2NPB1PN2/PPPQPP1PPP/1KR2CA2R w - - 6 3";
 	QTest::newRow("janus castling san1")
 		<< "janus"
 		<< "Kb8 Be3 Ng6 Ki1"
@@ -343,7 +342,7 @@ void tst_Board::moveStrings_data() const
 		<< "circulargryphon"
 		<< "Qxa7 e3 a5 Kb4 Nc6 Nc4+ Ke7 Ba6 Ng4 h4 Be2"
 		<< "8/R4k2/5n2/8/5n2/2K5/q3P2P/8 b - - 0 1"
-		<< "8/4k3/R1b5/8/1K3n1N/8/4r3/8 w - - 1 6";
+		<< "8/4k3/R1b5/8/1K3n1N/8/4r3/8 w - - 1 7";
 	QTest::newRow("giveaway san1")
 		<< "giveaway"
 		<< "e3"
@@ -368,6 +367,27 @@ void tst_Board::moveStrings_data() const
 		   "Qxd4 Bc3 Qh4+ g3 Qa4 Nf3 Qa6 Qxa6 bxa6 Ba5 h5 O-O"
 		<< "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1"
 		<< "r3kk1r/p2nppp1/p7/B6p/8/5NP1/PPP4P/R4RK1 b kq - 1 20";
+	QTest::newRow("grand lan1")
+		<< "grand"
+		<< "d10d9 f5f6 g8g6 f6g7"
+		<< "3r6/1nb1kcabn1/ppprpppppp/3q6/3p6/5P4/5C4/PPPPPRPPPP/1NBQKRABN1/10 b - - 0 1"
+		<< "10/1nbrkcabn1/ppprpp1ppp/3q2P3/3p6/10/5C4/PPPPPRPPPP/1NBQKRABN1/10 b - - 0 3";
+	QTest::newRow("grand san1")
+		<< "grand"
+		<< "R10d9 f6 g6 fxg7"
+		<< "3r6/1nb1kcabn1/ppprpppppp/3q6/3p6/5P4/5C4/PPPPPRPPPP/1NBQKRABN1/10 b - - 0 1"
+		<< "10/1nbrkcabn1/ppprpp1ppp/3q2P3/3p6/10/5C4/PPPPPRPPPP/1NBQKRABN1/10 b - - 0 3";
+	QTest::newRow("grand san2")
+		<< "grand"
+		<< "Rc6 c3=C+ Rxc3 Rxc3"
+		<< "10/10/p9/10/1p5R2/1P1k6/P1p7/n4r4/K9/10 w - - 0 1"
+		<< "10/10/p9/10/1p8/1P1k6/P9/n1r7/K9/10 w - - 0 3";
+	QTest::newRow("grand san3")
+		<< "grand"
+		<< "R10a9 R10b9 Ra10 Rg9 R1a7 Rbb9 R7a8+ Kc9 Ke4 Ra9 R10xa9+ "
+		   "Kd10 Ra10+ Kd9 Rj8 Re9+ Kd5 Kc9 Rjj10 Rd9+ Kc6 Kc8 Rjc10+"
+		<< "Rr8/10/1r1k6/10/10/10/10/5K4/10/R9 w - - 0 1"
+		<< "R1R7/3r6/2k7/10/2K7/10/10/10/10/10 b - - 12 12";
 	QTest::newRow("seirawan san1")
 		<< "seirawan"
 		<< "e4 e5 Nf3 Nf6/H Bc4 Hh6 O-O/Eh1 Bd6 Nc3/H O-O/Ee8"
@@ -443,6 +463,81 @@ void tst_Board::moveStrings_data() const
 		<< "e1c1 e8g8"
 		<< "r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R[EHeh] w KQkq - 0 1"
 		<< "r4rk1/pppppppp/8/8/8/8/PPPPPPPP/2KR3R[EHeh] w aH - 2 2";
+	QTest::newRow("makruk lan1a")
+		<< "makruk"
+		<< "e3e4 b8d7 b3b4 a6a5 c1b2 h6h5 f1g2 h5h4 g3h4 h8h4 g2g3 h4h7"
+		<< "rnsmksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKMSNR w - 0 0 1"
+		<< "r1smksn1/3n3r/1pppppp1/p7/1P2P3/P1PP1PSP/1S6/RN1KM1NR w - 0 0 7";
+	QTest::newRow("makruk san1a")
+		<< "makruk"
+		<< "e4 Nd7 b4 a5 Sb2 h5 Sg2 h4 gxh4 Rxh4 Sg3 Rh7"
+		<< "rnsmksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKMSNR w - 0 0 1"
+		<< "r1smksn1/3n3r/1pppppp1/p7/1P2P3/P1PP1PSP/1S6/RN1KM1NR w - 0 0 7";
+	QTest::newRow("makruk san1b")
+		<< "makruk"
+		<< "e4 Nd7 b4 a5 Sb2 h5 Sg2 h4 gxh4 Rxh4 Sg3 Rh7"
+		<< "rnsmksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKMSNR w - - 0 1"
+		<< "r1smksn1/3n3r/1pppppp1/p7/1P2P3/P1PP1PSP/1S6/RN1KM1NR w - - 2 7";
+	QTest::newRow("makruk pawn promotion, board's honour counting")
+		<< "makruk"
+		<< "h3=M"
+		<< "6r1/3M2k1/1M1K4/3N1M1R/7p/6m1/8/8 b - 0 0 93"
+		<< "6r1/3M2k1/1M1K4/3N1M1R/8/6mm/8/8 w - 128 0 94";
+	QTest::newRow("makruk board's to pieces' honour counting")
+		<< "makruk"
+		<< "Rxd6+ Nxd6"
+		<< "8/5M2/2rM1K1k/5M2/4N1R1/8/8/8 b - 128 33 110"
+		<< "8/5M2/3N1K1k/5M2/6R1/8/8/8 b - 32 12 111";
+	QTest::newRow("cambodian san1")
+		<< "cambodian"
+		<< "e4 d5 Me3 Md6 Kb2 Kg7"
+		<< "rnsmksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKMSNR w DEde 0 0 1"
+		<< "rns2snr/6k1/pppmpppp/3p4/4P3/PPPPMPPP/1K6/RNS2SNR w - 0 0 4";
+	QTest::newRow("asean san1b")
+		<< "asean"
+		<< "e4 Nd7 b4 a5 Bb2 h5 Bg2 h4 gxh4 Rxh4 Bg3 Rh7"
+		<< "rnbqkbnr/8/pppppppp/8/8/PPPPPPPP/8/RNBKQBNR w - - 0 1"
+		<< "r1bqkbn1/3n3r/1pppppp1/p7/1P2P3/P1PP1PBP/1B6/RN1KQ1NR w - - 2 7";
+	QTest::newRow("asean san2 promotion")
+		<< "asean"
+		<< "h8=R Kc3"
+		<< "8/7P/6K1/5R2/1k6/8/4b3/8 w - - 0 1"
+		<< "7R/8/6K1/5R2/8/2k5/4b3/8 w - - 1 2";
+	QTest::newRow("asean san3 pawn move")
+		<< "asean"
+		<< "h3 Nf1"
+		<< "6k1/8/6p1/N5b1/5b1p/8/3NK3/8 b - - 0 1"
+		<< "6k1/8/6p1/N5b1/5b2/7p/4K3/5N2 b - - 1 2";
+	QTest::newRow("asean san4 no threefold rep adjudicated")
+		<< "asean"
+		<< "Kf5 Kb2 Ke5 Kb3 Kf5 Kb2 Ke5 Kb3 Kf5 Kb2 Ke5 Kb3 Kf5 Kb2 Ke5 Kb3"
+		<< "8/8/8/4K3/8/1kq5/8/8 w - - 0 1"
+		<< "8/8/8/4K3/8/1kq5/8/8 w - - 16 9";
+	QTest::newRow("sittuyin lan1 promotion staying on square")
+		<< "sittuyin"
+		<< "g3g3f"
+		<< "8/8/6R1/s3r3/P5R1/1KP3p1/1F2kr2/8[-] b - 0 0 72"
+		<< "8/8/6R1/s3r3/P5R1/1KP3f1/1F2kr2/8[-] w - 0 0 73";
+	QTest::newRow("sittuyin san1 promotion staying on square")
+		<< "sittuyin"
+		<< "g3=F"
+		<< "8/8/6R1/s3r3/P5R1/1KP3p1/1F2kr2/8[-] b - 0 0 72"
+		<< "8/8/6R1/s3r3/P5R1/1KP3f1/1F2kr2/8[-] w - 0 0 73";
+	QTest::newRow("sittuyin san2 promotion by move")
+		<< "sittuyin"
+		<< "f2=F"
+		<< "5R2/8/8/8/5n2/5k2/3K4/4p3[-] b - 0 0 81"
+		<< "5R2/8/8/8/5n2/5k2/3K1f2/8[-] w - 0 0 82";
+	QTest::newRow("sittuyin san3 no threefold rep adjudicated")
+		<< "sittuyin"
+		<< "Kf5 Kb2 Ke5 Kb3 Kf5 Kb2 Ke5 Kb3 Kf5 Kb2 Ke5 Kb3 Kf5 Kb2 Ke5 Kb3"
+		<< "8/8/8/4K3/8/1kf5/8/8[-] w - - 0 1"
+		<< "8/8/8/4K3/8/1kf5/8/8[-] w - - 16 9";
+	QTest::newRow("losalamos san1")
+		<< "losalamos"
+		<< "d3 d4"
+		<< "rnqknr/pppppp/6/6/PPPPPP/RNQKNR w - - 0 1"
+		<< "rnqknr/ppp1pp/3p2/3P2/PPP1PP/RNQKNR w - - 0 2";
 
 }
 
@@ -740,6 +835,84 @@ void tst_Board::results_data() const
 		<< variant
 		<< "12/4k7/5W6/12/4K7/11E/12/12 b - - 0 1"
 		<< "1-0";
+
+	variant = "makruk";
+
+	QTest::newRow("makruk white win /w pawns: no counting")
+		<< variant
+		<< "7R/6Mk/5S2/7P/Pp6/8/2mnr3/K7 b - 0 0 129"
+		<< "1-0";
+
+	QTest::newRow("makruk black win KNMvsK")
+		<< variant
+		<< "8/8/8/8/8/5nk1/6m1/6K1 w - 128 56 213"
+		<< "0-1";
+
+	QTest::newRow("makruk full count black win KRvKM")
+		<< variant
+		<< "8/8/8/8/8/6k1/8/M1r3K1 w - 128 128 115"
+		<< "0-1";
+
+	QTest::newRow("makruk board's honour draw KRvKM")
+		<< variant
+		<< "2r5/8/8/8/8/1k6/6K1/M7 b - 128 128 125"
+		<< "1/2-1/2";
+
+	QTest::newRow("makruk board's honour draw KSMvKS")
+		<< variant
+		<< "8/8/8/4S3/2k1K3/1s6/7M/8 b - 128 128 236"
+		<< "1/2-1/2";
+
+	QTest::newRow("makruk KNvK insufficient material")
+		<< variant
+		<< "8/8/1k6/3K4/8/3N4/8/8 b - 128 6 105"
+		<< "1/2-1/2";
+
+	QTest::newRow("makruk KMMvK insufficient material")
+		<< variant
+		<< "8/8/6MM/8/8/2K5/k7/8 b - 128 8 99"
+		<< "1/2-1/2";
+
+	QTest::newRow("makruk KMMvK win overrides insufficient material")
+		<< variant
+		<< "8/5KMk/6M1/8/8/8/8/8 b - 128 8 75"
+		<< "1-0";
+
+	QTest::newRow("makruk KSMvK pieces' honour white win")
+		<< variant
+		<< "8/5KMk/7S/8/8/8/8/8 b - 88 52 174"
+		<< "1-0";
+
+	QTest::newRow("makruk KRRvK pieces' honour white win")
+		<< variant
+		<< "8/8/8/2K1k3/8/4RR2/8/8 b - 16 14 128"
+		<< "1-0";
+
+	QTest::newRow("makruk KRRvK pieces' honour ongoing")
+		<< variant
+		<< "8/8/8/2K1k3/8/3R1R2/8/8 w - 16 13 128"
+		<< "*";
+
+	variant = "karouk";
+
+	QTest::newRow("karouk KRRvKM black wins by check")
+		<< variant
+		<< "8/8/8/2K1k3/3m4/3R1R2/8/8 w - 128 13 128"
+		<< "0-1";
+
+	variant = "asean";
+
+	QTest::newRow("asean KQvK insufficient material")
+		<< variant
+		<< "8/8/8/5K2/1q6/8/8/k7 w - - 0 71"
+		<< "1/2-1/2";
+
+	variant = "ai-wok";
+
+	QTest::newRow("ai-wok black win")
+		<< variant
+		<< "8/8/8/2sp2k1/8/3P4/4K1a1/7r w - - 0 1"
+		<< "0-1";
 }
 
 void tst_Board::results()
@@ -1142,6 +1315,56 @@ void tst_Board::perft_data() const
 		<< 4 // 4 plies: 500337, 5 plies: 14144849, 6 plies: 400324148
 		<< Q_UINT64_C(500337);
 
+	variant = "makruk";
+	QTest::newRow("makruk startpos")
+		<< variant
+		<< "rnsmksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKMSNR w - 0 0 1"
+		<< 5 // 4 plies: 273026, 5 plies: 6223994, 6 plies: 142078049
+		<< Q_UINT64_C(6223994);
+
+	variant = "cambodian";
+	QTest::newRow("cambodian startpos")
+		<< variant
+		<< "rnsmksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKMSNR w DEde 0 0 1"
+		<< 4 // 4 plies: 361793, 5 plies: 8601434, 6 plies: 204755574
+		<< Q_UINT64_C(361793);
+	QTest::newRow("cambodian check1")
+		<< variant
+		<< "r1s1ks1r/3nm3/pppNpppp/3n4/5P2/PPPPPNPP/8/R1SKMS1R b DEe 0 0 5"
+		<< 2 // 1 ply: 2, 2 plies: 72 (sjaakii-1.4.1 dito)
+		<< Q_UINT64_C(72);
+
+	variant = "asean";
+	QTest::newRow("asean startpos")
+		<< variant
+		<< "rnbqkbnr/8/pppppppp/8/8/PPPPPPPP/8/RNBQKBNR w - - 0 1"
+		<< 5 // 4 plies: 273026, 5 plies: 6223994, 6 plies: 142078057
+		<< Q_UINT64_C(6223994);
+
+	variant = "sittuyin";
+	QTest::newRow("sittuyin startpos")
+		<< variant
+		<< "8/8/4pppp/pppp4/4PPPP/PPPP4/8/8[KFRRSSNNkfrrssnn] w - 0 0 1"
+		<< 3 // 1 ply: 88, 2 plies: 7744, 3 plies: 580096, 4 plies: 43454464
+		<< Q_UINT64_C(580096);
+	QTest::newRow("sittuyin midgame")
+		<< variant
+		<< "8/8/6R1/s3r3/P5R1/1KP3p1/1F2kr2/8[-] b - 0 0 72"
+		<< 4 // 1 ply: 35, 2 plies: 825, 3 plies: 26791, 4 plies: 657824
+		<< Q_UINT64_C(657824);
+
+	variant = "ai-wok";
+	QTest::newRow("ai-wok startpos")
+		<< variant
+		<< "rnsaksnr/8/pppppppp/8/8/PPPPPPPP/8/RNSKASNR w 0 1"
+		<< 4 // 3 plies: 18102, 4 plies: 485045, 5 plies: 13275068
+		<< Q_UINT64_C(485045);
+	QTest::newRow("ai-wok endgame")
+		<< variant
+		<< "8/8/8/2sp2k1/7p/3P4/6K1/7r w - - 0 1"
+		<< 5 // 4 plies: 6855, 5 plies: 30055, 6 plies: 631293
+		<< Q_UINT64_C(30055);
+
 	variant = "twokings";
 	QTest::newRow("twokings startpos")
 		<< variant
@@ -1165,12 +1388,37 @@ void tst_Board::perft_data() const
 		<< 5
 		<< Q_UINT64_C(4629764);
 
+	variant = "grand";
+	QTest::newRow("grand startpos")
+		<< variant
+		<< "r8r/1nbqkcabn1/pppppppppp/10/10/10/10/PPPPPPPPPP/1NBQKCABN1/R8R w - - 0 1"
+		<< 3 // 3plies: 259514, 4 plies: 15921643, 5 plies: 959883584
+		<< Q_UINT64_C(259514);
+	QTest::newRow("grand endgame1")
+		<< variant
+		<< "10/4k5/6P3/10/10/10/10/10/1p2K5/10 w - - 0 1"
+		<< 3 // 1 ply: 15, 2 plies: 165, 3 plies: 2446
+		<< Q_UINT64_C(2446);
+
 	variant = "seirawan";
 	QTest::newRow("seirawan startpos")
 		<< variant
 		<< "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[EHeh] w BCDFGbcdfgKQkq - 0 1"
 		<< 4 // 4 plies: 782599, 5 plies: 27639803, 6 plies: 967587141 (sjaakii: 967584909)
 		<< Q_UINT64_C(782599);
+
+	variant = "losalamos";
+	QTest::newRow("losalamos startpos")
+		<< variant
+		<< "rnqknr/pppppp/6/6/PPPPPP/RNQKNR w - - 0 1"
+		<< 5 // 4 plies: 14332, 5 plies: 191846, 6 plies: 2549164
+		<< Q_UINT64_C(191846);
+	QTest::newRow("losalamos promotion")
+		<< variant
+		<< "6/2P3/6/1K1k2/6/6 w - - 0 1"
+		<< 5 // 4 plies: 3117, 5 plies: 39171, 6 plies: 187431
+		<< Q_UINT64_C(39171);
+
 }
 
 void tst_Board::perft()
