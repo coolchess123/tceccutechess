@@ -13,6 +13,8 @@ Options:
 			'3check': Three-check Chess
 			'5check': Five-check Chess
 			'aiwok': Ai-Wok (Makruk variant)
+			'almost': Almost Chess
+			'amazon': Amazon Chess
 			'andernach': Andernach Chess
 			'antiandernach': Anti-Andernach Chess
 			'antichess': Antichess (Losing Chess)
@@ -27,6 +29,7 @@ Options:
 			'checkless': Checkless Chess
 			'courier': Courier Chess
 			'chessgi': Chessgi (Drop Chess)
+			'chigorin': Chigorin Chess
 			'circulargryphon': Circular Gryphon Chess
 			'coregal': Co-regal Chess
 			'crazyhouse': Crazyhouse (Drop Chess)
@@ -88,6 +91,7 @@ Options:
 			'round-robin': Round-robin tournament (default)
 			'gauntlet': First engine plays against the rest
 			'knockout': Single-elimination tournament.
+			'pyramid': Every engine plays against all predecessors
   -event EVENT		Set the event/tournament name to EVENT
   -games N		Play N games per encounter. This value should be set to
 			an even number in tournaments with more than two players
@@ -122,8 +126,10 @@ Options:
   -bookmode MODE	Set Polyglot book mode to MODE, which can be one of:
 			'ram': The whole book is loaded into RAM (default)
 			'disk': The book is accessed directly on disk.
-  -pgnout FILE [min]	Save the games to FILE in PGN format. Use the 'min'
-			argument to save in a minimal/compact PGN format.
+  -pgnout FILE [min][fi]
+			Save the games to FILE in PGN format. Use the 'min'
+			argument to save in a minimal/compact PGN format. Only
+			finished games are saved for argument 'fi'.
   -epdout FILE		Save the end position of the games to FILE in FEN format.
   -recover		Restart crashed engines instead of stopping the match
   -repeat [N]		Play each opening twice (or N times). Unless the -noswap

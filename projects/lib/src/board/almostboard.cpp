@@ -16,38 +16,31 @@
     along with Cute Chess.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TOURNAMENTSETTINGSWIDGET_H
-#define TOURNAMENTSETTINGSWIDGET_H
+#include "almostboard.h"
+#include "westernzobrist.h"
 
-#include <QWidget>
 
-namespace Ui {
-	class TournamentSettingsWidget;
+namespace Chess {
+
+AlmostBoard::AlmostBoard()
+	: WesternBoard(new WesternZobrist())
+{
+	setPieceType(Chancellor, tr("chancellor"), "C", KnightMovement | RookMovement);
 }
 
-class TournamentSettingsWidget : public QWidget
+Board* AlmostBoard::copy() const
 {
-	Q_OBJECT
+	return new AlmostBoard(*this);
+}
 
-	public:
-		explicit TournamentSettingsWidget(QWidget *parent = nullptr);
-		virtual ~TournamentSettingsWidget();
+QString AlmostBoard::variant() const
+{
+	return "almost";
+}
 
-		QString tournamentType() const;
-		int gamesPerEncounter() const;
-		int rounds() const;
-		int seedCount() const;
-		int delayBetweenGames() const;
-		bool openingRepetition() const;
-		bool engineRecovery() const;
-		bool savingOfUnfinishedGames() const;
+QString AlmostBoard::defaultFenString() const
+{
+	return "rnbckbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBCKBNR w KQkq - 0 1";
+}
 
-		void enableSettingsUpdates();
-
-	private:
-		void readSettings();
-
-		Ui::TournamentSettingsWidget *ui;
-};
-
-#endif // TOURNAMENTSETTINGSWIDGET_H
+} // namespace Chess

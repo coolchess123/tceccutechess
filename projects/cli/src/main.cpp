@@ -315,7 +315,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-debug", QVariant::String, 0, 1);
 	parser.addOption("-openings", QVariant::StringList);
 	parser.addOption("-bookmode", QVariant::String);
-	parser.addOption("-pgnout", QVariant::StringList, 1, 2);
+	parser.addOption("-pgnout", QVariant::StringList, 1, 3);
 	parser.addOption("-epdout", QVariant::String, 1, 1);
 	parser.addOption("-repeat", QVariant::Int, 0, 1);
 	parser.addOption("-noswap", QVariant::Bool, 0, 0);
@@ -468,6 +468,8 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				tournament->setPgnOutput(tMap["pgnOutput"].toString(), (PgnGame::PgnMode)tMap["pgnOutMode"].toInt());
 			else
 				tournament->setPgnOutput(tMap["pgnOutput"].toString());
+			if (tMap.contains("pgnOutUnfinished"))
+				tournament->setPgnWriteUnfinishedGames(tMap["pgnOutUnfinished"].toBool());
 		}
 		if (tMap.contains("livePgnOutput")) {
 			if (tMap.contains("livePgnOutMode"))
@@ -783,18 +785,28 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			else if (name == "-pgnout")
 			{
 				PgnGame::PgnMode mode = PgnGame::Verbose;
+				bool unfinished = true;
 				QStringList list = value.toStringList();
-				if (list.size() == 2)
+				if (list.size() == 2 || list.size() == 3)
 				{
-					if (list.at(1) == "min")
-						mode = PgnGame::Minimal;
-					else
-						ok = false;
+					for (int i = 1; i < list.size(); i++)
+					{
+						if (list.at(i) == "min")
+							mode = PgnGame::Minimal;
+						else if (list.at(i) == "fi")
+						{
+							unfinished = false;
+							tournament->setPgnWriteUnfinishedGames(false);
+						}
+						else
+							ok = false;
+					}
 				}
 				if (ok) {
 					tournament->setPgnOutput(list.at(0), mode);
 					tMap.insert("pgnOutput", list.at(0));
 					tMap.insert("pgnOutMode", mode);
+					tMap.insert("pgnOutUnfinished", unfinished);
 				}
 			}
 			// TCEC live PGN file

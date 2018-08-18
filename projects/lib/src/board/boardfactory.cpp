@@ -18,6 +18,8 @@
 
 #include "boardfactory.h"
 #include "aiwokboard.h"
+#include "almostboard.h"
+#include "amazonboard.h"
 #include "andernachboard.h"
 #include "antiboard.h"
 #include "aseanboard.h"
@@ -28,6 +30,7 @@
 #include "chancellorboard.h"
 #include "checklessboard.h"
 #include "chessgiboard.h"
+#include "chigorinboard.h"
 #include "coregalboard.h"
 #include "courierboard.h"
 #include "crazyhouseboard.h"
@@ -65,6 +68,8 @@ namespace Chess {
 REGISTER_BOARD(ThreeCheckBoard, "3check")
 REGISTER_BOARD(FiveCheckBoard, "5check")
 REGISTER_BOARD(AiWokBoard, "ai-wok")
+REGISTER_BOARD(AlmostBoard, "almost")
+REGISTER_BOARD(AmazonBoard, "amazon")
 REGISTER_BOARD(AndernachBoard, "andernach")
 REGISTER_BOARD(AntiAndernachBoard, "antiandernach")
 REGISTER_BOARD(AntiBoard, "antichess")
@@ -78,6 +83,7 @@ REGISTER_BOARD(ChancellorBoard, "chancellor")
 REGISTER_BOARD(ChangeOverBoard, "changeover")
 REGISTER_BOARD(ChecklessBoard, "checkless")
 REGISTER_BOARD(ChessgiBoard, "chessgi")
+REGISTER_BOARD(ChigorinBoard, "chigorin")
 REGISTER_BOARD(CircularGryphonBoard, "circulargryphon")
 REGISTER_BOARD(CoRegalBoard, "coregal")
 REGISTER_BOARD(CourierBoard, "courier")

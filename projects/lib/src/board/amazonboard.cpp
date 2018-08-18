@@ -16,38 +16,32 @@
     along with Cute Chess.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TOURNAMENTSETTINGSWIDGET_H
-#define TOURNAMENTSETTINGSWIDGET_H
+#include "amazonboard.h"
+#include "westernzobrist.h"
 
-#include <QWidget>
 
-namespace Ui {
-	class TournamentSettingsWidget;
+namespace Chess {
+
+AmazonBoard::AmazonBoard()
+	: WesternBoard(new WesternZobrist())
+{
+	setPieceType(Amazon, tr("amazon"), "A",
+		     KnightMovement | BishopMovement | RookMovement, "Q");
 }
 
-class TournamentSettingsWidget : public QWidget
+Board* AmazonBoard::copy() const
 {
-	Q_OBJECT
+	return new AmazonBoard(*this);
+}
 
-	public:
-		explicit TournamentSettingsWidget(QWidget *parent = nullptr);
-		virtual ~TournamentSettingsWidget();
+QString AmazonBoard::variant() const
+{
+	return "amazon";
+}
 
-		QString tournamentType() const;
-		int gamesPerEncounter() const;
-		int rounds() const;
-		int seedCount() const;
-		int delayBetweenGames() const;
-		bool openingRepetition() const;
-		bool engineRecovery() const;
-		bool savingOfUnfinishedGames() const;
+QString AmazonBoard::defaultFenString() const
+{
+	return "rnbakbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBAKBNR w KQkq - 0 1";
+}
 
-		void enableSettingsUpdates();
-
-	private:
-		void readSettings();
-
-		Ui::TournamentSettingsWidget *ui;
-};
-
-#endif // TOURNAMENTSETTINGSWIDGET_H
+} // namespace Chess
