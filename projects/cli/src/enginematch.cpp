@@ -423,8 +423,10 @@ public:
 	double m_performance;
 	double m_elo;
 	QMap<QString, QString> m_tableData;
+	QMap<QString, int> m_head2head;
 };
 
+#if 0
 bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s2)
 {
 	if (s1.m_disqualified == s2.m_disqualified) {
@@ -452,6 +454,31 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 	}
 	return s2.m_disqualified;
 }
+#else
+bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s2)
+{
+	if (s1.m_disqualified == s2.m_disqualified) {
+		if (s1.m_score == s2.m_score) {
+			if (s1.m_crashes == s2.m_crashes) {
+				if (s1.m_head2head[s2.m_engineName] == 0) {
+					if ((s1.m_winsAsWhite + s1.m_winsAsBlack) == (s2.m_winsAsWhite + s2.m_winsAsBlack)) {
+						return s1.m_winsAsBlack > s2.m_winsAsBlack;
+					} else {
+						return (s1.m_winsAsWhite + s1.m_winsAsBlack) > (s2.m_winsAsWhite + s2.m_winsAsBlack);
+					}
+				} else {
+					return s1.m_head2head[s2.m_engineName] > 0;
+				}
+			} else {
+				return s1.m_crashes < s2.m_crashes;
+			}
+		} else {
+			return s1.m_score > s2.m_score;
+		}
+	}
+	return s2.m_disqualified;
+}
+#endif
 
 void EngineMatch::generateCrossTable(QVariantMap& eMap)
 {
@@ -504,6 +531,13 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				if (!disqualified) {
 					whiteData.m_score += 1;
 					whiteData.m_winsAsWhite++;
+					if (whiteData.m_head2head.contains(blackName)) {
+						whiteData.m_head2head[blackName]++;
+						blackData.m_head2head[whiteName]--;
+					} else {
+						whiteData.m_head2head[blackName]= 1;
+						blackData.m_head2head[whiteName]= -1;
+					}
 				}
 				whiteDataString += "1";
 				blackDataString += "0";
@@ -511,6 +545,13 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				if (!disqualified) {
 					blackData.m_score += 1;
 					blackData.m_winsAsBlack++;
+					if (whiteData.m_head2head.contains(blackName)) {
+						whiteData.m_head2head[blackName]--;
+						blackData.m_head2head[whiteName]++;
+					} else {
+						whiteData.m_head2head[blackName]= -1;
+						blackData.m_head2head[whiteName]= 1;
+					}
 				}
 				whiteDataString += "0";
 				blackDataString += "1";
