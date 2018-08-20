@@ -371,6 +371,12 @@ void EngineMatch::generateSchedule(QVariantMap& eMap)
 struct CrossTableData
 {
 public:
+	enum WinnerType { WinnerNone, WinnerWhite, WinnerBlack };
+	struct SlotData {
+		int m_gameNo;
+		WinnerType m_winner;
+		double m_result;
+	};
 
 	CrossTableData(QString engineName, int elo = 0, int crashes = 0, int strikes = 0) :
 		m_score(0),
@@ -424,6 +430,7 @@ public:
 	double m_elo;
 	QMap<QString, QString> m_tableData;
 	QMap<QString, int> m_head2head;
+	QMap<QString, QList<SlotData> > m_crossData;
 };
 
 #if 0
@@ -522,8 +529,12 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 			CrossTableData& blackData = ctMap[blackName];
 			QString& whiteDataString = whiteData.m_tableData[blackName];
 			QString& blackDataString = blackData.m_tableData[whiteName];
+			QList<CrossTableData::SlotData>& whiteCrossData = whiteData.m_crossData[blackName];
+			QList<CrossTableData::SlotData>& blackCrossData = blackData.m_crossData[whiteName];
 			const bool disqualified = whiteData.m_disqualified || blackData.m_disqualified;
 
+			CrossTableData::SlotData slotData;
+			slotData.m_gameNo = i + 1;
 			if (result == "*") {
 				continue; // game in progress or invalid or something
 			}
@@ -541,6 +552,11 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				}
 				whiteDataString += "1";
 				blackDataString += "0";
+				slotData.m_winner = CrossTableData::WinnerWhite;
+				slotData.m_result = 1.0;
+				whiteCrossData.append(slotData);
+				slotData.m_result = 0.0;
+				blackCrossData.append(slotData);
 			} else if (result == "0-1") {
 				if (!disqualified) {
 					blackData.m_score += 1;
@@ -555,6 +571,11 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				}
 				whiteDataString += "0";
 				blackDataString += "1";
+				slotData.m_winner = CrossTableData::WinnerBlack;
+				slotData.m_result = 1.0;
+				blackCrossData.append(slotData);
+				slotData.m_result = 0.0;
+				whiteCrossData.append(slotData);
 			} else if (result == "1/2-1/2") {
 				if (!disqualified) {
 					whiteData.m_score += 0.5;
@@ -562,6 +583,10 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				}
 				whiteDataString += "=";
 				blackDataString += "=";
+				slotData.m_winner = CrossTableData::WinnerNone;
+				slotData.m_result = 0.5;
+				whiteCrossData.append(slotData);
+				blackCrossData.append(slotData);
 			}
 			if (whiteDataString.length() > roundLength) roundLength = whiteDataString.length();
 			if (blackDataString.length() > roundLength) roundLength = blackDataString.length();
@@ -735,6 +760,8 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 			obj["Score"] = i->m_score;
 			obj["GamesAsWhite"] = i->m_gamesPlayedAsWhite;
 			obj["GamesAsBlack"] = i->m_gamesPlayedAsBlack;
+			obj["WinsAsWhite"] = i->m_winsAsWhite;
+			obj["WinsAsBlack"] = i->m_winsAsBlack;
 			obj["Games"] = i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack;
 			obj["Neustadtl"] = i->m_neustadtlScore;
 			obj["Strikes"] = i->m_strikes;
@@ -746,20 +773,23 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 					continue;
 				QVariantMap result;
 				QVariantList scores;
-				for (const QChar& ch : i->m_tableData[engineName])
-					switch (ch.toLatin1()) {
-					case '1':
-						scores << 1.0;
+				for (const CrossTableData::SlotData& slotData : i->m_crossData[engineName]) {
+					QVariantMap slot;
+					slot["Game"] = slotData.m_gameNo;
+					slot["Result"] = slotData.m_result;
+					switch (slotData.m_winner) {
+					case CrossTableData::WinnerNone:
+						slot["Winner"] = "None";
 						break;
-					case '=':
-						scores << 0.5;
+					case CrossTableData::WinnerWhite:
+						slot["Winner"] = "White";
 						break;
-					case '0':
-						scores << 0.0;
-						break;
-					default:
+					case CrossTableData::WinnerBlack:
+						slot["Winner"] = "Black";
 						break;
 					}
+					scores.append(slot);
+				}
 				result["Text"] = i->m_tableData[engineName];
 				result["Scores"] = scores;
 				results[engineName] = result;
