@@ -181,7 +181,7 @@ bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 	// encounter, return true
 	int leadScore = qMax(pair->firstScore(), pair->secondScore());
 	int pointsInProgress = pair->gamesInProgress() * 2;
-	leadScore += pointsInProgress;
+	//leadScore += pointsInProgress;
 	if (leadScore <= gamesPerEncounter())
 		return true;
 

@@ -575,8 +575,39 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 
 				pList = tfMap["matchProgress"].toList();
 				QVariantList::iterator p;
+				double engineOne = 0;
+				double engineTwo = 0;
+				int matchNum = 1;
 				for (p = pList.begin(); p != pList.end(); ++p) {
 					QVariantMap pMap = p->toMap();
+					if (pMap["result"] == "1-0")
+					{
+						if (matchNum%2 == 0)
+						{
+							engineTwo = engineTwo + 1;
+						}
+						else
+						{
+							engineOne = engineOne + 1;
+						}
+					}
+					else if (pMap["result"] == "0-1")
+					{
+						if (matchNum%2 == 1)
+						{
+							engineTwo = engineTwo + 1;
+						}
+						else
+						{
+							engineOne = engineOne + 1;
+						}
+					}
+					else if (pMap["result"] == "1/2-1/2")
+					{
+						engineTwo = engineTwo + 0.5;
+						engineOne = engineOne + 0.5;
+					}
+					matchNum = matchNum + 1;
 					if (pMap["result"] == "*") {
 						pList.erase(p, pList.end());
 						break;
@@ -585,7 +616,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				tfMap.insert("matchProgress", pList);
 				nextGame = pList.size();
 				if (nextGame > 0)
-					tournament->setResume(nextGame);
+					tournament->setResume(nextGame, engineOne, engineTwo);
 			}
 		}
 	} else { // !usingTournamentFile

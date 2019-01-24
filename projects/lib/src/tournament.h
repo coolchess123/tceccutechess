@@ -282,7 +282,7 @@ class LIB_EXPORT Tournament : public QObject
 		 * Play will resume after the last completed game. Openings, including
 		 * repeated and randomly chosen openings, will resume as well.
 		 */
-		void setResume(int nextGameNumber);
+		void setResume(int nextGameNumber, double eng1Score, double eng2Score);
 		/*!
 		 * Sets the tournament to Berger/Schurig scheduling if \a enabled.
 		 */
@@ -553,6 +553,8 @@ class LIB_EXPORT Tournament : public QObject
 		QVector<QPair<QVector<Chess::Move>, QString> > m_cycleOpenings;
 		bool m_reloadEngines;
 		int m_strikes;
+		double m_eng1Score;
+		double m_eng2Score;
 };
 
 #endif // TOURNAMENT_H

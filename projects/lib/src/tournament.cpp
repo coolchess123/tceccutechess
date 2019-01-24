@@ -359,10 +359,12 @@ void Tournament::setReloadEngines(bool enabled)
 	m_reloadEngines = enabled;
 }
 
-void Tournament::setResume(int nextGameNumber)
+void Tournament::setResume(int nextGameNumber, double eng1Score, double eng2Score)
 {
 	Q_ASSERT(nextGameNumber >= 0);
 	m_resumeGameNumber = nextGameNumber;
+	m_eng2Score = eng2Score;
+	m_eng1Score = eng1Score;
 }
 
 void Tournament::addPlayer(PlayerBuilder* builder,
@@ -1203,6 +1205,14 @@ void Tournament::start()
 			}
 
 			skipGame(pair);
+		}
+		addScore(0, m_eng1Score * 2);
+		addScore(1, m_eng2Score * 2);
+		if ((m_eng1Score * 2 > m_finalGameCount) ||
+			(m_eng2Score * 2 > m_finalGameCount))
+		{
+			stop();
+			return;
 		}
 	}
 
