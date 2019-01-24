@@ -21,8 +21,9 @@
 #include <algorithm>
 
 PyramidTournament::PyramidTournament(GameManager* gameManager,
+					   EngineManager* engineManager,
 					   QObject *parent)
-	: Tournament(gameManager, parent),
+	: Tournament(gameManager, engineManager, parent),
 	  m_pairNumber(0),
 	  m_currentPlayer(1)
 {
@@ -64,4 +65,17 @@ TournamentPair* PyramidTournament::nextPair(int gameNumber)
 	int black = m_pairNumber++;
 
 	return pair(white, black);
+}
+
+int PyramidTournament::gamesPerRound() const
+{
+	// TODO: Implement for TCEC
+	return 0;
+}
+
+QList< QPair<QString, QString> > PyramidTournament::getPairings()
+{
+	// TODO: Implement pyramid for TCEC
+	QList< QPair<QString, QString> > pList;
+	return pList;
 }

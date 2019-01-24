@@ -103,7 +103,7 @@ void EvalWidget::onEval(const MoveEvaluation& eval)
 		item->setText(npsStr);
 		m_statsTable->setItem(0, NpsHeader, item);
 	}
-	if (eval.tbHits())
+	if (eval.tbHits() && eval.tbHits() != MoveEvaluation::NULL_TBHITS)
 	{
 		auto item = m_statsTable->itemPrototype()->clone();
 		item->setText(QString::number(eval.tbHits()));

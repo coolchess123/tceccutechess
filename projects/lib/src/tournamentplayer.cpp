@@ -29,12 +29,18 @@ TournamentPlayer::TournamentPlayer(PlayerBuilder* builder,
 	  m_bookDepth(bookDepth),
 	  m_wins(0),
 	  m_draws(0),
-	  m_losses(0)
+	  m_losses(0),
+	  m_crashes(0)
 {
 	Q_ASSERT(builder != nullptr);
 }
 
 const PlayerBuilder* TournamentPlayer::builder() const
+{
+	return m_builder;
+}
+
+PlayerBuilder* TournamentPlayer::builder()
 {
 	return m_builder;
 }
@@ -80,6 +86,11 @@ int TournamentPlayer::losses() const
 	return m_losses;
 }
 
+int TournamentPlayer::crashes() const
+{
+	return m_crashes;
+}
+
 int TournamentPlayer::score() const
 {
 	return m_wins * 2 + m_draws;
@@ -89,6 +100,10 @@ void TournamentPlayer::addScore(int score)
 {
 	switch (score)
 	{
+	case -1:
+		m_crashes++;
+		m_losses++;
+		break;
 	case 0:
 		m_losses++;
 		break;

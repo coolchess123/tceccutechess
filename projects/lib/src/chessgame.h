@@ -105,6 +105,7 @@ class LIB_EXPORT ChessGame : public QObject
 			      Chess::Result result = Chess::Result());
 		void startFailed(ChessGame* game = nullptr);
 		void playersReady();
+		void pgnMove();
 
 	private slots:
 		void startGame();
@@ -121,7 +122,10 @@ class LIB_EXPORT ChessGame : public QObject
 		void initializePgn();
 		void addPgnMove(const Chess::Move& move, const QString& comment);
 		void emitLastMove();
-		
+
+		QString evalString(const MoveEvaluation& eval, const Chess::Move& move);
+		QString statusString(const Chess::Move& move, bool doMove);
+
 		Chess::Board* m_board;
 		ChessPlayer* m_player[2];
 		TimeControl m_timeControl[2];

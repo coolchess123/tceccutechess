@@ -22,6 +22,8 @@
 #include <QObject>
 #include <QMap>
 #include <QString>
+#include <QFile>
+#include <QTextStream>
 #include <QElapsedTimer>
 #include <openingbook.h>
 
@@ -42,6 +44,10 @@ class EngineMatch : public QObject
 		void setDebugMode(bool debug);
 		void setRatingInterval(int interval);
 		void setBookMode(OpeningBook::AccessMode mode);
+		void setTournamentFile(QString &tournamentFile);
+		void setEloKfactor(qreal eloKfactor);
+		void setOutputFormats(bool pgnFormat, bool jsonFormat);
+		void setDebugFile(const QString& debugFile);
 
 		void start();
 		void stop();
@@ -52,11 +58,14 @@ class EngineMatch : public QObject
 	private slots:
 		void onGameStarted(ChessGame* game, int number);
 		void onGameFinished(ChessGame* game, int number);
+		void onGameSkipped(int number, int white, int black);
 		void onTournamentFinished();
 		void print(const QString& msg);
 
 	private:
 		void printRanking();
+		void generateSchedule(QVariantMap& eMap);
+		void generateCrossTable(QVariantMap& eMap);
 
 		Tournament* m_tournament;
 		bool m_debug;
@@ -64,6 +73,12 @@ class EngineMatch : public QObject
 		OpeningBook::AccessMode m_bookMode;
 		QMap<QString, OpeningBook*> m_books;
 		QElapsedTimer m_startTime;
+		QString m_tournamentFile;
+		qreal m_eloKfactor;
+		bool m_pgnFormat;
+		bool m_jsonFormat;
+		QFile m_debugFile;
+		QTextStream m_debugOut;
 };
 
 #endif // ENGINEMATCH_H

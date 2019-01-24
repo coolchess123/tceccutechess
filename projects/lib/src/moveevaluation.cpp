@@ -29,7 +29,7 @@ MoveEvaluation::MoveEvaluation()
 	  m_ponderhitRate(0),
 	  m_nodeCount(0),
 	  m_nps(0),
-	  m_tbHits(0)
+	  m_tbHits(NULL_TBHITS)
 {
 }
 
@@ -80,7 +80,7 @@ bool MoveEvaluation::isEmpty() const
 	&&  m_ponderhitRate == 0
 	&&  m_nodeCount == 0
 	&&  m_nps == 0
-	&&  m_tbHits == 0
+	&&  m_tbHits == NULL_TBHITS
 	&&  m_ponderMove.isEmpty())
 		return true;
 	return false;
@@ -192,7 +192,7 @@ void MoveEvaluation::clear()
 	m_pvNumber = 0;
 	m_nodeCount = 0;
 	m_nps = 0;
-	m_tbHits = 0;
+	m_tbHits = NULL_TBHITS;
 	m_hashUsage = 0;
 	m_ponderhitRate = 0;
 	m_pv.clear();
@@ -275,7 +275,7 @@ void MoveEvaluation::merge(const MoveEvaluation& other)
 		m_nodeCount = other.m_nodeCount;
 	if (other.m_nps)
 		m_nps = other.m_nps;
-	if (other.m_tbHits)
+	if (other.m_tbHits != NULL_TBHITS)
 		m_tbHits = other.m_tbHits;
 	if (other.m_hashUsage)
 		m_hashUsage = other.m_hashUsage;

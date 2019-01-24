@@ -17,7 +17,7 @@
 */
 
 #include "engineconfiguration.h"
-
+#include <QSet>
 #include "engineoption.h"
 #include "enginetextoption.h"
 #include "engineoptionfactory.h"
@@ -27,7 +27,9 @@ EngineConfiguration::EngineConfiguration()
 	  m_whiteEvalPov(false),
 	  m_pondering(false),
 	  m_validateClaims(true),
-	  m_restartMode(RestartAuto)
+	  m_restartMode(RestartAuto),
+	  m_rating(0),
+	  m_strikes(0)
 {
 }
 
@@ -41,7 +43,9 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_whiteEvalPov(false),
 	  m_pondering(false),
 	  m_validateClaims(true),
-	  m_restartMode(RestartAuto)
+	  m_restartMode(RestartAuto),
+	  m_rating(0),
+	  m_strikes(0)
 {
 }
 
@@ -50,7 +54,9 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_whiteEvalPov(false),
 	  m_pondering(false),
 	  m_validateClaims(true),
-	  m_restartMode(RestartAuto)
+	  m_restartMode(RestartAuto),
+	  m_rating(0),
+	  m_strikes(0)
 {
 	const QVariantMap map = variant.toMap();
 
@@ -95,6 +101,12 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 				addOption(option);
 		}
 	}
+
+	if (map.contains("rating"))
+		setRating(map["rating"].toInt());
+
+	if (map.contains("strikes"))
+		setStrikes(map["strikes"].toInt());
 }
 
 EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
@@ -109,7 +121,9 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_whiteEvalPov(other.m_whiteEvalPov),
 	  m_pondering(other.m_pondering),
 	  m_validateClaims(other.m_validateClaims),
-	  m_restartMode(other.m_restartMode)
+	  m_restartMode(other.m_restartMode),
+	  m_rating(other.m_rating),
+	  m_strikes(other.m_strikes)
 {
 	const auto options = other.options();
 	for (const EngineOption* option : options)
@@ -118,6 +132,7 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 
 EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 {
+	// GV: Can this even happen? Leave it in anyway?
 	if (this == &other)
 		return *this;
 
@@ -135,6 +150,8 @@ EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 	m_validateClaims = other.m_validateClaims;
 	m_restartMode = other.m_restartMode;
 	m_options = other.m_options;
+	m_rating = other.m_rating;
+	m_strikes = other.m_strikes;
 
 	// other's destructor will cause a mess if its m_options isn't cleared
 	other.m_options.clear();
@@ -183,6 +200,12 @@ QVariant EngineConfiguration::toVariant() const
 		map.insert("options", optionsList);
 	}
 
+	if (m_rating)
+		map.insert("rating", m_rating);
+
+	if (m_strikes > 0)
+		map.insert("strikes", m_strikes);
+
 	return map;
 }
 
@@ -211,6 +234,16 @@ void EngineConfiguration::setStderrFile(const QString& fileName)
 	m_stderrFile = fileName;
 }
 
+void EngineConfiguration::setRating(const int rating)
+{
+	m_rating = rating > 0 ? rating : 0;
+}
+
+void EngineConfiguration::setStrikes(const int strikes)
+{
+	m_strikes = strikes > 0 ? strikes : 0;
+}
+
 QString EngineConfiguration::name() const
 {
 	return m_name;
@@ -234,6 +267,16 @@ QString EngineConfiguration::stderrFile() const
 QString EngineConfiguration::protocol() const
 {
 	return m_protocol;
+}
+
+int EngineConfiguration::rating() const
+{
+	return m_rating;
+}
+
+int EngineConfiguration::strikes() const
+{
+	return m_strikes;
 }
 
 QStringList EngineConfiguration::arguments() const
@@ -377,6 +420,8 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 		m_pondering = other.m_pondering;
 		m_validateClaims = other.m_validateClaims;
 		m_restartMode = other.m_restartMode;
+		m_rating = other.m_rating;
+		m_strikes = other.m_strikes;
 
 		qDeleteAll(m_options);
 		m_options.clear();
@@ -385,4 +430,62 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 			m_options.append(option->copy());
 	}
 	return *this;
+}
+
+bool EngineConfiguration::operator!=(const EngineConfiguration& other) const
+{
+	return !operator==(other);
+}
+
+static bool equivalent(const QStringList& l1, const QStringList& l2, Qt::CaseSensitivity cs = Qt::CaseSensitive)
+{
+	for (auto str : l1)
+		if (!l2.contains(str, cs))
+			return false;
+	for (auto str : l2)
+		if (!l1.contains(str, cs))
+			return false;
+	return true;
+}
+
+bool EngineConfiguration::operator==(const EngineConfiguration& other) const
+{
+	if (m_whiteEvalPov != other.m_whiteEvalPov
+		|| m_pondering != other.m_pondering
+		|| m_validateClaims != other.m_validateClaims
+		|| m_restartMode != other.m_restartMode
+		|| m_rating != other.m_rating
+		|| m_strikes != other.m_strikes
+		|| m_name != other.m_name
+		|| m_command != other.m_command
+		|| m_workingDirectory != other.m_workingDirectory
+		|| m_stderrFile != other.m_stderrFile
+		|| m_protocol != other.m_protocol
+		|| m_arguments != other.m_arguments
+		|| m_initStrings != other.m_initStrings
+		|| !equivalent(m_variants, other.m_variants))
+		return false;
+
+	QSet<QString> names;
+	for (auto op : m_options)
+		names.insert(op->name());
+
+	for (auto oop : other.m_options)
+	{
+		bool found = false;
+		for (auto op : m_options)
+		{
+			if (oop->name() == op->name())
+			{
+				if (oop->value() == op->value())
+					found = true;
+				names.remove(op->name());
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+
+	return names.isEmpty();
 }

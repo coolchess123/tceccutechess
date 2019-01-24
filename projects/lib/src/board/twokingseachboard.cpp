@@ -193,7 +193,7 @@ Result TwoKingsEachBoard::result()
 		}
 		else
 		{
-			str = tr("Draw by stalemate");
+			str = tr("Stalemate");
 			return Result(Result::Draw, Side::NoSide, str);
 		}
 	}
@@ -229,21 +229,21 @@ Result TwoKingsEachBoard::result()
 	}
 	if (material <= 1)
 	{
-		str = tr("Draw by insufficient mating material");
+		str = tr("Insufficient material");
 		return Result(Result::Draw, Side::NoSide, str);
 	}
 
 	// 50 move rule
 	if (reversibleMoveCount() >= 100)
 	{
-		str = tr("Draw by fifty moves rule");
+		str = tr("Fifty moves rule");
 		return Result(Result::Draw, Side::NoSide, str);
 	}
 
 	// 3-fold repetition
 	if (repeatCount() >= 2)
 	{
-		str = tr("Draw by 3-fold repetition");
+		str = tr("3-Fold repetition");
 		return Result(Result::Draw, Side::NoSide, str);
 	}
 

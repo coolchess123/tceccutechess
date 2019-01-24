@@ -35,12 +35,15 @@ class LIB_EXPORT KnockoutTournament : public Tournament
 	public:
 		/*! Creates a new Knockout tournament. */
 		explicit KnockoutTournament(GameManager* gameManager,
+						EngineManager* engineManager,
 					    QObject *parent = nullptr);
 
 		// Inherited from Tournament
 		virtual QString type() const;
 		virtual bool canSetRoundMultiplier() const;
 		virtual QString results() const;
+		virtual int gamesPerRound() const;
+		virtual QList< QPair<QString, QString> > getPairings();
 
 	protected:
 		// Inherited from Tournament

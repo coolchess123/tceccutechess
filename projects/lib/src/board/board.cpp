@@ -351,6 +351,37 @@ QString Board::moveString(const Move& move, MoveNotation notation)
 	return lanMoveString(move);
 }
 
+QString Board::sanStringForPv(const QString& pv, MoveNotation notation)
+{
+	QString str;
+	int made = 0;
+	int i;
+
+	if (notation == StandardAlgebraic) {
+		QStringList strList = pv.split(' ');
+		if (strList.isEmpty())
+			return str;
+
+		for (i = 0; i < strList.length(); i++)
+		{
+			QString token = strList.at(i);
+			if (!token.length())
+				break;
+			Move move = moveFromString(token);
+			if (move.isNull())
+				break;
+			str += (made > 0) ? " " : "";
+			str += sanMoveString(move);
+			makeMove(move);
+			made++;
+		}
+		for (i = 0; i < made; i++) {
+			undoMove();
+		}
+	}
+	return str;
+}
+
 Move Board::moveFromLanString(const QString& istr)
 {
 	QString str(istr);

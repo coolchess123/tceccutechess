@@ -52,8 +52,8 @@ QTextStream& operator<<(QTextStream& out, const PgnGame& game)
 
 PgnGame::PgnGame()
 	: m_startingSide(Chess::Side::White),
-	  m_eco(EcoNode::root()),
-	  m_tagReceiver(nullptr)
+	  m_tagReceiver(nullptr),
+	  m_key(0)
 {
 }
 
@@ -65,7 +65,6 @@ bool PgnGame::isNull() const
 void PgnGame::clear()
 {
 	m_startingSide = Chess::Side();
-	m_eco = EcoNode::root();
 	m_tags.clear();
 	m_moves.clear();
 }
@@ -100,18 +99,19 @@ const QVector<PgnGame::MoveData>& PgnGame::moves() const
 	return m_moves;
 }
 
-void PgnGame::addMove(const MoveData& data, bool addEco)
+void PgnGame::addMove(const MoveData& data, quint64 key, bool addEco)
 {
 	m_moves.append(data);
+	m_key = key;
 
-	if (addEco) {
-		m_eco = (m_eco && isStandard()) ? m_eco->child(data.moveString)
-						: nullptr;
-		if (m_eco && m_eco->isLeaf())
+	if (addEco && isStandard())
+	{
+		const EcoNode* eco = EcoNode::find(key);
+		if (eco)
 		{
-			setTag("ECO", m_eco->ecoCode());
-			setTag("Opening", m_eco->opening());
-			setTag("Variation", m_eco->variation());
+			setTag("ECO", eco->ecoCode());
+			setTag("Opening", eco->opening());
+			setTag("Variation", eco->variation());
 		}
 	}
 }
@@ -202,9 +202,9 @@ bool PgnGame::parseMove(PgnStream& in, bool addEco)
 
 	MoveData md = { board->key(), board->genericMove(move),
 			str, QString() };
-	addMove(md, addEco);
-
 	board->makeMove(move);
+	addMove(md, board->key(), addEco);
+
 	return true;
 }
 
@@ -295,7 +295,7 @@ bool PgnGame::write(QTextStream& out, PgnMode mode) const
 	int movenum = 0;
 	int side = m_startingSide;
 
-	if (m_moves.isEmpty() && !m_initialComment.isEmpty())
+	if (!m_initialComment.isEmpty())
 		out << "\n" << "{" << m_initialComment << "}";
 
 	for (int i = 0; i < m_moves.size(); i++)
@@ -415,6 +415,11 @@ QString PgnGame::startingFenString() const
 	return m_tags.value("FEN");
 }
 
+quint64 PgnGame::key() const
+{
+	return m_key;
+}
+
 void PgnGame::setTag(const QString& tag, const QString& value)
 {
 	if (value.isEmpty())
@@ -444,9 +449,12 @@ void PgnGame::setDate(const QDate& date)
 	setTag("Date", date.toString("yyyy.MM.dd"));
 }
 
-void PgnGame::setRound(int round)
+void PgnGame::setRound(int round, int game)
 {
-	setTag("Round", QString::number(round));
+	QString value(QString::number(round));
+	if (game > 0)
+		value += '.' + QString::number(game);
+	setTag("Round", value);
 }
 
 void PgnGame::setPlayerName(Chess::Side side, const QString& name)
@@ -455,6 +463,14 @@ void PgnGame::setPlayerName(Chess::Side side, const QString& name)
 		setTag("White", name);
 	else if (side == Chess::Side::Black)
 		setTag("Black", name);
+}
+
+void PgnGame::setPlayerRating(Chess::Side side, const int rating)
+{
+	if (side == Chess::Side::White && rating) // remove "&& rating" if "-" is desired
+		setTag("WhiteElo", rating ? QString::number(rating) : "-");
+	else if (side == Chess::Side::Black && rating)
+		setTag("BlackElo", rating ? QString::number(rating) : "-");
 }
 
 void PgnGame::setResult(const Chess::Result& result)
@@ -527,7 +543,11 @@ void PgnGame::setResultDescription(const QString& description)
 
 	QString& comment = m_moves.last().comment;
 	if (!comment.isEmpty())
-		comment += ", ";
+	{
+		if (comment[comment.size() - 1] != ',')
+			comment += ',';
+		comment += ' ';
+	}
 
 	comment += description;
 }
@@ -553,6 +573,16 @@ void PgnGame::setGameEndTime(const QDateTime& dateTime)
 	setTag("GameEndTime", timeStamp(dateTime));
 
 	int d = m_gameStartTime.secsTo(dateTime);
-	QTime time = QTime(d / 3600, d % 3600 / 60, d % 60);
-	setTag("GameDuration", time.toString("hh:mm:ss"));
+	m_gameDuration = QTime(d / 3600, d % 3600 / 60, d % 60);
+	setTag("GameDuration", m_gameDuration.toString("hh:mm:ss"));
+}
+
+const QTime& PgnGame::gameDuration() const
+{
+	return m_gameDuration;
+}
+
+QString PgnGame::initialComment() const
+{
+	return m_initialComment;
 }

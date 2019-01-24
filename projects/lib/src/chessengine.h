@@ -118,6 +118,9 @@ class LIB_EXPORT ChessEngine : public ChessPlayer
 		/*! Returns a list of supported chess variants. */
 		QStringList variants() const;
 		
+		/*! Returns the options set by the engine's configuration. */
+		QString configurationString() const;
+
 	public slots:
 		// Inherited from ChessPlayer
 		virtual void go();
@@ -288,6 +291,7 @@ class LIB_EXPORT ChessEngine : public ChessPlayer
 		QList<EngineOption*> m_options;
 		QMap<QString, QVariant> m_optionBuffer;
 		EngineConfiguration::RestartMode m_restartMode;
+		QString m_configurationString;
 };
 
 #endif // CHESSENGINE_H

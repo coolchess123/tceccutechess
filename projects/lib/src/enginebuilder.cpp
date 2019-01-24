@@ -26,6 +26,15 @@ EngineBuilder::EngineBuilder(const EngineConfiguration& config)
 	: PlayerBuilder(config.name()),
 	  m_config(config)
 {
+	setRating(config.rating());
+	setStrikes(config.strikes());
+}
+
+void EngineBuilder::setConfiguration(const EngineConfiguration& config)
+{
+	m_config = config;
+	setRating(config.rating());
+	setStrikes(config.strikes());
 }
 
 bool EngineBuilder::isHuman() const

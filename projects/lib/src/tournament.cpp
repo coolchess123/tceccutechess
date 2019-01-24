@@ -22,6 +22,7 @@
 #include <QSet>
 #include "gamemanager.h"
 #include "playerbuilder.h"
+#include "enginebuilder.h"
 #include "board/boardfactory.h"
 #include "chessplayer.h"
 #include "chessgame.h"
@@ -30,10 +31,13 @@
 #include "openingbook.h"
 #include "sprt.h"
 #include "elo.h"
+#include <jsonserializer.h>
 
-Tournament::Tournament(GameManager* gameManager, QObject *parent)
+Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
+					   QObject *parent)
 	: QObject(parent),
 	  m_gameManager(gameManager),
+	  m_engineManager(engineManager),
 	  m_lastGame(nullptr),
 	  m_variant("standard"),
 	  m_round(0),
@@ -58,9 +62,20 @@ Tournament::Tournament(GameManager* gameManager, QObject *parent)
 	  m_repetitionCounter(0),
 	  m_swapSides(true),
 	  m_pgnOutMode(PgnGame::Verbose),
-	  m_pair(nullptr)
+	  m_pair(nullptr),
+	  m_livePgnOutMode(PgnGame::Verbose),
+	  m_pgnFormat(true),
+	  m_jsonFormat(true),
+	  m_resumeGameNumber(0),
+	  m_bergerSchedule(false),
+	  m_reloadEngines(false),
+	  m_strikes(0)
 {
 	Q_ASSERT(gameManager != nullptr);
+	Q_ASSERT(engineManager != nullptr);
+
+	connect(engineManager, SIGNAL(engineUpdated(int)), this,
+		SLOT(onEngineUpdated(int)));
 }
 
 Tournament::~Tournament()
@@ -94,6 +109,11 @@ Tournament::~Tournament()
 GameManager* Tournament::gameManager() const
 {
 	return m_gameManager;
+}
+
+EngineManager* Tournament::engineManager() const
+{
+	return m_engineManager;
 }
 
 bool Tournament::isFinished() const
@@ -166,6 +186,26 @@ Sprt* Tournament::sprt() const
 	return m_sprt;
 }
 
+bool Tournament::swapSides() const
+{
+	return m_swapSides;
+}
+
+bool Tournament::bergerSchedule() const
+{
+	return m_bergerSchedule;
+}
+
+bool Tournament::usesBergerSchedule() const
+{
+	return m_bergerSchedule && type() == "round-robin";
+}
+
+int Tournament::strikes() const
+{
+	return m_strikes;
+}
+
 bool Tournament::canSetRoundMultiplier() const
 {
 	return true;
@@ -185,6 +225,11 @@ void Tournament::setVariant(const QString& variant)
 {
 	Q_ASSERT(Chess::BoardFactory::variants().contains(variant));
 	m_variant = variant;
+}
+
+void Tournament::setEventDate(const QString& eventDate)
+{
+	m_eventDate = eventDate;
 }
 
 void Tournament::setCurrentRound(int round)
@@ -272,6 +317,23 @@ void Tournament::setEpdOutput(const QString& fileName)
 	}
 }
 
+void Tournament::setLivePgnOutput(const QString& fileName, PgnGame::PgnMode mode)
+{
+	m_livePgnOut = fileName;
+	m_livePgnOutMode = mode;
+}
+
+void Tournament::setLivePgnFormats(bool pgnFormat, bool jsonFormat)
+{
+	m_pgnFormat = pgnFormat;
+	m_jsonFormat = jsonFormat;
+}
+
+void Tournament::setStrikes(int strikes)
+{
+	m_strikes = strikes;
+}
+
 void Tournament::setOpeningRepetitions(int count)
 {
 	m_openingRepetitions = count;
@@ -285,6 +347,22 @@ void Tournament::setSwapSides(bool enabled)
 void Tournament::setOpeningBookOwnership(bool enabled)
 {
 	m_bookOwnership = enabled;
+}
+
+void Tournament::setBergerSchedule(bool enabled)
+{
+	m_bergerSchedule = enabled;
+}
+
+void Tournament::setReloadEngines(bool enabled)
+{
+	m_reloadEngines = enabled;
+}
+
+void Tournament::setResume(int nextGameNumber)
+{
+	Q_ASSERT(nextGameNumber >= 0);
+	m_resumeGameNumber = nextGameNumber;
 }
 
 void Tournament::addPlayer(PlayerBuilder* builder,
@@ -338,8 +416,21 @@ bool Tournament::hasGauntletRatingsOrder() const
 void Tournament::startGame(TournamentPair* pair)
 {
 	Q_ASSERT(pair->isValid());
+
+	// Reload the engines
+	if (m_reloadEngines)
+	{
+		QString configFile("engines.json");
+		m_engineManager->reloadEngines(configFile);
+	}
+
 	m_pair = pair;
 	m_pair->addStartedGame();
+	const bool usesBerger = usesBergerSchedule();
+	if (m_swapSides && usesBerger
+			&& (m_nextGameNumber / gamesPerCycle()) % 2
+				== m_pair->hasOriginalOrder())
+		m_pair->swapPlayers();
 
 	const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
 	const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
@@ -352,6 +443,8 @@ void Tournament::startGame(TournamentPair* pair)
 		this, SLOT(onGameStarted(ChessGame*)));
 	connect(game, SIGNAL(finished(ChessGame*)),
 		this, SLOT(onGameFinished(ChessGame*)));
+	connect(game, SIGNAL(pgnMove()),
+		this, SLOT(onPgnMove()));
 
 	game->setTimeControl(white.timeControl(), Chess::Side::White);
 	game->setTimeControl(black.timeControl(), Chess::Side::Black);
@@ -359,43 +452,78 @@ void Tournament::startGame(TournamentPair* pair)
 	game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
 	game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
 
-	if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
+	if (usesBerger)
 	{
-		game->setStartingFen(m_startFen);
-		game->setMoves(m_openingMoves);
-		m_startFen.clear();
-		m_openingMoves.clear();
-		m_repetitionCounter++;
+		QPair<QVector<Chess::Move>, QString>& cycleGame =
+						m_cycleOpenings[m_nextGameNumber % gamesPerCycle()];
+		if (m_nextGameNumber / gamesPerCycle() % m_openingRepetitions)
+		{
+			game->setStartingFen(cycleGame.second);
+			game->setMoves(cycleGame.first);
+
+			game->generateOpening();
+		}
+		else
+		{
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+
+			game->generateOpening();
+			cycleGame.first = game->moves();
+			cycleGame.second = game->startingFen();
+			if (cycleGame.second.isEmpty() && board->isRandomVariant())
+			{
+				cycleGame.second = board->defaultFenString();
+				game->setStartingFen(cycleGame.second);
+			}
+		}
 	}
 	else
 	{
-		m_repetitionCounter = 1;
-		if (m_openingSuite != nullptr)
+		if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
 		{
-			if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
-				qWarning("The opening suite is incompatible with the "
-				"current chess variant");
-		}
-	}
-
-	game->generateOpening();
-	if (m_repetitionCounter < m_openingRepetitions)
-	{
-		m_startFen = game->startingFen();
-		if (m_startFen.isEmpty() && board->isRandomVariant())
-		{
-			m_startFen = board->defaultFenString();
 			game->setStartingFen(m_startFen);
+			game->setMoves(m_openingMoves);
+			m_startFen.clear();
+			m_openingMoves.clear();
+			m_repetitionCounter++;
 		}
-		m_openingMoves = game->moves();
+		else
+		{
+			m_repetitionCounter = 1;
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+		}
+
+		game->generateOpening();
+		if (m_repetitionCounter < m_openingRepetitions)
+		{
+			m_startFen = game->startingFen();
+			if (m_startFen.isEmpty() && board->isRandomVariant())
+			{
+				m_startFen = board->defaultFenString();
+				game->setStartingFen(m_startFen);
+			}
+			m_openingMoves = game->moves();
+		}
 	}
 
 	game->pgn()->setEvent(m_name);
 	game->pgn()->setSite(m_site);
-	game->pgn()->setRound(m_round);
 
-	if (m_finishedGameCount > 0)
-		game->setStartDelay(m_startDelay);
+	const int gpr = gamesPerRound();
+	const int gameNo = gpr ? m_nextGameNumber % gpr + 1 : 0;
+	game->pgn()->setRound(m_round, gameNo);
+
+	game->setStartDelay(m_startDelay);
 	game->setAdjudicator(m_adjudicator);
 
 	GameData* data = new GameData;
@@ -410,7 +538,7 @@ void Tournament::startGame(TournamentPair* pair)
 
 	// Make sure the next game (if any) between the pair will
 	// start with reversed colors.
-	if (m_swapSides)
+	if (m_swapSides && !usesBerger)
 		m_pair->swapPlayers();
 
 	auto whiteBuilder = white.builder();
@@ -423,6 +551,112 @@ void Tournament::startGame(TournamentPair* pair)
 			       blackBuilder,
 			       GameManager::Enqueue,
 			       GameManager::ReusePlayers);
+}
+
+void Tournament::skipGame(TournamentPair* pair)
+{
+	Q_ASSERT(pair->isValid());
+
+	// Reload the engines
+	if (m_reloadEngines)
+	{
+		QString configFile("engines.json");
+		m_engineManager->reloadEngines(configFile);
+	}
+
+	m_pair = pair;
+	m_pair->addStartedGame();
+	const bool usesBerger = usesBergerSchedule();
+	if (m_swapSides && usesBerger
+			&& (m_nextGameNumber / gamesPerCycle()) % 2
+				== m_pair->hasOriginalOrder())
+		m_pair->swapPlayers();
+
+	const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
+	const TournamentPlayer& black = m_players[m_pair->secondPlayer()];
+
+	Chess::Board* board = Chess::BoardFactory::create(m_variant);
+	Q_ASSERT(board != nullptr);
+	ChessGame* game = new ChessGame(board, new PgnGame());
+
+	game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
+	game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
+
+	if (usesBerger)
+	{
+		QPair<QVector<Chess::Move>, QString>& cycleGame =
+						m_cycleOpenings[m_nextGameNumber % gamesPerCycle()];
+		if (m_nextGameNumber / gamesPerCycle() % m_openingRepetitions)
+		{
+			game->setStartingFen(cycleGame.second);
+			game->setMoves(cycleGame.first);
+
+			game->generateOpening();
+		}
+		else
+		{
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+
+			game->generateOpening();
+			cycleGame.first = game->moves();
+			cycleGame.second = game->startingFen();
+			if (cycleGame.second.isEmpty() && board->isRandomVariant())
+			{
+				cycleGame.second = board->defaultFenString();
+				game->setStartingFen(cycleGame.second);
+			}
+		}
+	}
+	else
+	{
+		if (!m_startFen.isEmpty() || !m_openingMoves.isEmpty())
+		{
+			game->setStartingFen(m_startFen);
+			game->setMoves(m_openingMoves);
+			m_startFen.clear();
+			m_openingMoves.clear();
+			m_repetitionCounter++;
+		}
+		else
+		{
+			m_repetitionCounter = 1;
+			if (m_openingSuite != nullptr)
+			{
+				if (!game->setMoves(m_openingSuite->nextGame(m_openingDepth)))
+					qWarning("The opening suite is incompatible with the "
+					"current chess variant");
+			}
+		}
+
+		game->generateOpening();
+		if (m_repetitionCounter < m_openingRepetitions)
+		{
+			m_startFen = game->startingFen();
+			if (m_startFen.isEmpty() && board->isRandomVariant())
+			{
+				m_startFen = board->defaultFenString();
+				game->setStartingFen(m_startFen);
+			}
+			m_openingMoves = game->moves();
+		}
+	}
+
+	++m_nextGameNumber;
+	++m_finishedGameCount;
+	++m_savedGameCount;
+
+	if (m_nextGameNumber > m_finalGameCount)
+		m_finalGameCount = m_nextGameNumber;
+
+	if (m_swapSides && !usesBerger)
+		m_pair->swapPlayers();
+
+	delete game;
 }
 
 void Tournament::onGameAboutToStart(ChessGame *game,
@@ -445,17 +679,42 @@ void Tournament::startNextGame()
 	if (m_stopping)
 		return;
 
-	TournamentPair* pair(nextPair(m_nextGameNumber));
-	if (!pair || !pair->isValid())
-		return;
-
-	if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+	bool needToStop = false;
+	for (;;)
 	{
-		m_startFen.clear();
-		m_openingMoves.clear();
-	}
+		TournamentPair* pair(nextPair(m_nextGameNumber));
+		if (!pair || !pair->isValid())
+		{
+			if (needToStop)
+				stop();
+			break;
+		}
 
-	startGame(pair);
+		if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+		{
+			m_startFen.clear();
+			m_openingMoves.clear();
+		}
+
+		if (m_strikes == 0)
+		{
+			startGame(pair);
+			break;
+		}
+
+		const int iWhite = pair->firstPlayer();
+		const int iBlack = pair->secondPlayer();
+		if (m_players.at(iWhite).crashes() + m_players.at(iWhite).builder()->strikes() < m_strikes
+			&& m_players.at(iBlack).crashes() + m_players.at(iBlack).builder()->strikes() < m_strikes)
+		{
+			startGame(pair);
+			break;
+		}
+
+		skipGame(pair);
+		emit gameSkipped(m_nextGameNumber, iWhite, iBlack);
+		needToStop = true;
+	}
 }
 
 inline bool faulty(const Chess::Result::Type& type)
@@ -572,6 +831,211 @@ void Tournament::onGameStarted(ChessGame* game)
 	m_players[iBlack].setName(game->player(Chess::Side::Black)->name());
 
 	emit gameStarted(game, data->number, iWhite, iBlack);
+
+	onPgnMove();
+}
+
+void Tournament::onPgnMove()
+{
+	if (m_livePgnOut.isEmpty()) return;
+
+	ChessGame* sender = qobject_cast<ChessGame*>(QObject::sender());
+	Q_ASSERT(sender != 0);
+
+	PgnGame* pgn(sender->pgn());
+	Q_ASSERT(pgn != 0);
+
+	if (m_pgnFormat)
+	{
+		const QString fileName(m_livePgnOut + ".pgn");
+		QFile::resize(fileName, 0);
+		pgn->write(fileName, m_livePgnOutMode);
+	}
+
+	if (m_jsonFormat)
+	{
+		Chess::Board* board(sender->board());
+		Q_ASSERT(board != 0);
+		board = board->copy();
+		board->setFenString(board->startingFenString());
+
+		QVariantMap pMap;
+
+		// Parse and assemble engine options
+		QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
+		for (QString& engine : engines)
+		{
+			engine = engine.trimmed();
+			const int ePos = engine.indexOf(':');
+			if (ePos > 0)
+			{
+				QVariantList oList;
+				QStringList options = engine.mid(ePos + 1).trimmed().split(';', QString::SkipEmptyParts);
+				for (QString& option : options)
+				{
+					option = option.trimmed();
+					QVariantMap oMap;
+					const int oPos = option.indexOf('=');
+					if(oPos > 0)
+					{
+						oMap["Name"] = option.left(oPos).trimmed();
+						oMap["Value"] = option.mid(oPos + 1).trimmed();
+					} else
+						oMap["Name"] = option;
+					oList << oMap;
+				}
+				pMap[engine.left(ePos).trimmed()] = oList;
+			}
+		}
+
+		// Assemble tags
+		const QList< QPair<QString, QString> >& tags = pgn->tags();
+		QVariantMap hMap;
+		for(const QPair<QString, QString>& tagPair : tags)
+			hMap[tagPair.first] = tagPair.second;
+		pMap["Headers"] = hMap;
+
+		// Parse and assemble move stats
+		const QVector<PgnGame::MoveData>& moves = pgn->moves();
+		QVariantList mList;
+		for (const PgnGame::MoveData& move : moves)
+		{
+			QVariantMap mMap;
+			QVariantMap aMap;
+
+			mMap["m"] = move.moveString;
+
+			QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
+			sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
+			mMap["from"] = sq;
+
+			sq = static_cast<char>(move.move.targetSquare().file() + 'a');
+			sq += static_cast<char>(move.move.targetSquare().rank() + '1');
+			mMap["to"] = sq;
+
+			mMap["book"] = false;
+
+			QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
+			for(QString& stat : stats)
+			{
+				stat = stat.trimmed();
+				if (stat == "book") {
+					mMap["book"] = true;
+				} else {
+					const int pos = stat.indexOf('=');
+					if (pos > 0)
+					{
+						const QString name(stat.left(pos).trimmed());
+						const QString value(stat.mid(pos + 1).trimmed());
+						if (name == "pv")
+						{
+							QVariantMap pvMap;
+							QVariantList pvList;
+
+							pvMap["San"] = value;
+
+							int pvmCnt = 0;
+							QStringList pvMoves = value.split(' ', QString::SkipEmptyParts);
+							for (const QString& pvMoveStr : pvMoves)
+							{
+								QVariantMap pvMove;
+
+								const Chess::Move& pvbm(board->moveFromString(pvMoveStr));
+								if (pvbm.isNull())
+									break;
+								const Chess::GenericMove& gm(board->genericMove(pvbm));
+
+								board->makeMove(pvbm);
+								++pvmCnt;
+
+								pvMove["m"] = pvMoveStr;
+								pvMove["fen"] = board->fenString();
+
+								sq = static_cast<char>(gm.sourceSquare().file() + 'a');
+								sq += static_cast<char>(gm.sourceSquare().rank() + '1');
+								pvMove["from"] = sq;
+
+								sq = static_cast<char>(gm.targetSquare().file() + 'a');
+								sq += static_cast<char>(gm.targetSquare().rank() + '1');
+								pvMove["to"] = sq;
+
+								pvList << pvMove;
+							}
+							for(; pvmCnt > 0; --pvmCnt)
+								board->undoMove();
+
+							pvMap["Moves"] = pvList;
+							mMap["pv"] = pvMap;
+						}
+						else if (name == "mb")
+						{
+							QVariantMap mbMap;
+							int idx = 0;
+							for (const char* mstr : {"p", "n", "b", "r", "q"})
+							{
+								mbMap[mstr] = value.mid(idx, 2).toInt();
+								idx += 2;
+							}
+							mMap["material"] = mbMap;
+						}
+						else if (name == "R50")
+							aMap["FiftyMoves"] = value.toInt();
+						else if (name == "Rd")
+							aMap["Draw"] = value.toInt();
+						else if (name == "Rr")
+							aMap["ResignOrWin"] = value.toInt();
+						else
+							mMap[name] = value;
+					}
+					else	// real comment
+						mMap["rem"] = stat;
+				}
+			}
+			if (!aMap.empty())
+				mMap["adjudication"] = aMap;
+
+			board->makeMove(board->moveFromGenericMove(move.move));
+
+			mMap["fen"] = board->fenString();
+
+			mList << mMap;
+		}
+		pMap["Moves"] = mList;
+
+		delete board;
+
+		const QString tempName(m_livePgnOut + "_temp.json");
+		const QString finalName(m_livePgnOut + ".json");
+		if (QFile::exists(tempName))
+			QFile::remove(tempName);
+		QFile output(tempName);
+		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qWarning("cannot open live JSON output file: %s", qUtf8Printable(tempName));
+		} else {
+			QTextStream out(&output);
+			JsonSerializer serializer(pMap);
+			serializer.serialize(out);
+			output.close();
+			if (QFile::exists(finalName))
+				QFile::remove(finalName);
+			if (!QFile::rename(tempName, finalName))
+				qWarning("cannot rename live JSON output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
+		}
+	}
+}
+
+void Tournament::onEngineUpdated(int engineIndex)
+{
+	const EngineConfiguration& config = m_engineManager->engineAt(engineIndex);
+
+	for (auto player : m_players)
+		if (player.name() == config.name())
+		{
+			EngineBuilder* builder =
+							reinterpret_cast<EngineBuilder*>(player.builder());
+			builder->setConfiguration(config);
+			break;
+		}
 }
 
 void Tournament::onGameFinished(ChessGame* game)
@@ -579,6 +1043,7 @@ void Tournament::onGameFinished(ChessGame* game)
 	Q_ASSERT(game != nullptr);
 
 	PgnGame* pgn(game->pgn());
+	Chess::Result result(game->result());
 
 	m_finishedGameCount++;
 
@@ -596,20 +1061,38 @@ void Tournament::onGameFinished(ChessGame* game)
 	if (!blackName.isEmpty())
 		m_players[iBlack].setName(blackName);
 
-	switch (game->result().winner())
+	switch (result.winner())
 	{
 	case Chess::Side::White:
 		addScore(iWhite, 2);
-		addScore(iBlack, 0);
+		switch (result.type())
+		{
+		case Chess::Result::Disconnection:
+		case Chess::Result::StalledConnection:
+			addScore(iBlack, -1);
+			break;
+		default:
+			addScore(iBlack, 0);
+			break;
+		}
 		sprtResult = (iWhite == 0) ? Sprt::Win : Sprt::Loss;
 		break;
 	case Chess::Side::Black:
 		addScore(iBlack, 2);
-		addScore(iWhite, 0);
+		switch (result.type())
+		{
+		case Chess::Result::Disconnection:
+		case Chess::Result::StalledConnection:
+			addScore(iWhite, -1);
+			break;
+		default:
+			addScore(iWhite, 0);
+			break;
+		}
 		sprtResult = (iBlack == 0) ? Sprt::Win : Sprt::Loss;
 		break;
 	default:
-		if (game->result().isDraw())
+		if (result.isDraw())
 		{
 			addScore(iWhite, 1);
 			addScore(iBlack, 1);
@@ -621,7 +1104,7 @@ void Tournament::onGameFinished(ChessGame* game)
 	writeEpd(game);
 	writePgn(pgn, gameNumber);
 
-	Chess::Result::Type resultType(game->result().type());
+	Chess::Result::Type resultType(result.type());
 	bool crashed = (resultType == Chess::Result::Disconnection ||
 			resultType == Chess::Result::StalledConnection);
 	if (!m_recover && crashed)
@@ -693,12 +1176,35 @@ void Tournament::start()
 	m_pgnGames.clear();
 	m_startFen.clear();
 	m_openingMoves.clear();
+	const bool usesBerger = usesBergerSchedule();
+	if (usesBerger)
+		m_cycleOpenings.resize(gamesPerCycle());
+	else
+		m_cycleOpenings.clear();
 
 	connect(m_gameManager, SIGNAL(ready()),
 		this, SLOT(startNextGame()));
 
 	initializePairing();
 	m_finalGameCount = gamesPerCycle() * gamesPerEncounter() * roundMultiplier();
+
+	if (m_resumeGameNumber)
+	{
+		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
+		{
+			TournamentPair* pair(nextPair(m_nextGameNumber));
+			if (!pair || !pair->isValid())
+				return;
+
+			if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+			{
+				m_startFen.clear();
+				m_openingMoves.clear();
+			}
+
+			skipGame(pair);
+		}
+	}
 
 	startNextGame();
 }

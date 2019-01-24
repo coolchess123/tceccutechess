@@ -40,6 +40,8 @@ class LIB_EXPORT EngineManager : public QObject
 		int engineCount() const;
 		/*! Returns the engine at \a index. */
 		EngineConfiguration engineAt(int index) const;
+		/*! Returns the index of the engine with \a name or -1 if not found. */
+		int engineIndex(const QString& name) const;
 
 		/*! Adds \a engine to the list of available engines. */
 		void addEngine(const EngineConfiguration& engine);
@@ -60,6 +62,7 @@ class LIB_EXPORT EngineManager : public QObject
 		bool supportsVariant(const QString& variant) const;
 
 		void loadEngines(const QString& fileName);
+		void reloadEngines(const QString& fileName);
 		void saveEngines(const QString& fileName);
 
 		/*! Returns the names of all configured engines. */

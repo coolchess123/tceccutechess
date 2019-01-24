@@ -18,18 +18,199 @@
 #include "chessgame.h"
 #include <QThread>
 #include <QTimer>
+#include <QtMath>
+#include <QRegularExpression>
 #include "board/board.h"
+#include "board/westernboard.h"
 #include "chessplayer.h"
 #include "openingbook.h"
+#include "chessengine.h"
+#include "engineoption.h"
 
-namespace {
-
-QString evalString(const MoveEvaluation& eval)
+QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& move)
 {
-	if (eval.isBookEval())
-		return "book";
 	if (eval.isEmpty())
 		return QString();
+
+#if 1
+	QString str;
+	if (eval.isBookEval())
+		str = "book";
+	else {
+		// score
+		QString sScore;
+		int depth = eval.depth();
+		if (depth > 0)
+		{
+			int score = eval.score();
+			int absScore = qAbs(score);
+
+			// Detect mate-in-n scores
+			if (absScore > 9900
+			&&  (absScore = 1000 - (absScore % 1000)) < 100)
+			{
+				if (score < 0)
+					sScore = "-";
+				sScore += "M" + QString::number(absScore);
+			}
+			else
+				sScore = QString::number(double(score) / 100.0, 'f', 2);
+
+		} else
+			sScore = "0.00";
+
+		str = "d=";
+		if (depth <= 0)
+			depth = 1;
+		str += QString::number(depth);
+
+		// selective depth
+		str += ", sd=";
+		if (eval.selectiveDepth() > depth)
+			str += QString::number(eval.selectiveDepth());
+		else
+			str += QString::number(depth);
+
+		// pv parser / san converter
+		QString sanPv = m_board->sanStringForPv(eval.pv(), Chess::Board::StandardAlgebraic);
+		if (sanPv.isEmpty())
+		{
+			bool lanCheck = true;
+			QRegularExpression re;
+
+			sanPv = eval.pv();
+			if (sanPv.contains('.'))
+			{
+				QString probPv(sanPv);
+				re.setPattern("\\d+\\.\\h+");	// Remove numbering
+				probPv.remove(re);
+				re.setPattern("\\.\\.\\.\\h+");	// Remove ellipses
+				probPv.remove(re);
+				sanPv = m_board->sanStringForPv(probPv, Chess::Board::StandardAlgebraic);
+				lanCheck = sanPv.isEmpty();
+				if (lanCheck)
+					sanPv = probPv;
+			}
+			re.setPattern("-|x");
+			if (lanCheck && sanPv.contains(re))				// LAN notation
+			{
+				re.setPattern("([NBRQK]?)([a-h][1-8])(-|x)([a-h][1-8])([NBRQ]?)");
+				sanPv = sanPv.replace(re, "\\2\\4\\5");
+				sanPv = m_board->sanStringForPv(sanPv, Chess::Board::StandardAlgebraic);
+			}
+		}
+		// ponder move 'pd' algebraic move
+	#if 0
+		QStringList sanList = sanPv.split(' ');
+		if (sanList.length() > 1) {
+			str+= ", pd=" + sanList[1];
+		}
+	#else
+		if (!eval.ponderMove().isEmpty())
+			str+= ", pd=" + eval.ponderMove();
+	#endif
+
+	#if 0
+		// move time 'mt' "hh:mm:ss"
+		int t = eval.time(); // milliseconds
+		str += ", mt=";
+		if (t == 0)
+			str += "00:00:00";
+		else {
+			int total = qFloor(t / 1000.);
+			int hours = qFloor(total / 3600.) % 24; // should be ok, right?
+			int minutes = (total / 60) % 60;
+			int seconds = total % 60;
+			str +=	QString::number(hours).rightJustified(2, '0') + ":" +
+					QString::number(minutes).rightJustified(2, '0') + ":" +
+					QString::number(seconds).rightJustified(2, '0');
+		}
+
+		// time left 'tl' "hh:mm:ss"
+		ChessPlayer *player = m_player[m_board->sideToMove()];
+		Q_ASSERT(player != 0);
+
+		int tl = player->timeControl()->timeLeft(); // milliseconds
+		str += ", tl=";
+		if (tl == 0)
+			str += "00:00:00";
+		else {
+			int total = qFloor(tl / 1000.);
+			int hours = qFloor(total / 3600.) % 24; // should be ok, right?
+			int minutes = (total / 60) % 60;
+			int seconds = total % 60;
+			str +=	QString::number(hours).rightJustified(2, '0') + ":" +
+					QString::number(minutes).rightJustified(2, '0') + ":" +
+					QString::number(seconds).rightJustified(2, '0');
+		}
+
+		// speed 's' "%d kN/s"
+		int nps = eval.nps();
+		str += ", s=" + QString::number(qFloor(nps / 1000)) + " kN/s";
+	#else
+		// move time 'mt'
+		str += ", mt=" + QString::number(eval.time());
+
+		// time left 'tl'
+		ChessPlayer *player = m_player[m_board->sideToMove()];
+		Q_ASSERT(player != 0);
+		str += ", tl=" + QString::number(player->timeControl()->timeLeft());
+
+		// speed 's'
+		str += ", s=" + QString::number(eval.nps());
+	#endif
+
+		// nodes 'n' "%d"
+		str += ", n=" + QString::number(eval.nodeCount());
+
+		// pv 'pv' algebraic string
+		str += ", pv=" + sanPv;
+
+		// tbhits 'tb'
+		str += ", tb=";
+		if (eval.tbHits() == MoveEvaluation::NULL_TBHITS)
+			str += "null";
+		else
+			str += QString::number(eval.tbHits());
+
+		// hash usage
+		str += ", h=" + QString::number(eval.hashUsage() / 10.0, 'f', 1);
+
+		// ponderhit rate
+		str += ", ph=" + QString::number(eval.ponderhitRate() / 10.0, 'f', 1);
+
+		// eval from white's perspective 'wv'
+		Chess::Side side = m_board->sideToMove();
+		str += ", wv=";
+		if (side == Chess::Side::Black && sScore != "0.00") {
+			if (sScore[0] == '-')
+				str += sScore.right(sScore.length() - 1);
+			else
+				str += "-" + sScore;
+		} else {
+			str += sScore;
+		}
+	}
+
+	m_board->makeMove(move);
+
+	// 50-move clock 'R50'
+	str += ", R50=" + QString::number((100 - m_board->reversibleMoveCount()) / 2);
+
+	// draw rule clock 'Rd'
+	str += ", Rd=" + QString::number(m_adjudicator.drawClock(m_board, eval));
+
+	// resign rule clock 'Rr'
+	str += ", Rr=" + QString::number(m_adjudicator.resignClock(m_board, eval));
+
+	// material balance
+	str += statusString(move, false);
+
+	m_board->undoMove();
+
+#else
+	if (eval.isBookEval())
+		return "book";
 
 	QString str = eval.scoreText();
 	if (eval.depth() > 0)
@@ -47,11 +228,47 @@ QString evalString(const MoveEvaluation& eval)
 	else if (t < 10000)
 		precision = 1;
 	str += QString::number(double(t / 1000.0), 'f', precision) + 's';
-
+#endif
 	return str;
 }
 
-} // anonymous namespace
+QString ChessGame::statusString(const Chess::Move& move, bool doMove)
+{
+	if (doMove)
+		m_board->makeMove(move);
+
+	// Material balance 'mb'
+	QMap<QString, int> pMap;
+	for (int file = 0; file < m_board->height(); file++)
+		for (int rank = 0; rank < m_board->width(); rank++)
+		{
+			const Chess::Square sq = Chess::Square(file, rank);
+			const Chess::Piece piece = m_board->pieceAt(sq);
+			if (!piece.isValid()) continue;
+			const QString sym(m_board->pieceSymbol(piece).toUpper());
+			if (!pMap.contains(sym))
+				pMap[sym] = 0;
+			if (piece.side() == Chess::Side::White)
+				++pMap[sym];
+			else
+				--pMap[sym];
+		}
+
+	QString str(", mb=");
+	for(const char* istr : {"P", "N", "B", "R", "Q"})
+	{
+		const int v(pMap[istr]);
+		if (v >= 0)
+			str += '+';
+		str += QString::number(v);
+	}
+
+	if (doMove)
+		m_board->undoMove();
+
+	str += ',';
+	return str;
+}
 
 ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
 	: QObject(parent),
@@ -184,6 +401,7 @@ void ChessGame::stop(bool emitMoveChanged)
 
 	m_pgn->setResult(m_result);
 	m_pgn->setResultDescription(m_result.description());
+	m_pgn->setTag("TerminationDetails", m_result.shortDescription());
 
 	if (emitMoveChanged && plies > 1)
 	{
@@ -229,11 +447,15 @@ void ChessGame::addPgnMove(const Chess::Move& move, const QString& comment)
 	md.moveString = m_board->moveString(move, Chess::Board::StandardAlgebraic);
 	md.comment = comment;
 
-	m_pgn->addMove(md);
+	m_board->makeMove(move);
+	m_pgn->addMove(md, m_board->key());
+	m_board->undoMove();
 }
 
 void ChessGame::emitLastMove()
 {
+	emit pgnMove();
+
 	int ply = m_moves.size() - 1;
 	if (m_scores.contains(ply))
 	{
@@ -262,7 +484,7 @@ void ChessGame::onMoveMade(const Chess::Move& move)
 
 	m_scores[m_moves.size()] = sender->evaluation().score();
 	m_moves.append(move);
-	addPgnMove(move, evalString(sender->evaluation()));
+	addPgnMove(move, evalString(sender->evaluation(), move));
 
 	// Get the result before sending the move to the opponent
 	m_board->makeMove(move);
@@ -675,6 +897,8 @@ void ChessGame::initializePgn()
 	m_pgn->setDate(QDate::currentDate());
 	m_pgn->setPlayerName(Chess::Side::White, m_player[Chess::Side::White]->name());
 	m_pgn->setPlayerName(Chess::Side::Black, m_player[Chess::Side::Black]->name());
+	m_pgn->setPlayerRating(Chess::Side::White, m_player[Chess::Side::White]->rating());
+	m_pgn->setPlayerRating(Chess::Side::Black, m_player[Chess::Side::Black]->rating());
 	m_pgn->setResult(m_result);
 
 	if (m_timeControl[Chess::Side::White] == m_timeControl[Chess::Side::Black])
@@ -684,6 +908,25 @@ void ChessGame::initializePgn()
 		m_pgn->setTag("WhiteTimeControl", m_timeControl[Chess::Side::White].toString());
 		m_pgn->setTag("BlackTimeControl", m_timeControl[Chess::Side::Black].toString());
 	}
+
+	// this is a hack, but it works
+	QString engineOptions;
+	if (!m_player[Chess::Side::White]->isHuman()) {
+		ChessEngine *engine = dynamic_cast<ChessEngine *>(m_player[Chess::Side::White]);
+		if (engine) {
+			engineOptions += QString("WhiteEngineOptions: %1").arg(engine->configurationString());
+		}
+	}
+
+	if (!m_player[Chess::Side::Black]->isHuman()) {
+		ChessEngine *engine = dynamic_cast<ChessEngine *>(m_player[Chess::Side::Black]);
+		if (engine) {
+			if (!engineOptions.isEmpty()) engineOptions += ", ";
+			engineOptions += QString("BlackEngineOptions: %1").arg(engine->configurationString());
+		}
+	}
+//	m_pgn->setGameComment(engineOptions);
+	m_pgn->setResultDescription(engineOptions);
 }
 
 void ChessGame::startGame()
@@ -741,7 +984,7 @@ void ChessGame::startGame()
 		Chess::Move move(m_moves.at(i));
 		Q_ASSERT(m_board->isLegalMove(move));
 		
-		addPgnMove(move, "book");
+		addPgnMove(move, "book" + statusString(move, true));
 
 		playerToMove()->makeBookMove(move);
 		playerToWait()->makeMove(move);

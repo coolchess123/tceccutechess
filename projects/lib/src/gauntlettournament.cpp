@@ -22,8 +22,9 @@
 #include "chessgame.h"
 
 GauntletTournament::GauntletTournament(GameManager* gameManager,
+					   EngineManager* engineManager,
 				       QObject *parent)
-	: Tournament(gameManager, parent),
+	: Tournament(gameManager, engineManager, parent),
 	  m_opponent(-1)
 {
 }
@@ -31,6 +32,39 @@ GauntletTournament::GauntletTournament(GameManager* gameManager,
 QString GauntletTournament::type() const
 {
 	return "gauntlet";
+}
+
+int GauntletTournament::gamesPerRound() const
+{
+	return (playerCount() - 1) * gamesPerEncounter();
+}
+
+QList< QPair<QString, QString> > GauntletTournament::getPairings()
+{
+	QList< QPair<QString, QString> > pList;
+	int gameNumber = 0;
+	int opponent = 1;
+
+	while (gameNumber < finalGameCount())
+	{
+		if (opponent >= playerCount())
+			opponent = 1;
+
+		int white = 0;
+		int black = opponent++;
+
+		for(int game = 0; game < gamesPerEncounter(); ++game)
+		{
+			pList.append(qMakePair(playerAt(white).builder()->name(),
+								   playerAt(black).builder()->name()));
+			++gameNumber;
+
+			if(swapSides())
+				qSwap(white, black);
+		}
+	}
+
+	return pList;
 }
 
 void GauntletTournament::onGameAboutToStart(ChessGame* game,

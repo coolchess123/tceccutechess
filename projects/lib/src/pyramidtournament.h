@@ -35,9 +35,12 @@ class LIB_EXPORT PyramidTournament : public Tournament
 	public:
 		/*! Creates a new Pyramid tournament. */
 		explicit PyramidTournament(GameManager* gameManager,
+						  EngineManager* engineManager,
 					      QObject *parent = nullptr);
 		// Inherited from Tournament
 		virtual QString type() const;
+		virtual int gamesPerRound() const;
+		virtual QList< QPair<QString, QString> > getPairings();
 
 	protected:
 		// Inherited from Tournament

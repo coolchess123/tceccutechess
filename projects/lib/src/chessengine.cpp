@@ -84,7 +84,7 @@ ChessEngine::ChessEngine(QObject* parent)
 	  m_restartMode(EngineConfiguration::RestartAuto)
 {
 	m_pingTimer->setSingleShot(true);
-	m_pingTimer->setInterval(15000);
+	m_pingTimer->setInterval(30000);
 	connect(m_pingTimer, SIGNAL(timeout()), this, SLOT(onPingTimeout()));
 
 	m_quitTimer->setSingleShot(true);
@@ -92,7 +92,7 @@ ChessEngine::ChessEngine(QObject* parent)
 	connect(m_quitTimer, SIGNAL(timeout()), this, SLOT(onQuitTimeout()));
 
 	m_idleTimer->setSingleShot(true);
-	m_idleTimer->setInterval(15000);
+	m_idleTimer->setInterval(30000);
 	connect(m_idleTimer, SIGNAL(timeout()), this, SLOT(onIdleTimeout()));
 
 	m_protocolStartTimer->setSingleShot(true);
@@ -131,17 +131,24 @@ void ChessEngine::applyConfiguration(const EngineConfiguration& configuration)
 	for (const QString& str : initStrings)
 		write(str);
 
+	m_configurationString = "Protocol=" + configuration.protocol() + "; ";
 	const auto options = configuration.options();
 	for (const auto option : options)
 	{
-		if (option->isEditable())
+		if (option->isEditable()) {
 			setOption(option->name(), option->value());
+			m_configurationString += option->name() + "=" + option->value().toString() + "; ";
+		}
 	}
+	m_configurationString = m_configurationString.trimmed();
 
 	m_whiteEvalPov = configuration.whiteEvalPov();
 	m_pondering = configuration.pondering();
 	m_restartMode = configuration.restartMode();
 	setClaimsValidated(configuration.areClaimsValidated());
+
+	if (configuration.rating())
+		setRating(configuration.rating());
 }
 
 void ChessEngine::addOption(EngineOption* option)
@@ -515,4 +522,9 @@ void ChessEngine::quit()
 	connect(m_ioDevice, SIGNAL(readChannelFinished()), this, SLOT(onQuitTimeout()));
 	sendQuit();
 	m_quitTimer->start();
+}
+
+QString ChessEngine::configurationString() const
+{
+	return m_configurationString;
 }

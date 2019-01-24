@@ -31,6 +31,7 @@
 #include "gameadjudicator.h"
 #include "tournamentplayer.h"
 #include "tournamentpair.h"
+#include "enginemanager.h"
 class GameManager;
 class PlayerBuilder;
 class ChessGame;
@@ -50,7 +51,8 @@ class LIB_EXPORT Tournament : public QObject
 		 * Creates a new tournament that uses \a gameManager
 		 * to manage the games.
 		 */
-		Tournament(GameManager* gameManager, QObject *parent);
+		Tournament(GameManager* gameManager, EngineManager* engineManager,
+				   QObject *parent);
 		/*!
 		 * Destroys the tournament.
 		 *
@@ -62,8 +64,14 @@ class LIB_EXPORT Tournament : public QObject
 
 		/*! Returns the tournament type (eg. "round-robin" or "gauntlet"). */
 		virtual QString type() const = 0;
+		/*! Returns a list of all pairings (by player name) for this tournament. */
+		virtual QList< QPair<QString, QString> > getPairings() = 0;
+		/*! Returns the number of games per round for this tournament. */
+		virtual int gamesPerRound() const = 0;
 		/*! Returns the GameManager that manages the tournament's games. */
 		GameManager* gameManager() const;
+		/*! Returns the EngineManager that manages the tournament's engines. */
+		EngineManager* engineManager() const;
 		/*! Returns true if the tournament is finished; otherwise returns false. */
 		bool isFinished() const;
 		/*! Returns a detailed description of the error. */
@@ -117,6 +125,18 @@ class LIB_EXPORT Tournament : public QObject
 		 * stopping criterion.
 		 */
 		Sprt* sprt() const;
+		/*! Returns true if the players swap sides in an encounter. */
+		bool swapSides() const;
+		/*! Returns true if the tournament wants Berger/Schurig scheduling. */
+		bool bergerSchedule() const;
+		/*!
+		 * Returns true if the tournament wants Berger/Schurig scheduling
+		 * and the tournament type is "round-robin".
+		 */
+		bool usesBergerSchedule() const;
+		/*! Returns the number of strikes that disqualifies a player.
+		 */
+		int strikes() const;
 
 		/*! Sets the tournament's name to \a name. */
 		void setName(const QString& name);
@@ -129,6 +149,13 @@ class LIB_EXPORT Tournament : public QObject
 		 *
 		 * \a counter must be at least 1.
 		 */
+		/*! Sets the tournament'S eevnt date to \a eventDate. */
+		void setEventDate(const QString& eventDate);
+		/*!
+			 * Sets the game count per encounter to \a counter.
+			 *
+			 * \a counter must be at least 1.
+			 */
 		void setGamesPerEncounter(int count);
 		/*!
 		 * Returns true (default) if the tournament supports
@@ -203,6 +230,24 @@ class LIB_EXPORT Tournament : public QObject
 		 */
 		void setEpdOutput(const QString& fileName);
 
+ 		/*!
+ 		 * Sets the live PGN output file for the games to \a fileName.
+ 		 *
+ 		 * The games are saved to the file in mode \a mode.
+ 		 * If no live PGN output file is set (default) then cutechess will
+		 * not generate a live PGN.
+ 		 */
+		void setLivePgnOutput(const QString& fileName,
+				  PgnGame::PgnMode mode = PgnGame::Verbose);
+
+ 		/*! Sets the output formatting for the live output.
+ 		 */
+		void setLivePgnFormats(bool pgnFormat, bool jsonFormat);
+
+ 		/*! Sets the number of \a strikes at which a player is disqualified.
+ 		 */
+		void setStrikes(int strikes);
+
 		/*!
 		 * Sets the number of opening repetitions to \a count.
 		 *
@@ -229,6 +274,23 @@ class LIB_EXPORT Tournament : public QObject
 		 * the tournament.
 		 */
 		void setSeedCount(int seedCount);
+		/*!
+		 * Sets the tournament mode to \a resume.
+		 *
+		 * If \a resume is true and the \a tournamentfile option is enabled,
+		 * cutechess will attempt to resume the tournament after an interruption.
+		 * Play will resume after the last completed game. Openings, including
+		 * repeated and randomly chosen openings, will resume as well.
+		 */
+		void setResume(int nextGameNumber);
+		/*!
+		 * Sets the tournament to Berger/Schurig scheduling if \a enabled.
+		 */
+		void setBergerSchedule(bool enabled);
+		/*!
+		 * Reloads the local engines.json before game start if \a enabled.
+		 */
+		void setReloadEngines(bool enabled);
 		/*!
 		 * Adds player \a builder to the tournament.
 		 *
@@ -291,6 +353,17 @@ class LIB_EXPORT Tournament : public QObject
 				  int whiteIndex,
 				  int blackIndex);
 		/*!
+		 * This signal is emitted when game \a game with ordering
+		 * number \a number is skipped.
+		 *
+		 * \a whiteIndex is the index to the white player's data
+		 * \a blackIndex is the index to the black player's data
+		 * \note The game numbers start at 1.
+		 */
+		void gameSkipped(int number,
+				 int whiteIndex,
+				 int blackIndex);
+		/*!
 		 * This signal is emitted when all of the tournament's games
 		 * have been played or after the tournament was stopped.
 		 *
@@ -320,6 +393,13 @@ class LIB_EXPORT Tournament : public QObject
 		 * Reimplementations should call the base implementation.
 		 */
 		void startGame(TournamentPair* pair);
+		/*!
+		 * This member function is called by \a startNextGame() to
+		 * skip a tournament game between \a pair.
+		 *
+		 * Reimplementations should call the base implementation.
+		 */
+		void skipGame(TournamentPair* pair);
 		/*!
 		 * This member function is called by \a startGame() right
 		 * before the game is actually started.
@@ -402,6 +482,8 @@ class LIB_EXPORT Tournament : public QObject
 		void onGameFinished(ChessGame* game);
 		void onGameDestroyed(ChessGame* game);
 		void onGameStartFailed(ChessGame* game);
+		void onPgnMove();
+		void onEngineUpdated(int engineIndex);
 
 	private:
 		struct GameData
@@ -421,6 +503,7 @@ class LIB_EXPORT Tournament : public QObject
 		};
 
 		GameManager* m_gameManager;
+		EngineManager* m_engineManager;
 		ChessGame* m_lastGame;
 		QString m_error;
 		QString m_name;
@@ -460,6 +543,16 @@ class LIB_EXPORT Tournament : public QObject
 		QMap<int, PgnGame> m_pgnGames;
 		QMap<ChessGame*, GameData*> m_gameData;
 		QVector<Chess::Move> m_openingMoves;
+		QString m_livePgnOut;
+		PgnGame::PgnMode m_livePgnOutMode;
+		bool m_pgnFormat;
+		bool m_jsonFormat;
+		QString m_eventDate;
+		int m_resumeGameNumber;
+		bool m_bergerSchedule;
+		QVector<QPair<QVector<Chess::Move>, QString> > m_cycleOpenings;
+		bool m_reloadEngines;
+		int m_strikes;
 };
 
 #endif // TOURNAMENT_H

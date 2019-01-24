@@ -28,10 +28,13 @@ GameAdjudicator::GameAdjudicator()
 	  m_resignMoveCount(0),
 	  m_resignScore(0),
 	  m_maxGameLength(0),
-	  m_tbEnabled(false)
+	  m_tbEnabled(false),
+	  m_tcecAdjudication(false)
 {
 	m_resignScoreCount[0] = 0;
 	m_resignScoreCount[1] = 0;
+    m_resignWinnerScoreCount[0] = 0;
+    m_resignWinnerScoreCount[1] = 0;
 }
 
 void GameAdjudicator::setDrawThreshold(int moveNumber, int moveCount, int score)
@@ -53,6 +56,8 @@ void GameAdjudicator::setResignThreshold(int moveCount, int score)
 	m_resignScore = score;
 	m_resignScoreCount[0] = 0;
 	m_resignScoreCount[1] = 0;
+    m_resignWinnerScoreCount[0] = 0;
+    m_resignWinnerScoreCount[1] = 0;
 }
 
 void GameAdjudicator::setMaximumGameLength(int moveCount)
@@ -64,6 +69,11 @@ void GameAdjudicator::setMaximumGameLength(int moveCount)
 void GameAdjudicator::setTablebaseAdjudication(bool enable)
 {
 	m_tbEnabled = enable;
+}
+
+void GameAdjudicator::setTcecAdjudication(bool enable)
+{
+	m_tcecAdjudication = enable;
 }
 
 void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& eval)
@@ -89,38 +99,76 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	// Draw adjudication
 	if (m_drawMoveNum > 0)
 	{
-		if (qAbs(eval.score()) <= m_drawScore)
-			m_drawScoreCount++;
+		if (m_tcecAdjudication && board->reversibleMoveCount() == 0)
+		{} // m_drawScoreCount == 0;
 		else
-			m_drawScoreCount = 0;
-
-		if (board->plyCount() / 2 >= m_drawMoveNum
-		&&  m_drawScoreCount >= m_drawMoveCount * 2)
 		{
-			m_result = Chess::Result(Chess::Result::Adjudication, Chess::Side::NoSide);
-			return;
+			if (qAbs(eval.score()) <= m_drawScore)
+				m_drawScoreCount++;
+			else
+				m_drawScoreCount = 0;
+
+			if (board->plyCount() / 2 >= m_drawMoveNum
+			&&  m_drawScoreCount >= m_drawMoveCount * 2)
+			{
+				m_result = Chess::Result(Chess::Result::Adjudication,
+							Chess::Side::NoSide, "TCEC draw rule");
+				return;
+			}
 		}
 	}
 
 	// Resign adjudication
 	if (m_resignMoveCount > 0)
 	{
-		int& count = m_resignScoreCount[side];
-		if (eval.score() <= m_resignScore)
-			count++;
-		else
-			count = 0;
+		if (m_tcecAdjudication)
+		{
+            int& loserCount = m_resignScoreCount[side];
+            int& winnerCount = m_resignWinnerScoreCount[side];
 
-		if (count >= m_resignMoveCount)
-			m_result = Chess::Result(Chess::Result::Adjudication,
-						 side.opposite());
+            if (eval.score() <= m_resignScore) {
+            	loserCount++;
+            	winnerCount = 0;
+            } else if (eval.score() >= -m_resignScore) {
+            	winnerCount++;
+            	loserCount = 0;
+            } else
+            	loserCount = winnerCount = 0;
+
+            if (loserCount >= m_resignMoveCount
+            				&& m_resignWinnerScoreCount[side.opposite()] >= m_resignMoveCount) {
+            	m_result = Chess::Result(Chess::Result::Adjudication,
+										 side.opposite(), "TCEC win rule");
+            	return;
+            } else if (winnerCount >= m_resignMoveCount
+            				&& m_resignScoreCount[side.opposite()] >= m_resignMoveCount) {
+            	m_result = Chess::Result(Chess::Result::Adjudication,
+										 side, "TCEC win rule");
+            	return;
+            }
+		}
+		else
+		{
+			int& count = m_resignScoreCount[side];
+			if (eval.score() <= m_resignScore)
+				count++;
+			else
+				count = 0;
+
+			if (count >= m_resignMoveCount) {
+				m_result = Chess::Result(Chess::Result::Adjudication,
+							 side.opposite(), "TCEC resign rule");
+				return;
+			}
+		}
 	}
 
 	// Limit game length
 	if (m_maxGameLength > 0
 	&&  board->plyCount() >= 2 * m_maxGameLength)
 	{
-		m_result = Chess::Result(Chess::Result::Adjudication, Chess::Side::NoSide);
+		m_result = Chess::Result(Chess::Result::Adjudication, Chess::Side::NoSide,
+								 "TCEC max moves rule");
 		return;
 	}
 }
@@ -133,4 +181,77 @@ void GameAdjudicator::resetDrawMoveCount()
 Chess::Result GameAdjudicator::result() const
 {
 	return m_result;
+}
+
+int GameAdjudicator::drawClock(const Chess::Board* board, const MoveEvaluation& eval) const
+{
+	if (m_drawMoveNum <= 0)
+		return -1000;
+
+	const int drawMoveLimit = m_drawMoveCount * 2;
+	int count = m_drawScoreCount;
+
+	if (m_tcecAdjudication && board->reversibleMoveCount() == 0)
+		count = 0;
+	else if (qAbs(eval.score()) <= m_drawScore && board->reversibleMoveCount() != 0)
+		count++;
+	else
+		count = 0;
+
+	count = count >= drawMoveLimit ? 0 : (drawMoveLimit - count);
+
+	if ( count >= drawMoveLimit || (board->plyCount() + count) / 2 < m_drawMoveNum)
+		count = -count - 1;
+
+	return count;
+}
+
+int GameAdjudicator::resignClock(const Chess::Board* board, const MoveEvaluation& eval) const
+{
+	if (m_resignMoveCount <= 0)
+		return -1000;
+
+	const Chess::Side side = board->sideToMove().opposite();
+	int count;
+
+	if (m_tcecAdjudication)
+	{
+		const int resignMoveLimit = m_resignMoveCount * 2;
+		int loserCount = m_resignScoreCount[side];
+		int winnerCount = m_resignWinnerScoreCount[side];
+		if (eval.score() <= m_resignScore) {
+			loserCount++;
+        	winnerCount = 0;
+		} else if (eval.score() >= -m_resignScore) {
+			winnerCount++;
+        	loserCount = 0;
+		} else
+			loserCount = winnerCount = 0;
+
+		count = loserCount > m_resignWinnerScoreCount[side.opposite()]
+				? m_resignWinnerScoreCount[side.opposite()] : loserCount;
+        loserCount = 2 * count + (loserCount > m_resignWinnerScoreCount[side.opposite()]);
+        count =  winnerCount > m_resignScoreCount[side.opposite()]
+				? m_resignScoreCount[side.opposite()] : winnerCount;
+        winnerCount = 2 * count + (winnerCount > m_resignScoreCount[side.opposite()]);
+
+        count = winnerCount > loserCount ? winnerCount : loserCount;
+
+        count = count >= resignMoveLimit ? 0 : (resignMoveLimit - count);
+
+        if (count >= resignMoveLimit)
+        	count = -count - 1;
+	}
+	else
+	{
+		count = m_resignScoreCount[side];
+		if (eval.score() <= m_resignScore)
+			count++;
+		else
+			count = 0;
+
+		count = count >=  m_resignMoveCount? 0 : ( m_resignMoveCount - count);
+	}
+
+	return count;
 }
