@@ -29,6 +29,7 @@ EngineConfiguration::EngineConfiguration()
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
+	  m_restart_score(0),
 	  m_strikes(0)
 {
 }
@@ -45,6 +46,7 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
+	  m_restart_score(0),
 	  m_strikes(0)
 {
 }
@@ -56,6 +58,7 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
+	  m_restart_score(0),
 	  m_strikes(0)
 {
 	const QVariantMap map = variant.toMap();
@@ -123,6 +126,7 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_validateClaims(other.m_validateClaims),
 	  m_restartMode(other.m_restartMode),
 	  m_rating(other.m_rating),
+	  m_restart_score(other.m_restart_score),
 	  m_strikes(other.m_strikes)
 {
 	const auto options = other.options();
@@ -152,7 +156,7 @@ EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 	m_options = other.m_options;
 	m_rating = other.m_rating;
 	m_strikes = other.m_strikes;
-
+	m_restart_score = other.m_restart_score;
 	// other's destructor will cause a mess if its m_options isn't cleared
 	other.m_options.clear();
 	return *this;
@@ -244,6 +248,11 @@ void EngineConfiguration::setStrikes(const int strikes)
 	m_strikes = strikes > 0 ? strikes : 0;
 }
 
+void EngineConfiguration::setResumeScore(const int score)
+{
+   m_restart_score = score > 0 ? score : 0;
+}
+
 QString EngineConfiguration::name() const
 {
 	return m_name;
@@ -277,6 +286,11 @@ int EngineConfiguration::rating() const
 int EngineConfiguration::strikes() const
 {
 	return m_strikes;
+}
+
+int EngineConfiguration::resumescore() const
+{
+	return m_restart_score;
 }
 
 QStringList EngineConfiguration::arguments() const
@@ -422,6 +436,7 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 		m_restartMode = other.m_restartMode;
 		m_rating = other.m_rating;
 		m_strikes = other.m_strikes;
+		m_restart_score = other.m_restart_score;
 
 		qDeleteAll(m_options);
 		m_options.clear();

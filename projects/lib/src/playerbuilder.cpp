@@ -21,6 +21,7 @@
 PlayerBuilder::PlayerBuilder(const QString& name)
 	: m_name(name),
 	  m_rating(0),
+	  m_resume_score(0),
 	  m_strikes(0)
 {
 }
@@ -58,3 +59,14 @@ void PlayerBuilder::setStrikes(const int strikes)
 {
 	m_strikes = strikes;
 }
+
+void PlayerBuilder::setResumeScore(const int score)
+{
+   m_resume_score = score;
+}
+
+int PlayerBuilder::resumescore() const
+{
+   return m_resume_score;
+}
+

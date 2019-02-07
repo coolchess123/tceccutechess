@@ -21,7 +21,9 @@
 #include <QtMath>
 #include "playerbuilder.h"
 #include "mersenne.h"
+#include "board/boardfactory.h"
 
+bool m_should_we_stop_global = false;
 
 KnockoutTournament::KnockoutTournament(GameManager* gameManager,
 					   EngineManager* engineManager,
@@ -170,6 +172,50 @@ bool KnockoutTournament::areAllGamesFinished() const
 	return !pair->gamesInProgress() && !needMoreGames(pair);
 }
 
+bool KnockoutTournament::shouldWeStopTour() const
+{
+	return m_should_we_stop_global;
+}
+
+bool KnockoutTournament::shouldWeStop(int iWhite, int iBlack, const TournamentPair* pair) const
+{
+	int firstScore  = pair->firstScore() + Tournament::playerAt(iWhite).builder()->resumescore();
+	int secondScore = pair->secondScore() + Tournament::playerAt(iBlack).builder()->resumescore();
+	int leadScore = qMax(firstScore, secondScore);
+	int pointsInProgress = pair->gamesInProgress() * 2;
+
+	if (leadScore <= gamesPerEncounter())
+	{
+		m_should_we_stop_global = false;
+	}
+	else
+	{
+		m_should_we_stop_global = true;	
+	}
+
+	if (!m_should_we_stop_global)
+	{
+		if (((Tournament::playerAt(iWhite).builder()->strikes() + Tournament::playerAt(iWhite).crashes()) 
+				>= Tournament::strikes() ||
+			 (Tournament::playerAt(iBlack).builder()->strikes() + Tournament::playerAt(iWhite).crashes()) 
+				>= Tournament::strikes()))
+		{
+			m_should_we_stop_global = true;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	m_should_we_stop_global = true;
+	return true;
+}
+
+bool KnockoutTournament::procceedNextGame() const
+{
+}
+
 bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 {
 	// Second player is a BYE
@@ -179,9 +225,20 @@ bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 	// Assign the leading player all points from ongoing games.
 	// If the leader still doesn't have enough points to win the
 	// encounter, return true
-	int leadScore = qMax(pair->firstScore(), pair->secondScore());
+	const int iWhite = pair->firstPlayer();
+	const int iBlack = pair->secondPlayer();
+
+	int firstScore  = pair->firstScore() + Tournament::playerAt(iWhite).builder()->resumescore();
+	int secondScore = pair->secondScore() + Tournament::playerAt(iBlack).builder()->resumescore();
+	int leadScore = qMax(firstScore, secondScore);
 	int pointsInProgress = pair->gamesInProgress() * 2;
 	//leadScore += pointsInProgress;
+
+	if (shouldWeStop(iWhite, iBlack, pair))
+	{
+		return false;
+	}
+
 	if (leadScore <= gamesPerEncounter())
 		return true;
 
@@ -267,11 +324,27 @@ QString KnockoutTournament::results() const
 				winner = "...";
 			else
 			{
-				winner = playerAt(pair->leader()).name();
+				int whoWon = pair->leader();
+				if (whoWon < 0)
+				{
+					const int iWhite = pair->firstPlayer();
+					const int iBlack = pair->secondPlayer();
+
+					if (Tournament::playerAt(iWhite).builder()->strikes() > 
+						Tournament::playerAt(iBlack).builder()->strikes())
+					{
+						whoWon = iBlack;
+					}
+					else
+					{
+						whoWon = iWhite;
+					}
+					winner = playerAt(whoWon).name();
+				}
 			}
 			int r = round + 1;
 			int lineNum = ((2 << (r - 1)) - 1) + (x * (2 << r));
-			QString text = QString("%1%2")
+			QString text = QString("%1 Winner %2")
 				       .arg(QString(r * 2, '\t'), winner);
 			if (pair->scoreSum())
 			{

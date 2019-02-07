@@ -473,6 +473,8 @@ class LIB_EXPORT Tournament : public QObject
 		 * The default implementation always returns false.
 		 */
 		virtual bool hasGauntletRatingsOrder() const;
+		virtual bool shouldWeStop(int white, int black, const TournamentPair* pair) const;
+		virtual bool shouldWeStopTour() const;
 
 	private slots:
 		void startNextGame();
@@ -555,6 +557,7 @@ class LIB_EXPORT Tournament : public QObject
 		int m_strikes;
 		double m_eng1Score;
 		double m_eng2Score;
+		bool m_should_we_stop;
 };
 
 #endif // TOURNAMENT_H

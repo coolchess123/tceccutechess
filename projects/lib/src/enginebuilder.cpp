@@ -20,6 +20,7 @@
 #include <QDir>
 #include "engineprocess.h"
 #include "enginefactory.h"
+#include "board/boardfactory.h"
 
 
 EngineBuilder::EngineBuilder(const EngineConfiguration& config)
@@ -28,6 +29,7 @@ EngineBuilder::EngineBuilder(const EngineConfiguration& config)
 {
 	setRating(config.rating());
 	setStrikes(config.strikes());
+	setResumeScore(config.resumescore());
 }
 
 void EngineBuilder::setConfiguration(const EngineConfiguration& config)
@@ -35,6 +37,7 @@ void EngineBuilder::setConfiguration(const EngineConfiguration& config)
 	m_config = config;
 	setRating(config.rating());
 	setStrikes(config.strikes());
+	setResumeScore(config.resumescore());
 }
 
 bool EngineBuilder::isHuman() const

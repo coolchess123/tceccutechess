@@ -997,6 +997,12 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 	}
 }
 
+void updateCrashCount(QVariantMap *stMap, TournamentPlayer plr)
+{
+	int score = plr.crashes() + plr.builder()->strikes();
+	stMap->insert(plr.builder()->name(), score);
+}
+
 void EngineMatch::onGameFinished(ChessGame* game, int number)
 {
 	Q_ASSERT(game != nullptr);
@@ -1024,6 +1030,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 			QVariantMap pMap;
 			QVariantList pList;
 			QVariantMap tsMap;
+			QVariantMap stMap;
 			if (!tfMap.isEmpty()) {
 				if (tfMap.contains("matchProgress")) {
 					pList = tfMap["matchProgress"].toList();
@@ -1060,6 +1067,12 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 				QString sScore;
 				const Chess::Side sides[] = { Chess::Side::White, Chess::Side::Black, Chess::Side::NoSide };
 
+				/* ARUN: Update the crash count and write to the tournament file */
+				for (int ii = 0; ii < m_tournament->playerCount(); ii++) {
+					const TournamentPlayer& plr(m_tournament->playerAt(ii));
+					updateCrashCount (&stMap, plr);
+				}
+
 				for (int i = 0; sides[i] != Chess::Side::NoSide; i++) {
 					Chess::Side side = sides[i];
 					eval = game->player(side)->evaluation();
@@ -1086,6 +1099,7 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 
 				pList.replace(number-1, pMap);
 				tfMap.insert("matchProgress", pList);
+				tfMap.insert("strikes", stMap);
 
 				QFile output(m_tournamentFile);
 				if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {

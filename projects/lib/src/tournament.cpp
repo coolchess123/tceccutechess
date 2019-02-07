@@ -363,8 +363,6 @@ void Tournament::setResume(int nextGameNumber, double eng1Score, double eng2Scor
 {
 	Q_ASSERT(nextGameNumber >= 0);
 	m_resumeGameNumber = nextGameNumber;
-	m_eng2Score = eng2Score;
-	m_eng1Score = eng1Score;
 }
 
 void Tournament::addPlayer(PlayerBuilder* builder,
@@ -403,6 +401,16 @@ TournamentPair* Tournament::pair(int player1, int player2)
 	m_pairs[pairs[0]] = ret;
 
 	return ret;
+}
+
+bool Tournament::shouldWeStopTour() const
+{
+	return areAllGamesFinished();
+}
+
+bool Tournament::shouldWeStop(int white, int black, const TournamentPair* pair) const
+{
+	return false;
 }
 
 bool Tournament::areAllGamesFinished() const
@@ -684,9 +692,19 @@ void Tournament::startNextGame()
 	bool needToStop = false;
 	for (;;)
 	{
+		qWarning () << "Tournament::startNextGame: checking next pair";
+		needToStop = shouldWeStopTour();
+		if (needToStop)
+		{
+			stop();
+			return;
+		}
 		TournamentPair* pair(nextPair(m_nextGameNumber));
+		needToStop = shouldWeStopTour();
+		qWarning () << "CAlling shouldWeStopTour" << needToStop;
 		if (!pair || !pair->isValid())
 		{
+			qWarning () << "Start next game no pair found:" << needToStop;
 			if (needToStop)
 				stop();
 			break;
@@ -706,6 +724,7 @@ void Tournament::startNextGame()
 
 		const int iWhite = pair->firstPlayer();
 		const int iBlack = pair->secondPlayer();
+
 		if (m_players.at(iWhite).crashes() + m_players.at(iWhite).builder()->strikes() < m_strikes
 			&& m_players.at(iBlack).crashes() + m_players.at(iBlack).builder()->strikes() < m_strikes)
 		{
@@ -717,6 +736,7 @@ void Tournament::startNextGame()
 		emit gameSkipped(m_nextGameNumber, iWhite, iBlack);
 		needToStop = true;
 	}
+	qWarning () << "End of start next game";
 }
 
 inline bool faulty(const Chess::Result::Type& type)
@@ -1192,31 +1212,26 @@ void Tournament::start()
 
 	if (m_resumeGameNumber)
 	{
+		m_finishedGameCount = m_resumeGameNumber - 1;
 		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
 		{
 			TournamentPair* pair(nextPair(m_nextGameNumber));
 			if (!pair || !pair->isValid())
-				return;
+			{
+				break;
+			}
 
 			if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
 			{
 				m_startFen.clear();
 				m_openingMoves.clear();
 			}
-
 			skipGame(pair);
 		}
-		addScore(0, m_eng1Score * 2);
-		addScore(1, m_eng2Score * 2);
-		if ((m_eng1Score * 2 > m_finalGameCount) ||
-			(m_eng2Score * 2 > m_finalGameCount))
-		{
-			stop();
-			return;
-		}
 	}
-
+	qWarning() << "START(): Starting next game";
 	startNextGame();
+	qWarning() << "START(): Hanging here";
 }
 
 void Tournament::stop()

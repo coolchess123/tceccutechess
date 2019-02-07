@@ -51,7 +51,11 @@ class LIB_EXPORT KnockoutTournament : public Tournament
 		virtual int gamesPerCycle() const;
 		virtual TournamentPair* nextPair(int gameNumber);
 		virtual void addScore(int player, int score);
-		virtual bool areAllGamesFinished() const;
+      virtual bool areAllGamesFinished() const;
+      virtual bool procceedNextGame() const;
+      virtual bool shouldWeStop(int white, int black, const TournamentPair* pair) const;
+      virtual bool shouldWeStopTour() const;
+      bool m_should_we_stop;
 
 	private:
 		static int playerSeed(int rank, int bracketSize);

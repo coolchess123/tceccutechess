@@ -139,7 +139,59 @@ OpeningSuite* parseOpenings(const MatchParser::Option& option, Tournament* tourn
 	return nullptr;
 }
 
-bool parseEngine(const QStringList& args, EngineData& data)
+void addEngineScore(QVariantMap *engineMap, QString name, int value)
+{
+	if (engineMap->size())
+	{
+		for (QVariantMap::const_iterator iter = engineMap->begin(); iter != engineMap->end(); ++iter) {
+			if (iter.key() == name)
+			{
+				int score = iter.value().toInt();
+				score += value;
+				engineMap->insert(name, score);
+				qWarning () << "Traversing:" << iter.value() << " ," << iter.key() << " ,name:" << name;
+			}
+		}
+	}
+	else
+	{
+		engineMap->insert(name, value);
+	}
+}
+
+int getEngineScore(QVariantMap *engineMap, QString name)
+{
+	if (engineMap->size())
+	{
+		for (QVariantMap::const_iterator iter = engineMap->begin(); iter != engineMap->end(); ++iter) {
+			if (iter.key() == name)
+			{
+				return (iter.value().toInt());
+			}
+		}
+	}
+	return 0;
+}
+
+bool addResumeScore(const QVariantList eList, QVariant result, QVariant white, QVariant black, 	QVariantMap *engineMap)
+{
+	qWarning() << "Size of list is :" << eList.size();
+	if (result == "1-0")
+	{
+		addEngineScore(engineMap, white.toString(), 2);
+	}
+	else if (result == "0-1")
+	{
+		addEngineScore(engineMap, black.toString(), 2);
+	}
+	else if (result == "1/2-1/2")
+	{
+		addEngineScore(engineMap, black.toString(), 1);
+		addEngineScore(engineMap, white.toString(), 1);
+	}
+}
+
+bool parseEngine(const QStringList& args, EngineData& data, QVariantMap stMap, QVariantMap *engineMap)
 {
 	for (const auto& arg : args)
 	{
@@ -155,6 +207,16 @@ bool parseEngine(const QStringList& args, EngineData& data)
 				qWarning() << "Unknown engine configuration:" << val;
 				return false;
 			}
+			/* ARUN: If the map is not empty, update the strikes using the existing values */
+			if (!stMap.isEmpty())
+			{
+				if (stMap.contains(data.config.name()))
+				{
+					data.config.setStrikes(stMap[data.config.name()].toUInt());
+				}
+			}
+			int getScore = getEngineScore (engineMap, data.config.name());
+			data.config.setResumeScore(getScore);
 		}
 		else if (name == "name")
 			data.config.setName(val);
@@ -445,6 +507,9 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	GameAdjudicator adjudicator;
 	MatchParser::Option openingsOption = {"", QVariant()};
 	MatchParser::Option bookmodeOption = {"", QVariant()};
+	QVariantMap stMap;
+	QVariantMap nullMap;
+	QVariantMap engineMap;
 
 	if (usingTournamentFile) {
 		if (tMap.contains("gamesPerEncounter"))
@@ -550,22 +615,9 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			tournament->setReloadEngines(tMap["reloadConfiguration"].toBool());
 		if (tMap.contains("tcecAdjudication"))
 			adjudicator.setTcecAdjudication(tMap["tcecAdjudication"].toBool());
-		if (eMap.contains("engines")) {
-			eList = eMap["engines"].toList();
-			for (int e = 0; e < eList.size(); e++) {
-				bool ok = true;
-				QStringList eData = eList.at(e).toStringList();
-				EngineData engine;
-				engine.bookDepth = 1000;
-				ok = parseEngine(eData, engine);
-				if (ok)
-					engines.append(engine);
-			}
+		if (tfMap.contains("strikes")) {
+			stMap = tfMap["strikes"].toMap();
 		}
-		if (eMap.contains("each")) {
-			eachOptions = eMap["each"].toStringList();
-		}
-
 		if (tfMap.contains("matchProgress")) {
 			if (!wantsResume) {
 				tfMap.remove("matchProgress");
@@ -580,37 +632,14 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				int matchNum = 1;
 				for (p = pList.begin(); p != pList.end(); ++p) {
 					QVariantMap pMap = p->toMap();
-					if (pMap["result"] == "1-0")
-					{
-						if (matchNum%2 == 0)
-						{
-							engineTwo = engineTwo + 1;
-						}
-						else
-						{
-							engineOne = engineOne + 1;
-						}
-					}
-					else if (pMap["result"] == "0-1")
-					{
-						if (matchNum%2 == 1)
-						{
-							engineTwo = engineTwo + 1;
-						}
-						else
-						{
-							engineOne = engineOne + 1;
-						}
-					}
-					else if (pMap["result"] == "1/2-1/2")
-					{
-						engineTwo = engineTwo + 0.5;
-						engineOne = engineOne + 0.5;
-					}
+					addResumeScore(eList, pMap["result"], pMap["white"], pMap["black"], &engineMap);
 					matchNum = matchNum + 1;
 					if (pMap["result"] == "*") {
 						pList.erase(p, pList.end());
 						break;
+					}
+					if (pMap["terminationDetails"] == "Skipped") {
+						qWarning() << "ARUN: Skipping entry" << matchNum;
 					}
 				}
 				tfMap.insert("matchProgress", pList);
@@ -618,6 +647,22 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				if (nextGame > 0)
 					tournament->setResume(nextGame, engineOne, engineTwo);
 			}
+		}
+		if (eMap.contains("engines")) {
+			eList = eMap["engines"].toList();
+			qWarning () << "Elist is " << eList;
+			for (int e = 0; e < eList.size(); e++) {
+				bool ok = true;
+				QStringList eData = eList.at(e).toStringList();
+				EngineData engine;
+				engine.bookDepth = 1000;
+				ok = parseEngine(eData, engine, stMap, &engineMap);
+				if (ok)
+					engines.append(engine);
+			}
+		}
+		if (eMap.contains("each")) {
+			eachOptions = eMap["each"].toStringList();
 		}
 	} else { // !usingTournamentFile
 		const auto options = parser.options();
@@ -633,7 +678,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			{
 				EngineData engine;
 				engine.bookDepth = 1000;
-				ok = parseEngine(value.toStringList(), engine);
+				ok = parseEngine(value.toStringList(), engine, nullMap, &nullMap);
 				if (ok) {
 					if (!engines.contains(engine))
 						engines.append(engine);
@@ -1025,7 +1070,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 		QList<EngineData>::iterator it;
 		for (it = engines.begin(); it != engines.end(); ++it)
 		{
-			ok = parseEngine(eachOptions, *it);
+			ok = parseEngine(eachOptions, *it, nullMap, &nullMap);
 			if (!ok)
 				break;
 		}

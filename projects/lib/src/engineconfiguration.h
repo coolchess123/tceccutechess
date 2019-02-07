@@ -158,6 +158,7 @@ class LIB_EXPORT EngineConfiguration
 		 * \sa setStrikes()
 		 */
 		int strikes() const;
+		int resumescore() const;
 
 		/*! Returns the command line arguments sent to the engine. */
 		QStringList arguments() const;
@@ -229,6 +230,7 @@ class LIB_EXPORT EngineConfiguration
 		bool areClaimsValidated() const;
 		/*! Sets result claim validation mode to \a validate. */
 		void setClaimsValidated(bool validate);
+		void setResumeScore(const int score);
 
 		/*!
 		 * Assigns \a other to this engine configuration and returns
@@ -255,6 +257,7 @@ class LIB_EXPORT EngineConfiguration
 		RestartMode m_restartMode;
 		int m_rating;
 		int m_strikes;
+		int m_restart_score;
 };
 
 #endif // ENGINE_CONFIGURATION_H
