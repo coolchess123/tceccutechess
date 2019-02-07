@@ -149,7 +149,6 @@ void addEngineScore(QVariantMap *engineMap, QString name, int value)
 				int score = iter.value().toInt();
 				score += value;
 				engineMap->insert(name, score);
-				qWarning () << "Traversing:" << iter.value() << " ," << iter.key() << " ,name:" << name;
 			}
 		}
 	}
@@ -173,9 +172,8 @@ int getEngineScore(QVariantMap *engineMap, QString name)
 	return 0;
 }
 
-bool addResumeScore(const QVariantList eList, QVariant result, QVariant white, QVariant black, 	QVariantMap *engineMap)
+void addResumeScore(QVariant result, QVariant white, QVariant black, 	QVariantMap *engineMap)
 {
-	qWarning() << "Size of list is :" << eList.size();
 	if (result == "1-0")
 	{
 		addEngineScore(engineMap, white.toString(), 2);
@@ -632,14 +630,14 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				int matchNum = 1;
 				for (p = pList.begin(); p != pList.end(); ++p) {
 					QVariantMap pMap = p->toMap();
-					addResumeScore(eList, pMap["result"], pMap["white"], pMap["black"], &engineMap);
+					addResumeScore(pMap["result"], pMap["white"], pMap["black"], &engineMap);
 					matchNum = matchNum + 1;
 					if (pMap["result"] == "*") {
 						pList.erase(p, pList.end());
 						break;
 					}
 					if (pMap["terminationDetails"] == "Skipped") {
-						qWarning() << "ARUN: Skipping entry" << matchNum;
+						qWarning() << "ARUN: Skipping Game:" << matchNum;
 					}
 				}
 				tfMap.insert("matchProgress", pList);
@@ -650,7 +648,6 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 		}
 		if (eMap.contains("engines")) {
 			eList = eMap["engines"].toList();
-			qWarning () << "Elist is " << eList;
 			for (int e = 0; e < eList.size(); e++) {
 				bool ok = true;
 				QStringList eData = eList.at(e).toStringList();

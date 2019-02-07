@@ -692,7 +692,6 @@ void Tournament::startNextGame()
 	bool needToStop = false;
 	for (;;)
 	{
-		qWarning () << "Tournament::startNextGame: checking next pair";
 		needToStop = shouldWeStopTour();
 		if (needToStop)
 		{
