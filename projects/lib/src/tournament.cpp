@@ -1235,7 +1235,6 @@ void Tournament::start()
 		//m_finishedGameCount = m_resumeGameNumber - 1;
 		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
 		{
-	      qWarning() << "START(): nextGame:" << nextGame;
 			TournamentPair* pair(nextPair(m_nextGameNumber));
 			if (!pair || !pair->isValid())
 			{
