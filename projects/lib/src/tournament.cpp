@@ -435,6 +435,7 @@ bool Tournament::shouldWeStop(int white, int black, const TournamentPair* pair) 
 
 bool Tournament::areAllGamesFinished() const
 {
+   qWarning() << "ARUN: areAllGamesFinished Game:" << m_finishedGameCount << ":::" << m_finalGameCount;
 	return m_finishedGameCount >= m_finalGameCount;
 }
 
@@ -1231,9 +1232,10 @@ void Tournament::start()
 
 	if (m_resumeGameNumber)
 	{
-		m_finishedGameCount = m_resumeGameNumber - 1;
+		//m_finishedGameCount = m_resumeGameNumber - 1;
 		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
 		{
+	      qWarning() << "START(): nextGame:" << nextGame;
 			TournamentPair* pair(nextPair(m_nextGameNumber));
 			if (!pair || !pair->isValid())
 			{

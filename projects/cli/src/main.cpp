@@ -634,6 +634,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					matchNum = matchNum + 1;
 					if (pMap["result"] == "*") {
 						pList.erase(p, pList.end());
+						qWarning() << "ARUN: Skipping Game:" << matchNum;
 						break;
 					}
 					if (pMap["terminationDetails"] == "Skipped") {
@@ -642,6 +643,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				}
 				tfMap.insert("matchProgress", pList);
 				nextGame = pList.size();
+			   qWarning() << "ARUN: Skipping Game:" << nextGame;
 				if (nextGame > 0)
 					tournament->setResume(nextGame, engineOne, engineTwo);
 			}
