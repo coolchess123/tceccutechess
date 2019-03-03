@@ -32,6 +32,7 @@
 #include "sprt.h"
 #include "elo.h"
 #include <jsonserializer.h>
+#include <QFileInfo>
 
 Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 					   QObject *parent)
@@ -403,9 +404,28 @@ TournamentPair* Tournament::pair(int player1, int player2)
 	return ret;
 }
 
+bool Tournament::fileExists(QString path) const
+{
+    QFileInfo check_file(path);
+    // check if file exists and if yes: Is it really a file and no directory?
+    if (check_file.exists() && check_file.isFile()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool Tournament::shouldWeStopTour() const
 {
-	return areAllGamesFinished();
+   QString path = "failed.txt";
+   if (!fileExists(path))
+   {
+      return areAllGamesFinished();
+   }
+   else
+   {
+	   return true;
+   }
 }
 
 bool Tournament::shouldWeStop(int white, int black, const TournamentPair* pair) const

@@ -475,6 +475,8 @@ class LIB_EXPORT Tournament : public QObject
 		virtual bool hasGauntletRatingsOrder() const;
 		virtual bool shouldWeStop(int white, int black, const TournamentPair* pair) const;
 		virtual bool shouldWeStopTour() const;
+      virtual bool fileExists(QString path) const;
+
 
 	private slots:
 		void startNextGame();
