@@ -428,13 +428,20 @@ bool Tournament::fileExists(QString path) const
           }
           /* do something with the line */
        } while (!line.isNull()); 
-       if (gameNo && (gameNo == (m_finishedGameCount + 1)))
+       if (gameNo)
        {
-          return true;
+          if (gameNo == (m_finishedGameCount + 1))
+          {
+             return true;
+          }
+          else
+          {
+             return false;
+          }
        }
        else
        {
-          return false;
+          return true;
        }
     } else {
         return false;
