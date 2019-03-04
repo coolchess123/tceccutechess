@@ -407,9 +407,35 @@ TournamentPair* Tournament::pair(int player1, int player2)
 bool Tournament::fileExists(QString path) const
 {
     QFileInfo check_file(path);
+    QFile filen(path);
+
     // check if file exists and if yes: Is it really a file and no directory?
     if (check_file.exists() && check_file.isFile()) {
-        return true;
+       filen.open(QIODevice::ReadOnly);
+       QTextStream stream(&filen);
+       QString line;
+       int gameNo = 0;
+       
+       do {
+          QString line = stream.readLine();
+          if (line.isNull())
+          {
+             break;
+          }
+          else
+          {
+             gameNo = line.toInt();
+          }
+          /* do something with the line */
+       } while (!line.isNull()); 
+       if (gameNo && (gameNo == (m_finishedGameCount + 1)))
+       {
+          return true;
+       }
+       else
+       {
+          return false;
+       }
     } else {
         return false;
     }
@@ -424,6 +450,10 @@ bool Tournament::shouldWeStopTour() const
    }
    else
    {
+      qWarning () << " \n *************************************************************** \n" << 
+                     "         We stopped before game#::" << (m_finishedGameCount + 1) << "\n" <<
+                     "         Look at failed.txt" <<
+                     " \n *************************************************************** \n";
 	   return true;
    }
 }
@@ -435,7 +465,6 @@ bool Tournament::shouldWeStop(int white, int black, const TournamentPair* pair) 
 
 bool Tournament::areAllGamesFinished() const
 {
-   qWarning() << "ARUN: areAllGamesFinished Game:" << m_finishedGameCount << ":::" << m_finalGameCount;
 	return m_finishedGameCount >= m_finalGameCount;
 }
 
