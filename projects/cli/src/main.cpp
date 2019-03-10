@@ -365,6 +365,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 	parser.addOption("-resign", QVariant::StringList);
 	parser.addOption("-maxmoves", QVariant::Int, 1, 1);
 	parser.addOption("-tb", QVariant::String, 1, 1);
+ 	parser.addOption("-tbdrawonly", QVariant::Bool, 0, 0); 
 	parser.addOption("-tbpieces", QVariant::Int, 1, 1);
 	parser.addOption("-tbignore50", QVariant::Bool, 0, 0);
 	parser.addOption("-event", QVariant::String, 1, 1);
@@ -583,7 +584,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			adjudicator.setMaximumGameLength(tMap["maxMoves"].toInt());
 
 		if (tMap.contains("tb")) {
-			adjudicator.setTablebaseAdjudication(true);
+			adjudicator.setTablebaseAdjudication(true, false);
 
 			bool ok = SyzygyTablebase::initialize(tMap["tb"].toString()) &&
 				 SyzygyTablebase::tbAvailable(3);
@@ -758,10 +759,15 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 					tMap.insert("maxMoves", maxMoves);
 				}
 			}
+			// Only adjudicate draws
+			else if (name == "-tbdrawonly")
+			{
+				adjudicator.setTablebaseAdjudication(true, true);
+			}
 			// Syzygy tablebase adjudication
 			else if (name == "-tb")
 			{
-				adjudicator.setTablebaseAdjudication(true);
+				adjudicator.setTablebaseAdjudication(true, false);
 				QString path = value.toString();
 
 				ok = SyzygyTablebase::initialize(path) &&

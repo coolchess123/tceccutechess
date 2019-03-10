@@ -71,7 +71,7 @@ class LIB_EXPORT GameAdjudicator
 		 * If \a enable is true then games are adjudicated if the
 		 * latest position is found in the tablebases.
 		 */
-		void setTablebaseAdjudication(bool enable);
+		void setTablebaseAdjudication(bool enable, bool drawOnly);
 		/*!
 		 * Sets TCEC adjudication to \a enable.
 		 *
@@ -118,6 +118,7 @@ class LIB_EXPORT GameAdjudicator
 		int m_resignScoreCount[2];
 		int m_maxGameLength;
 		bool m_tbEnabled;
+		bool m_tbDrawOnly;
 		Chess::Result m_result;
 		int m_resignWinnerScoreCount[2];
 		bool m_tcecAdjudication;

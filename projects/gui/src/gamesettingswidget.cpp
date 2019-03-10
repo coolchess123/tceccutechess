@@ -140,7 +140,7 @@ GameAdjudicator GameSettingsWidget::adjudicator() const
 	ret.setResignThreshold(ui->m_resignMoveCountSpin->value(),
 			       -ui->m_resignScoreSpin->value());
 	ret.setMaximumGameLength(ui->m_maxGameLengthSpin->value());
-	ret.setTablebaseAdjudication(ui->m_tbCheck->isChecked());
+	ret.setTablebaseAdjudication(ui->m_tbCheck->isChecked(), false);
 
 	return ret;
 }
