@@ -591,6 +591,9 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			if (!ok)
 				qWarning("Could not load Syzygy tablebases");
 		}
+		if (tMap.contains("tbdrawonly")) {
+			adjudicator.setTablebaseAdjudication(true, true);
+		}
 		if (tMap.contains("tbPieces")) {
 			int value = tMap["tbPieces"].toInt();
 			if (value > 2)
@@ -763,6 +766,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			else if (name == "-tbdrawonly")
 			{
 				adjudicator.setTablebaseAdjudication(true, true);
+ 				tMap.insert("tbdrawonly", true);
 			}
 			// Syzygy tablebase adjudication
 			else if (name == "-tb")

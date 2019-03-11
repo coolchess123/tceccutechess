@@ -466,7 +466,7 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 {
 	if (s1.m_disqualified == s2.m_disqualified) {
 		if (s1.m_score == s2.m_score) {
-			if (s1.m_crashes == s2.m_crashes) {
+			if (s1.m_strikes == s2.m_strikes) {
 				if (s1.m_head2head[s2.m_engineName] == 0) {
 					if (s1.m_winsAsWhite == s2.m_winsAsWhite) {
 					    return s1.m_neustadtlScore > s2.m_neustadtlScore;
@@ -477,7 +477,7 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 					return s1.m_head2head[s2.m_engineName] > 0;
 				}
 			} else {
-				return s1.m_crashes < s2.m_crashes;
+				return s1.m_strikes < s2.m_strikes;
 			}
 		} else {
 			return s1.m_score > s2.m_score;
