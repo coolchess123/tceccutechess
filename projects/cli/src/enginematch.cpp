@@ -762,6 +762,8 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 			obj["GamesAsBlack"] = i->m_gamesPlayedAsBlack;
 			obj["WinsAsWhite"] = i->m_winsAsWhite;
 			obj["WinsAsBlack"] = i->m_winsAsBlack;
+			obj["LossAsBlack"] = i->m_gamesPlayedAsWhite - i->m_winsAsWhite;
+			obj["LossAsWhite"] = i->m_gamesPlayedAsBlack - i->m_winsAsBlack;
 			obj["Games"] = i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack;
 			obj["Neustadtl"] = i->m_neustadtlScore;
 			obj["Strikes"] = i->m_strikes;
