@@ -773,10 +773,12 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 					continue;
 				QVariantMap result;
 				QVariantList scores;
+				result["H2h"] = 0;
 				for (const CrossTableData::SlotData& slotData : i->m_crossData[engineName]) {
 					QVariantMap slot;
 					slot["Game"] = slotData.m_gameNo;
 					slot["Result"] = slotData.m_result;
+					result["H2h"] = result["H2h"].toDouble() + slotData.m_result;
 					switch (slotData.m_winner) {
 					case CrossTableData::WinnerNone:
 						slot["Winner"] = "None";
