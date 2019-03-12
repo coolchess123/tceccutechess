@@ -386,6 +386,8 @@ public:
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
 		m_winsAsBlack(0),
+		m_lossAsWhite(0),
+		m_lossAsBlack(0),
 		m_crashes(crashes),
 		m_strikes(crashes + strikes),
 		m_disqualified(false),
@@ -403,6 +405,8 @@ public:
 		m_gamesPlayedAsBlack(0),
 		m_winsAsWhite(0),
 		m_winsAsBlack(0),
+		m_lossAsWhite(0),
+		m_lossAsBlack(0),
 		m_crashes(0),
 		m_strikes(0),
 		m_disqualified(false),
@@ -423,6 +427,8 @@ public:
 	int m_gamesPlayedAsBlack;
 	int m_winsAsWhite;
 	int m_winsAsBlack;
+	int m_lossAsBlack;
+	int m_lossAsWhite;
 	int m_crashes;
 	int m_strikes;
 	bool m_disqualified;
@@ -542,6 +548,7 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				if (!disqualified) {
 					whiteData.m_score += 1;
 					whiteData.m_winsAsWhite++;
+					blackData.m_lossAsBlack++;
 					if (whiteData.m_head2head.contains(blackName)) {
 						whiteData.m_head2head[blackName]++;
 						blackData.m_head2head[whiteName]--;
@@ -561,6 +568,7 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				if (!disqualified) {
 					blackData.m_score += 1;
 					blackData.m_winsAsBlack++;
+					whiteData.m_lossAsWhite++;
 					if (whiteData.m_head2head.contains(blackName)) {
 						whiteData.m_head2head[blackName]--;
 						blackData.m_head2head[whiteName]++;
@@ -762,8 +770,8 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 			obj["GamesAsBlack"] = i->m_gamesPlayedAsBlack;
 			obj["WinsAsWhite"] = i->m_winsAsWhite;
 			obj["WinsAsBlack"] = i->m_winsAsBlack;
-			obj["LossAsBlack"] = i->m_gamesPlayedAsWhite - i->m_winsAsWhite;
-			obj["LossAsWhite"] = i->m_gamesPlayedAsBlack - i->m_winsAsBlack;
+			obj["LossAsWhite"] = i->m_lossAsWhite;
+			obj["LossAsBlack"] = i->m_lossAsBlack;
 			obj["Games"] = i->m_gamesPlayedAsWhite + i->m_gamesPlayedAsBlack;
 			obj["Neustadtl"] = i->m_neustadtlScore;
 			obj["Strikes"] = i->m_strikes;
