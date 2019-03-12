@@ -85,18 +85,23 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	if (m_tbEnabled)
 	{
 		m_result = board->tablebaseResult();
-		if (m_result.isDraw())
+		
+		if (!m_tbDrawOnly)
 		{
-			return;
+			if (!m_result.isNone())
+			{
+				return;
+			}
 		}
 		else
 		{
-			if (m_tbDrawOnly)
+			if (m_result.isDraw())
 			{
-				if (!m_result.isNone())
-				{
-					m_result = Chess::Result();
-				}
+				return;
+			}
+			else
+			{
+				m_result = Chess::Result();
 			}
 		}
 	}
