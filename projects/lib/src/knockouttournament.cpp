@@ -71,14 +71,15 @@ QList<int> KnockoutTournament::firstRoundPlayers() const
 	for (int i = seedCount; i < n; i++)
 	{
 		unseeded << i;
+		players << i;
 	}
 
+/*
 	while (!unseeded.isEmpty())
 	{
 		int i = Mersenne::random() % unseeded.size();
-		players << unseeded.takeAt(i);
 	}
-
+*/
 	return players;
 }
 
@@ -108,12 +109,16 @@ void KnockoutTournament::initializePairing()
 			all[byeIndex] = player;
 		}
 		else
-			all[index] = player;
+			all[i] = player;
 	}
 
 	QList<TournamentPair*> pairs;
+	int j = 0;
 	for (int i = 0; i < x; i += 2)
-		pairs.append(pair(all.at(i), all.at(i + 1)));
+	{
+		pairs.append(pair(all.at(j), all.at(x -j - 1)));
+		j++;
+	}
 
 	m_rounds.clear();
 	m_rounds << pairs;
@@ -174,7 +179,20 @@ bool KnockoutTournament::areAllGamesFinished() const
 
 bool KnockoutTournament::shouldWeStopTour() const
 {
-	return m_should_we_stop_global;
+	QString path = "failed.txt";
+
+	if (!fileExists(path))
+	{
+		return m_should_we_stop_global;
+	}
+	else
+	{
+		qWarning () << " \n *************************************************************** \n" << 
+						"         We stopped before game#::" <<
+						"         Look at failed.txt" <<
+						" \n *************************************************************** \n";
+		return true;
+	}
 }
 
 bool KnockoutTournament::shouldWeStop(int iWhite, int iBlack, const TournamentPair* pair) const
@@ -280,6 +298,10 @@ TournamentPair* KnockoutTournament::nextPair(int gameNumber)
 		nextRound << pair(winners.at(i), winners.at(i + 1));
 	}
 	m_rounds << nextRound;
+	if (currentRound() == 1)
+	{
+		return nullptr;
+	}
 	setCurrentRound(currentRound() + 1);
 
 	for (TournamentPair* pair : qAsConst(nextRound))

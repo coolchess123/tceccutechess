@@ -143,13 +143,18 @@ void addEngineScore(QVariantMap *engineMap, QString name, int value)
 {
 	if (engineMap->size())
 	{
+		int found = 0;
 		for (QVariantMap::const_iterator iter = engineMap->begin(); iter != engineMap->end(); ++iter) {
 			if (iter.key() == name)
 			{
+				found = 1;
 				int score = iter.value().toInt();
 				score += value;
 				engineMap->insert(name, score);
 			}
+		}
+		if (! found) {
+			engineMap->insert(name, value);
 		}
 	}
 	else
