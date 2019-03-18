@@ -789,9 +789,6 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 					slot["Game"] = slotData.m_gameNo;
 					slot["Result"] = slotData.m_result;
 					result["H2h"] = result["H2h"].toDouble() + slotData.m_result;
-					if (slotData.m_winner) {
-						obj["Opponent"] = engineName;
-					}
 					switch (slotData.m_winner) {
 					case CrossTableData::WinnerNone:
 						slot["Winner"] = "None";
@@ -802,6 +799,9 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 					case CrossTableData::WinnerBlack:
 						slot["Winner"] = "Black";
 						break;
+					}
+					if (slot.contains("Winner")) {
+						obj["Opponent"] = engineName;
 					}
 					scores.append(slot);
 				}
