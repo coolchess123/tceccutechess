@@ -789,6 +789,9 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 					slot["Game"] = slotData.m_gameNo;
 					slot["Result"] = slotData.m_result;
 					result["H2h"] = result["H2h"].toDouble() + slotData.m_result;
+					if (slotData.m_winner) {
+						obj["Opponent"] = engineName;
+					}
 					switch (slotData.m_winner) {
 					case CrossTableData::WinnerNone:
 						slot["Winner"] = "None";
@@ -814,6 +817,9 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 
 		if (tsMap.contains("name"))
 			cMap["Event"] = tsMap["name"].toString();
+
+		if (tsMap.contains("type"))
+			cMap["Type"] = tsMap["type"].toString();
 
 		JsonSerializer serializer(cMap);
 		serializer.serialize(out);
