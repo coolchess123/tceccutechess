@@ -183,7 +183,7 @@ bool KnockoutTournament::shouldWeStopTour() const
 
 	if (!fileExists(path))
 	{
-		return m_should_we_stop_global;
+		return areAllGamesFinished();
 	}
 	else
 	{
@@ -206,9 +206,9 @@ bool KnockoutTournament::shouldWeStop(int iWhite, int iBlack, const TournamentPa
 	{
 		m_should_we_stop_global = false;
 	}
-	else
+	else if (firstScore == secondScore)
 	{
-		m_should_we_stop_global = true;	
+		m_should_we_stop_global = false;	
 	}
 
 	if (!m_should_we_stop_global)
@@ -265,16 +265,26 @@ bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 	if (gamesPerEncounter() % 2 == 0)
 		minDiff = 3;
 
-	int maxDiff = qAbs(pair->scoreDiff()) + pointsInProgress;
-	if (maxDiff >= minDiff)
+	if ((qAbs(firstScore - secondScore) > 0) && 
+		((firstScore + secondScore) % 4 == 0))
+	{
 		return false;
+	}
+
+	int maxDiff = qAbs(firstScore - secondScore);
+	if (maxDiff >= minDiff)
+	{
+		return false;
+	}
 
 	if (minDiff == 1 || maxDiff == 0)
+	{
 		return true;
+	}
 
 	// If the encounter was extended, make sure there's an even
 	// number of games if gamesPerEncounter() is even
-	return pair->gamesStarted() % 2 != 0;
+	return true;
 }
 
 TournamentPair* KnockoutTournament::nextPair(int gameNumber)
