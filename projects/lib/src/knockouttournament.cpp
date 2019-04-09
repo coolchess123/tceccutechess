@@ -142,15 +142,18 @@ void KnockoutTournament::addScore(int player, int score)
 {
 	for (TournamentPair* pair : m_rounds.last())
 	{
-		if (pair->firstPlayer() == player)
+		if (score > 0)
 		{
-			pair->addFirstScore(score);
-			break;
-		}
-		if (pair->secondPlayer() == player)
-		{
-			pair->addSecondScore(score);
-			break;
+			if (pair->firstPlayer() == player)
+			{
+				pair->addFirstScore(score);
+				break;
+			}
+			if (pair->secondPlayer() == player)
+			{
+				pair->addSecondScore(score);
+				break;
+			}
 		}
 	}
 
@@ -170,11 +173,16 @@ QList<int> KnockoutTournament::lastRoundWinners() const
 bool KnockoutTournament::areAllGamesFinished() const
 {
 	const QList<TournamentPair*>& lastRound(m_rounds.last());
-	if (lastRound.size() > 1)
-		return false;
 
-	const TournamentPair* pair(lastRound.first());
-	return !pair->gamesInProgress() && !needMoreGames(pair);
+	qWarning () << "lastRound.size:" << lastRound.size() << " , m_should_we_stop_global" << m_should_we_stop_global;
+	const auto last = m_rounds.last();
+	for (TournamentPair* pair : last)
+	{
+		if (needMoreGames(pair))
+			return false;
+	}
+
+	return true;
 }
 
 bool KnockoutTournament::shouldWeStopTour() const
@@ -262,16 +270,14 @@ bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 
 	// Make sure the score diff is big enough
 	int minDiff = 1;
-	if (gamesPerEncounter() % 2 == 0)
+
+	if ((firstScore + secondScore) % 4 == 0)
+		minDiff = 2;
+	else
 		minDiff = 3;
 
-	if ((qAbs(firstScore - secondScore) > 0) && 
-		((firstScore + secondScore) % 4 == 0))
-	{
-		return false;
-	}
-
 	int maxDiff = qAbs(firstScore - secondScore);
+	qWarning () << "firstScore:" << firstScore << " ,secondScore:" << secondScore << " ,minDiff:" << minDiff;
 	if (maxDiff >= minDiff)
 	{
 		return false;
@@ -284,6 +290,7 @@ bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 
 	// If the encounter was extended, make sure there's an even
 	// number of games if gamesPerEncounter() is even
+	qWarning () << "need more games: true";
 	return true;
 }
 
