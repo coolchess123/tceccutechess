@@ -475,7 +475,11 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 			if (s1.m_strikes == s2.m_strikes) {
 				if (s1.m_head2head[s2.m_engineName] == 0) {
 					if ((s1.m_winsAsWhite + s1.m_winsAsBlack) == (s2.m_winsAsWhite + s2.m_winsAsBlack)) {
-					    return s1.m_neustadtlScore > s2.m_neustadtlScore;
+						if ((s1.m_gamesPlayedAsWhite + s1.m_gamesPlayedAsBlack) == (s2.m_gamesPlayedAsWhite + s2.m_gamesPlayedAsBlack)) {
+							return s1.m_neustadtlScore > s2.m_neustadtlScore;
+						} else {
+							return (s1.m_gamesPlayedAsWhite + s1.m_gamesPlayedAsBlack) > (s2.m_gamesPlayedAsWhite + s2.m_gamesPlayedAsBlack);
+						}
 					} else {
 						return (s1.m_winsAsWhite + s1.m_winsAsBlack) > (s2.m_winsAsWhite + s2.m_winsAsBlack);
 					}
