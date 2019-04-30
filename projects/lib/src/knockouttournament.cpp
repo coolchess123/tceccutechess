@@ -242,6 +242,24 @@ bool KnockoutTournament::procceedNextGame() const
 {
 }
 
+bool KnockoutTournament::resetBook(const TournamentPair* pair) const
+{
+	// Second player is a BYE
+	if (!pair->isValid())
+		return false;
+
+	const int iWhite = pair->firstPlayer();
+	const int iBlack = pair->secondPlayer();
+	int firstScore  = pair->firstScore() + Tournament::playerAt(iWhite).builder()->resumescore();
+	int secondScore = pair->secondScore() + Tournament::playerAt(iBlack).builder()->resumescore();
+
+	if ((firstScore == secondScore) && (!firstScore))
+	{
+		return true;
+	}
+	return false;
+}
+
 bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 {
 	// Second player is a BYE

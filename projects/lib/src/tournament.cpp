@@ -448,6 +448,11 @@ bool Tournament::fileExists(QString path) const
     }
 }
 
+bool Tournament::resetBook(const TournamentPair* pair) const
+{
+	return false;
+}
+
 bool Tournament::shouldWeStopTour() const
 {
    QString path = "failed.txt";
@@ -747,6 +752,7 @@ void Tournament::startNextGame()
 		return;
 
 	bool needToStop = false;
+	bool needtoResetBook = false;
 	for (;;)
 	{
 		needToStop = shouldWeStopTour();
@@ -766,7 +772,9 @@ void Tournament::startNextGame()
 			break;
 		}
 
-		if (!pair->hasSamePlayers(m_pair) && m_players.size() > 2)
+		needtoResetBook = resetBook(pair);
+		qWarning () << "CAlling resetBook ,needtoResetBook:" << needtoResetBook;
+		if (needtoResetBook || ((!pair->hasSamePlayers(m_pair) && m_players.size() > 2)))
 		{
 			m_startFen.clear();
 			m_openingMoves.clear();
