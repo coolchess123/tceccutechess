@@ -592,7 +592,7 @@ void Tournament::startGame(TournamentPair* pair)
 	game->pgn()->setSite(m_site);
 
 	const int gpr = gamesPerRound();
-	const int gameNo = gpr ? m_nextGameNumber % gpr + 1 : 0;
+	const int gameNo = gpr ? m_nextGameNumber % gpr + 1 : m_nextGameNumber + 1;
 	game->pgn()->setRound(m_round, gameNo);
 
 	game->setStartDelay(m_startDelay);
