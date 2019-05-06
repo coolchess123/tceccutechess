@@ -33,6 +33,7 @@
 #include "elo.h"
 #include <jsonserializer.h>
 #include <QFileInfo>
+#include <chessgame.h>
 
 Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 					   QObject *parent)
@@ -485,6 +486,12 @@ bool Tournament::hasGauntletRatingsOrder() const
 	return false;
 }
 
+void Tournament::setTC(TournamentPlayer white, TournamentPlayer black, ChessGame * game, const TournamentPair* pair)
+{
+	game->setTimeControl(white.timeControl(), Chess::Side::White);
+	game->setTimeControl(black.timeControl(), Chess::Side::Black);
+}
+
 void Tournament::startGame(TournamentPair* pair)
 {
 	Q_ASSERT(pair->isValid());
@@ -518,8 +525,7 @@ void Tournament::startGame(TournamentPair* pair)
 	connect(game, SIGNAL(pgnMove()),
 		this, SLOT(onPgnMove()));
 
-	game->setTimeControl(white.timeControl(), Chess::Side::White);
-	game->setTimeControl(black.timeControl(), Chess::Side::Black);
+	setTC(white, black, game, m_pair);
 
 	game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
 	game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());

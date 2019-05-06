@@ -22,6 +22,7 @@
 #include "playerbuilder.h"
 #include "mersenne.h"
 #include "board/boardfactory.h"
+#include <chessgame.h>
 
 bool m_should_we_stop_global = false;
 
@@ -183,6 +184,67 @@ bool KnockoutTournament::areAllGamesFinished() const
 	}
 
 	return true;
+}
+
+void KnockoutTournament::setTC(TournamentPlayer white, TournamentPlayer black, ChessGame * game, const TournamentPair* pair)
+{
+	TimeControl wTimeControl = white.timeControl();
+	TimeControl bTimeControl = black.timeControl();
+
+	if (!pair)
+	{
+		game->setTimeControl(wTimeControl, Chess::Side::White);
+		game->setTimeControl(bTimeControl, Chess::Side::Black);
+		return;
+	}
+
+	int firstScore  = pair->firstScore() + white.builder()->resumescore();
+	int secondScore = pair->secondScore() + black.builder()->resumescore();
+
+	qWarning() << "ARUN: Holy:" << white.builder()->resumescore();
+
+	if ((firstScore + secondScore) >= 128)
+	{
+		wTimeControl.setTimePerTc(60000);
+		wTimeControl.setTimeIncrement(1000);
+		bTimeControl.setTimePerTc(60000);
+		bTimeControl.setTimeIncrement(1000);
+		qWarning() << "ARUNN: reducing TC: 64" << white.timeControl().timePerTc();
+	}
+	else if ((firstScore + secondScore) >= 112)
+	{
+		wTimeControl.setTimePerTc(120000);
+		wTimeControl.setTimeIncrement(1000);
+		bTimeControl.setTimePerTc(120000);
+		bTimeControl.setTimeIncrement(1000);
+		qWarning() << "ARUNN: reducing TC: 56" << white.timeControl().timePerTc();
+	}
+	else if ((firstScore + secondScore) >= 96)
+	{
+		wTimeControl.setTimePerTc(240000);
+		wTimeControl.setTimeIncrement(2000);
+		bTimeControl.setTimePerTc(240000);
+		bTimeControl.setTimeIncrement(2000);
+		qWarning() << "ARUNN: reducing TC: 48" << white.timeControl().timePerTc();
+	}
+	else if ((firstScore + secondScore) >= 80)
+	{
+		wTimeControl.setTimePerTc(480000);
+		wTimeControl.setTimeIncrement(3000);
+		bTimeControl.setTimePerTc(480000);
+		bTimeControl.setTimeIncrement(3000);
+		qWarning() << "ARUNN: reducing TC: 40" << white.timeControl().timePerTc();
+	}
+	else if ((firstScore + secondScore) >= 64)
+	{
+		wTimeControl.setTimePerTc(960000);
+		bTimeControl.setTimePerTc(960000);
+		wTimeControl.setTimeIncrement(4000);
+		bTimeControl.setTimeIncrement(4000);
+		qWarning() << "ARUNN: reducing TC: 32" << white.timeControl().timePerTc();
+	}
+	game->setTimeControl(wTimeControl, Chess::Side::White);
+	game->setTimeControl(bTimeControl, Chess::Side::Black);
 }
 
 bool KnockoutTournament::shouldWeStopTour() const

@@ -477,6 +477,7 @@ class LIB_EXPORT Tournament : public QObject
 		virtual bool shouldWeStopTour() const;
 		virtual bool resetBook(const TournamentPair* pair) const;
 		virtual bool fileExists(QString path) const;
+		virtual void setTC(TournamentPlayer white, TournamentPlayer black, ChessGame * game, const TournamentPair* pair);
 
 
 	private slots:

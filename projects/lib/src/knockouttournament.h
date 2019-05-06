@@ -56,6 +56,8 @@ class LIB_EXPORT KnockoutTournament : public Tournament
       virtual bool shouldWeStop(int white, int black, const TournamentPair* pair) const;
       virtual bool shouldWeStopTour() const;
       virtual bool resetBook(const TournamentPair* pair) const;
+      virtual void setTC(TournamentPlayer white, TournamentPlayer black, ChessGame * game, const TournamentPair* pair);
+
       bool m_should_we_stop;
 
 	private:
