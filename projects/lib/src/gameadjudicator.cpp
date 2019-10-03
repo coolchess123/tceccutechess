@@ -107,7 +107,7 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	}
 
 	// Moves forced by the user (eg. from opening book or played by user)
-	if (eval.depth() <= 0)
+	if (!m_tcecAdjudication && eval.depth() <= 0)
 	{
 		m_drawScoreCount = 0;
 		m_resignScoreCount[side] = 0;
