@@ -71,6 +71,8 @@ class LIB_EXPORT ChessGame : public QObject
 		void setAdjudicator(const GameAdjudicator& adjudicator);
 		void setStartDelay(int time);
 		void setBookOwnership(bool enabled);
+		void setLiveOutput(const QString &livePgnOut, PgnGame::PgnMode livePgnOutMode,
+				   bool pgnFormat, bool jsonFormat);
 
 		void generateOpening();
 
@@ -123,6 +125,8 @@ class LIB_EXPORT ChessGame : public QObject
 		void addPgnMove(const Chess::Move& move, const QString& comment);
 		void emitLastMove();
 
+		void updateLiveFiles() const;
+
 		QString evalString(const MoveEvaluation& eval, const Chess::Move& move);
 		QString statusString(const Chess::Move& move, bool doMove);
 
@@ -147,6 +151,12 @@ class LIB_EXPORT ChessGame : public QObject
 		QSemaphore m_pauseSem;
 		QSemaphore m_resumeSem;
 		GameAdjudicator m_adjudicator;
+
+		// live output support
+		QString m_livePgnOut;
+		PgnGame::PgnMode m_livePgnOutMode = PgnGame::Minimal;
+		bool m_pgnFormat = false;
+		bool m_jsonFormat = false;
 };
 
 #endif // CHESSGAME_H

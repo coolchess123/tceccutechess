@@ -488,7 +488,6 @@ class LIB_EXPORT Tournament : public QObject
 		void onGameFinished(ChessGame* game);
 		void onGameDestroyed(ChessGame* game);
 		void onGameStartFailed(ChessGame* game);
-		void onPgnMove();
 		void onEngineUpdated(int engineIndex);
 
 	private:

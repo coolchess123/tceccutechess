@@ -31,9 +31,7 @@
 #include "openingbook.h"
 #include "sprt.h"
 #include "elo.h"
-#include <jsonserializer.h>
 #include <QFileInfo>
-#include <chessgame.h>
 
 Tournament::Tournament(GameManager* gameManager, EngineManager* engineManager,
 					   QObject *parent)
@@ -522,11 +520,10 @@ void Tournament::startGame(TournamentPair* pair)
 		this, SLOT(onGameStarted(ChessGame*)));
 	connect(game, SIGNAL(finished(ChessGame*)),
 		this, SLOT(onGameFinished(ChessGame*)));
-	connect(game, SIGNAL(pgnMove()),
-		this, SLOT(onPgnMove()));
 
 	setTC(white, black, game, m_pair);
 
+	game->setLiveOutput(m_livePgnOut, m_livePgnOutMode, m_pgnFormat, m_jsonFormat);
 	game->setOpeningBook(white.book(), Chess::Side::White, white.bookDepth());
 	game->setOpeningBook(black.book(), Chess::Side::Black, black.bookDepth());
 
@@ -923,197 +920,6 @@ void Tournament::onGameStarted(ChessGame* game)
 	m_players[iBlack].setName(game->player(Chess::Side::Black)->name());
 
 	emit gameStarted(game, data->number, iWhite, iBlack);
-
-	onPgnMove();
-}
-
-void Tournament::onPgnMove()
-{
-	if (m_livePgnOut.isEmpty()) return;
-
-	ChessGame* sender = qobject_cast<ChessGame*>(QObject::sender());
-	Q_ASSERT(sender != 0);
-
-	PgnGame* pgn(sender->pgn());
-	Q_ASSERT(pgn != 0);
-
-	if (m_pgnFormat)
-	{
-		const QString fileName(m_livePgnOut + ".pgn");
-		QFile::resize(fileName, 0);
-		pgn->write(fileName, m_livePgnOutMode);
-	}
-
-	if (m_jsonFormat)
-	{
-		Chess::Board* board(sender->board());
-		Q_ASSERT(board != 0);
-		board = board->copy();
-		board->setFenString(board->startingFenString());
-
-		QVariantMap pMap;
-
-		// Parse and assemble engine options
-		QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
-		for (QString& engine : engines)
-		{
-			engine = engine.trimmed();
-			const int ePos = engine.indexOf(':');
-			if (ePos > 0)
-			{
-				QVariantList oList;
-				QStringList options = engine.mid(ePos + 1).trimmed().split(';', QString::SkipEmptyParts);
-				for (QString& option : options)
-				{
-					option = option.trimmed();
-					QVariantMap oMap;
-					const int oPos = option.indexOf('=');
-					if(oPos > 0)
-					{
-						oMap["Name"] = option.left(oPos).trimmed();
-						oMap["Value"] = option.mid(oPos + 1).trimmed();
-					} else
-						oMap["Name"] = option;
-					oList << oMap;
-				}
-				pMap[engine.left(ePos).trimmed()] = oList;
-			}
-		}
-
-		// Assemble tags
-		const QList< QPair<QString, QString> >& tags = pgn->tags();
-		QVariantMap hMap;
-		for(const QPair<QString, QString>& tagPair : tags)
-			hMap[tagPair.first] = tagPair.second;
-		pMap["Headers"] = hMap;
-
-		// Parse and assemble move stats
-		const QVector<PgnGame::MoveData>& moves = pgn->moves();
-		QVariantList mList;
-		for (const PgnGame::MoveData& move : moves)
-		{
-			QVariantMap mMap;
-			QVariantMap aMap;
-
-			mMap["m"] = move.moveString;
-
-			QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
-			sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
-			mMap["from"] = sq;
-
-			sq = static_cast<char>(move.move.targetSquare().file() + 'a');
-			sq += static_cast<char>(move.move.targetSquare().rank() + '1');
-			mMap["to"] = sq;
-
-			mMap["book"] = false;
-
-			QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
-			for(QString& stat : stats)
-			{
-				stat = stat.trimmed();
-				if (stat == "book") {
-					mMap["book"] = true;
-				} else {
-					const int pos = stat.indexOf('=');
-					if (pos > 0)
-					{
-						const QString name(stat.left(pos).trimmed());
-						const QString value(stat.mid(pos + 1).trimmed());
-						if (name == "pv")
-						{
-							QVariantMap pvMap;
-							QVariantList pvList;
-
-							pvMap["San"] = value;
-
-							int pvmCnt = 0;
-							QStringList pvMoves = value.split(' ', QString::SkipEmptyParts);
-							for (const QString& pvMoveStr : pvMoves)
-							{
-								QVariantMap pvMove;
-
-								const Chess::Move& pvbm(board->moveFromString(pvMoveStr));
-								if (pvbm.isNull())
-									break;
-								const Chess::GenericMove& gm(board->genericMove(pvbm));
-
-								board->makeMove(pvbm);
-								++pvmCnt;
-
-								pvMove["m"] = pvMoveStr;
-								pvMove["fen"] = board->fenString();
-
-								sq = static_cast<char>(gm.sourceSquare().file() + 'a');
-								sq += static_cast<char>(gm.sourceSquare().rank() + '1');
-								pvMove["from"] = sq;
-
-								sq = static_cast<char>(gm.targetSquare().file() + 'a');
-								sq += static_cast<char>(gm.targetSquare().rank() + '1');
-								pvMove["to"] = sq;
-
-								pvList << pvMove;
-							}
-							for(; pvmCnt > 0; --pvmCnt)
-								board->undoMove();
-
-							pvMap["Moves"] = pvList;
-							mMap["pv"] = pvMap;
-						}
-						else if (name == "mb")
-						{
-							QVariantMap mbMap;
-							int idx = 0;
-							for (const char* mstr : {"p", "n", "b", "r", "q"})
-							{
-								mbMap[mstr] = value.mid(idx, 2).toInt();
-								idx += 2;
-							}
-							mMap["material"] = mbMap;
-						}
-						else if (name == "R50")
-							aMap["FiftyMoves"] = value.toInt();
-						else if (name == "Rd")
-							aMap["Draw"] = value.toInt();
-						else if (name == "Rr")
-							aMap["ResignOrWin"] = value.toInt();
-						else
-							mMap[name] = value;
-					}
-					else	// real comment
-						mMap["rem"] = stat;
-				}
-			}
-			if (!aMap.empty())
-				mMap["adjudication"] = aMap;
-
-			board->makeMove(board->moveFromGenericMove(move.move));
-
-			mMap["fen"] = board->fenString();
-
-			mList << mMap;
-		}
-		pMap["Moves"] = mList;
-
-		delete board;
-
-		const QString tempName(m_livePgnOut + "_temp.json");
-		const QString finalName(m_livePgnOut + ".json");
-		if (QFile::exists(tempName))
-			QFile::remove(tempName);
-		QFile output(tempName);
-		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open live JSON output file: %s", qUtf8Printable(tempName));
-		} else {
-			QTextStream out(&output);
-			JsonSerializer serializer(pMap);
-			serializer.serialize(out);
-			output.close();
-			if (QFile::exists(finalName))
-				QFile::remove(finalName);
-			if (!QFile::rename(tempName, finalName))
-				qWarning("cannot rename live JSON output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
-		}
-	}
 }
 
 void Tournament::onEngineUpdated(int engineIndex)
