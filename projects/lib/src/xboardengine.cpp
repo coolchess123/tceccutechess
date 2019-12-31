@@ -671,9 +671,9 @@ void XboardEngine::parseLine(const QString& line)
 		// Node count
 		if ((ref = nextToken(ref)).isNull())
 			return;
-		val = ref.toString().toULongLong(&ok);
+		unsigned long long node = ref.toString().toULongLong(&ok);
 		if (ok)
-			m_eval.setNodeCount(val);
+			m_eval.setNodeCount(node);
 
 		// Principal variation
 		if ((ref = nextToken(ref, true)).isNull())
