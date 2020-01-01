@@ -235,6 +235,10 @@ void ChessEngine::start()
 
 void ChessEngine::onProtocolStart()
 {
+	const char *uciOptionThreads = "Threads";
+	const char *xboardOptionThreads = "cores";
+	QMap<QString, QVariant>::const_iterator i;
+
 	m_protocolStartTimer->stop();
 	m_pinging = false;
 	setState(Idle);
@@ -242,10 +246,21 @@ void ChessEngine::onProtocolStart()
 
 	flushWriteBuffer();
 
-	QMap<QString, QVariant>::const_iterator i = m_optionBuffer.constBegin();
+	// We'll set the threads option before anything else. On many engines, this will speed up hash init
+	i = m_optionBuffer.constFind(uciOptionThreads);
+	if (i != m_optionBuffer.constEnd())
+		setOption(i.key(), i.value());
+
+	i = m_optionBuffer.constFind(xboardOptionThreads);
+	if (i != m_optionBuffer.constEnd())
+		setOption(i.key(), i.value());
+
+	i = m_optionBuffer.constBegin();
 	while (i != m_optionBuffer.constEnd())
 	{
-		setOption(i.key(), i.value());
+		if ((i.key() != uciOptionThreads) && (i.key() != xboardOptionThreads))
+			setOption(i.key(), i.value());
+
 		++i;
 	}
 	m_optionBuffer.clear();
