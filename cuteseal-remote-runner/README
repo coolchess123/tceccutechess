@@ -1,0 +1,59 @@
+Cuteseal support
+----------------
+
+Cuteseal support is intended for laggy network connections to
+eliminate the network lag from move time. Cuteseal moves timing from
+the cutechess server to the remote engine side of the network
+connection. This is achieved by running the engine with
+cuteseal-remote-runner, which adds timing info for all input and
+output commands. Cutechess-cli then uses this timing info to calculate
+move times correctly without the effect of the network lag.
+
+
+Usage
+-----
+
+First, compile the cutechess remote runner:
+
+    cd cuteseal-remote-runner
+    ./compile.sh
+
+Then, to enable cuteseal support for a remote engine, launch is as
+follows in engines.json:
+
+        "command": "<tceccutechess-path>/cuteseal-remote-runner/cuteseal-remote-runner stockfish",
+
+Then, set cuteseal="true" in the cutechess-cli launch parameters. For
+example:
+
+	-engine conf="Stockfish Cuteseal" tc="1+0.1" cuteseal="true"
+
+This tells cutechess that the engine input/output uses cuteseal.
+
+Run cuteseal-remote-runner without parameters for a usage and
+explanation on the cuteseal protocol layer.
+
+You can also launch the engine with cuteseal-remote-runner on your
+console, as you'd do with any other engine:
+
+	 ./cuteseal-remote-runner stockfish
+
+You can then send the usual commands such as 'uci' and 'go
+infinite'. Or try:
+
+	 ./cuteseal-remote-runner stockfish bench
+
+Cuteseal has one extra input command prefix that sets a timeout for
+the engine to send the 'bestmove' command. This is:
+
+       cuteseal-deadline <ns> <command ...>
+
+For example:
+
+       cuteseal-deadline 1100000000 go movetime 1000
+
+to ensure that bestmove is received within 1.1 sec. If not, a "STATUS
+TIMEOUT" message will be sent back to inform that the engine did not
+respond in time. Receiving this message triggers the Cutechess server
+to immediately forfeit the game due to timeout.
+
