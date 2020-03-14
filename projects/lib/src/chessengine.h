@@ -230,6 +230,8 @@ class LIB_EXPORT ChessEngine : public ChessPlayer
 		 */
 		bool pondering() const;
 
+		bool isCuteseal() const;
+
 	protected slots:
 		// Inherited from ChessPlayer
 		virtual void onTimeout();
@@ -292,6 +294,7 @@ class LIB_EXPORT ChessEngine : public ChessPlayer
 		QMap<QString, QVariant> m_optionBuffer;
 		EngineConfiguration::RestartMode m_restartMode;
 		QString m_configurationString;
+		bool m_cuteseal;
 };
 
 #endif // CHESSENGINE_H

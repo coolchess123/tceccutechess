@@ -342,6 +342,12 @@ bool parseEngine(const QStringList& args, EngineData& data, QVariantMap stMap, Q
 		{
 			data.config.setPondering(true);
 		}
+		else if (name == "cuteseal")
+		{
+			bool useCuteseal = (val.toUpper() == "TRUE");
+			qWarning() << "CUTESEAL " << useCuteseal;
+			data.config.setCuteseal(useCuteseal);
+		}
 		// Custom engine option
 		else if (name.startsWith("option."))
 			data.config.setOption(name.section('.', 1), val);

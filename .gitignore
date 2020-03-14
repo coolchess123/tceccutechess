@@ -81,3 +81,6 @@ qtc-gdbmacros/
 
 # Installation packages
 dist/linux/package
+
+# Cuteseal remote runner
+cuteseal-remote-runner/cuteseal-remote-runner

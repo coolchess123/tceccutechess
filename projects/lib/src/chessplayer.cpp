@@ -130,7 +130,7 @@ void ChessPlayer::startClock()
 
 	if (!m_timeControl.isInfinite())
 	{
-		int t = m_timeControl.timeLeft() + m_timeControl.expiryMargin();
+		int t = m_timeControl.timeLeft() + m_timeControl.expiryMargin() + getMaxNetLagMs();
 		m_timer->start(qMax(t, 0) + 200);
 	}
 }
@@ -275,12 +275,12 @@ void ChessPlayer::forfeit(Chess::Result::Type type, const QString& description)
 	claimResult(Chess::Result(type, m_side.opposite(), description));
 }
 
-void ChessPlayer::emitMove(const Chess::Move& move)
+void ChessPlayer::emitMove(const Chess::Move& move, int64_t overrideMoveTimeMs)
 {
 	if (m_state == Thinking)
 		setState(Observing);
 
-	m_timeControl.update();
+	m_timeControl.update(true, overrideMoveTimeMs);
 	m_eval.setTime(m_timeControl.lastMoveTime());
 
 	m_timer->stop();

@@ -280,8 +280,11 @@ class LIB_EXPORT ChessPlayer : public QObject
 		/*!
 		 * Emits the player's move, and a timeout signal if the
 		 * move came too late.
+		 *
+		 * The move time is overridden by actual move times when
+		 * cuteseal is enabled.
 		 */
-		void emitMove(const Chess::Move& move);
+		void emitMove(const Chess::Move& move, int64_t overrideMoveTimeMs = -1);
 		
 		/*! Returns the opposing player. */
 		const ChessPlayer* opponent() const;
@@ -301,6 +304,14 @@ class LIB_EXPORT ChessPlayer : public QObject
 		 */
 		MoveEvaluation m_eval;
 
+		/*!
+		 * Maximum allowed net lag (millisecs). This adds to the
+		 * timer-based timeout. By default, we use local engines and we
+		 * don't allow any net-based lag. With cuteseal netlag
+		 * compensator, this should be set to something like 30 secs, as
+		 * the cuteseal-remote-runner will remotely flag the timeouts.
+		 */
+		virtual int getMaxNetLagMs() const { return 0; }
 	private:
 		void startClock();
 

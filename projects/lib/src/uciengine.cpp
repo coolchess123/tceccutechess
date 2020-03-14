@@ -91,7 +91,8 @@ UciEngine::UciEngine(QObject* parent)
 	  m_movesPondered(0),
 	  m_ponderHits(0),
 	  m_ignoreThinking(false),
-	  m_rePing(false)
+	  m_rePing(false),
+	  m_cutesealMoveStartNs(0)
 {
 	addVariant("standard");
 	setName("UciEngine");
@@ -248,8 +249,15 @@ void UciEngine::startThinking()
 	}
 	else
 		qFatal("Player %s doesn't have a side", qUtf8Printable(name()));
-	
-	QString command = "go";
+
+	QString command;
+	if (isCuteseal())
+	{
+		// give deadline for shouting TIMEOUT if the engine doesn't respond with bestmove
+		command = QString("cuteseal-deadline %1 ").arg(int64_t { myTc->timeLeft() + myTc->expiryMargin() } * 1000000);
+	}
+
+	command += "go";
 	if (pondering() && !m_ponderMove.isNull())
 	{
 		command += " ponder";
@@ -593,7 +601,51 @@ EngineOption* UciEngine::parseOption(const QStringRef& line)
 
 void UciEngine::parseLine(const QString& line)
 {
-	const QStringRef command(firstToken(line));
+	QStringRef command;
+	int64_t localCommandTimeNs = -1;
+
+	if (isCuteseal())
+	{
+		QStringRef lineNum(firstToken(line));
+		QStringRef timeNs(nextToken(lineNum));
+		QStringRef streamToken(nextToken(timeNs));
+
+		localCommandTimeNs = timeNs.toLongLong();
+		command = nextToken(streamToken);
+
+		if (streamToken == "STATUS")
+		{
+			if (command == "TIMEOUT")
+			{
+				forfeit(Chess::Result::Timeout);
+			}
+
+			return;
+		}
+		else if (streamToken == "STDIN")
+		{
+			if (command == "cuteseal-deadline")
+			{
+				// implement move time bookkeeping
+				m_cutesealMoveStartNs = localCommandTimeNs;
+			}
+		}
+		else if (streamToken == "STDOUT" || streamToken == "STDERR")
+		{
+			// nothing here
+		}
+		else
+		{
+			qWarning() << "Bad cuteseal stream token: " << streamToken;
+			return;
+		}
+
+	}
+	else
+	{
+		command = firstToken(line);
+	}
+
 
 	if (command == "info")
 	{
@@ -656,7 +708,15 @@ void UciEngine::parseLine(const QString& line)
 			board()->undoMove();
 		}
 
-		emitMove(move);
+		if (!isCuteseal())
+		{
+			emitMove(move);
+		}
+		else
+		{
+			int64_t deltaNs = (localCommandTimeNs - m_cutesealMoveStartNs);
+			emitMove(move, (deltaNs + 500000) / 1000000);
+		}
 	}
 	else if (command == "readyok")
 	{

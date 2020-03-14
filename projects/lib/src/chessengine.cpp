@@ -81,7 +81,8 @@ ChessEngine::ChessEngine(QObject* parent)
 	  m_idleTimer(new QTimer(this)),
 	  m_protocolStartTimer(new QTimer(this)),
 	  m_ioDevice(nullptr),
-	  m_restartMode(EngineConfiguration::RestartAuto)
+	  m_restartMode(EngineConfiguration::RestartAuto),
+	  m_cuteseal(false)
 {
 	m_pingTimer->setSingleShot(true);
 	m_pingTimer->setInterval(120000);
@@ -149,6 +150,8 @@ void ChessEngine::applyConfiguration(const EngineConfiguration& configuration)
 
 	if (configuration.rating())
 		setRating(configuration.rating());
+
+	m_cuteseal = configuration.isCuteseal();
 }
 
 void ChessEngine::addOption(EngineOption* option)
@@ -296,6 +299,11 @@ bool ChessEngine::whiteEvalPov() const
 bool ChessEngine::pondering() const
 {
 	return m_pondering;
+}
+
+bool ChessEngine::isCuteseal() const
+{
+	return m_cuteseal;
 }
 
 void ChessEngine::endGame(const Chess::Result& result)

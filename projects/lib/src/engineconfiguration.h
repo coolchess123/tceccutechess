@@ -232,6 +232,9 @@ class LIB_EXPORT EngineConfiguration
 		void setClaimsValidated(bool validate);
 		void setResumeScore(const int score);
 
+		void setCuteseal(bool cuteseal);
+		bool isCuteseal() const;
+
 		/*!
 		 * Assigns \a other to this engine configuration and returns
 		 * a reference to this object.
@@ -258,6 +261,7 @@ class LIB_EXPORT EngineConfiguration
 		int m_rating;
 		int m_strikes;
 		int m_restart_score;
+		bool m_cuteseal;
 };
 
 #endif // ENGINE_CONFIGURATION_H

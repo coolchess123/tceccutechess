@@ -322,13 +322,15 @@ void TimeControl::startTimer()
 	m_time.start();
 }
 
-void TimeControl::update(bool applyIncrement)
+void TimeControl::update(bool applyIncrement, int64_t overrideElapsedMs)
 {
 	/*
 	 * This will overflow after roughly 49 days however it's unlikely
 	 * we'll ever hit that limit.
 	 */
-	if (m_time.isValid())
+	if (overrideElapsedMs >= 0)
+		m_lastMoveTime = overrideElapsedMs;
+	else if (m_time.isValid())
 		m_lastMoveTime = (int)m_time.elapsed();
 	else
 		m_lastMoveTime = 0;

@@ -181,7 +181,7 @@ class LIB_EXPORT TimeControl
 		 * Set this value to false if no increment is necessary for
 		 * the current move, e.g. for a book move.
 		 */
-		void update(bool applyIncrement = true);
+		void update(bool applyIncrement = true, int64_t overrideElapsedMs = -1);
 
 		/*! Returns the last elapsed move time. */
 		int lastMoveTime() const;

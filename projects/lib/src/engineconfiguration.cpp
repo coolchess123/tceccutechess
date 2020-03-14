@@ -30,7 +30,8 @@ EngineConfiguration::EngineConfiguration()
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
 	  m_restart_score(0),
-	  m_strikes(0)
+	  m_strikes(0),
+	  m_cuteseal(false)
 {
 }
 
@@ -47,7 +48,8 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
 	  m_restart_score(0),
-	  m_strikes(0)
+	  m_strikes(0),
+	  m_cuteseal(false)
 {
 }
 
@@ -59,7 +61,8 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
 	  m_restart_score(0),
-	  m_strikes(0)
+	  m_strikes(0),
+	  m_cuteseal(false)
 {
 	const QVariantMap map = variant.toMap();
 
@@ -127,7 +130,8 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_restartMode(other.m_restartMode),
 	  m_rating(other.m_rating),
 	  m_restart_score(other.m_restart_score),
-	  m_strikes(other.m_strikes)
+	  m_strikes(other.m_strikes),
+	  m_cuteseal(other.m_cuteseal)
 {
 	const auto options = other.options();
 	for (const EngineOption* option : options)
@@ -157,6 +161,7 @@ EngineConfiguration& EngineConfiguration::operator=(EngineConfiguration&& other)
 	m_rating = other.m_rating;
 	m_strikes = other.m_strikes;
 	m_restart_score = other.m_restart_score;
+	m_cuteseal = other.m_cuteseal;
 	// other's destructor will cause a mess if its m_options isn't cleared
 	other.m_options.clear();
 	return *this;
@@ -209,6 +214,9 @@ QVariant EngineConfiguration::toVariant() const
 
 	if (m_strikes > 0)
 		map.insert("strikes", m_strikes);
+
+	if (m_cuteseal)
+		map.insert("cuteseal", true);
 
 	return map;
 }
@@ -418,6 +426,16 @@ void EngineConfiguration::setClaimsValidated(bool validate)
 	m_validateClaims = validate;
 }
 
+void EngineConfiguration::setCuteseal(bool cuteseal)
+{
+	m_cuteseal = cuteseal;
+}
+
+bool EngineConfiguration::isCuteseal() const
+{
+	return m_cuteseal;
+}
+
 EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& other)
 {
 	if (this != &other)
@@ -437,6 +455,7 @@ EngineConfiguration& EngineConfiguration::operator=(const EngineConfiguration& o
 		m_rating = other.m_rating;
 		m_strikes = other.m_strikes;
 		m_restart_score = other.m_restart_score;
+		m_cuteseal = other.m_cuteseal;
 
 		qDeleteAll(m_options);
 		m_options.clear();
