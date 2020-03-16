@@ -212,7 +212,7 @@ namespace {
                 pollDeadlineMs = -1;
             } else {
                 // active DL
-                int64_t nsLeft = getClockNs() - bestmoveDeadlineNs;
+                int64_t nsLeft = bestmoveDeadlineNs - getClockNs();
                 if (nsLeft < 0) {
                     pollDeadlineMs = 0; // one more try, but no wait
                 } else {
@@ -242,7 +242,7 @@ namespace {
                     }
                 }
 
-                // we'll also send this to the engine
+                // we'll also send the line to the engine
                 fputs(line, toChild);
                 fputc('\n', toChild);
                 fflush(toChild);
