@@ -57,3 +57,7 @@ TIMEOUT" message will be sent back to inform that the engine did not
 respond in time. Receiving this message triggers the Cutechess server
 to immediately forfeit the game due to timeout.
 
+Finally, send USR1 signal to the runner process (note: runner, not
+engine!) to request a status report. This can be useful to determine
+whether the runner is still alive in case the engine becomes
+unresponsive.

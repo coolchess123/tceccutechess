@@ -1,4 +1,5 @@
 
+#include <atomic>
 #include <cinttypes>
 #include <cstdarg>
 #include <cstdio>
@@ -11,6 +12,7 @@
 
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -28,15 +30,27 @@ namespace {
     uint64_t outCmdCounter { }; // 64 bits should be enough for anyone?
     uint64_t clockBaseNs { };
 
+    std::atomic<int> sigExitSigNum { -1 }; // non-negative if exit is signaled
+    std::atomic<bool> sigStatusReport { false }; // status report requested
+
+    std::string logPath { };
+    bool logAppend { };
+    FILE *logFile { };
+
     void print_usage()
     {
-        puts("Usage: cuteseal-remote-runner <engine> [engine-options ...]\n"
+        puts("Usage: cuteseal-remote-runner [options] <engine> [engine-options ...]\n"
              "\n"
              "Run engine and tag all input and output with time stamps. This is\n"
              "intended for lag elimination when running engines over a high-latency\n"
              "network.\n"
              "\n"
-             "What this script essentially does is as follows:\n"
+             "Options:\n"
+             "-h         This help.\n"
+             "-l <file>  Log output to a file. Truncate existing log.\n"
+             "-la <file> Log output to a file. Append to existing log.\n"
+             "\n"
+             "What the runner essentially does is as follows:\n"
              "- Launches the engine\n"
              "- Per input inline:\n"
              "  o echo the received line to output with timing information attached\n"
@@ -66,7 +80,10 @@ namespace {
              "If bestmove is not sent in time, the runner will send 'STATUS TIMEOUT' message,\n"
              "which the server-side will consider as a forfeit. This replaces the server-side\n"
              "timer-based timeout mechanism. The prefix 'cutechess-deadline <ns>' is not sent\n"
-             "to the engine.\n");
+             "to the engine.\n"
+             "\n"
+             "Send signal USR1 to cuteseal-remote-runner process to request a status report.\n"
+            );
     }
 
     uint64_t getClockNs()
@@ -75,6 +92,16 @@ namespace {
         timespec tp { };
         clock_gettime(CLOCK_MONOTONIC, &tp);
         return (tp.tv_sec * secsPerNs + tp.tv_nsec) - clockBaseNs;
+    }
+
+    void statusSignalHandler(int signum)
+    {
+        sigStatusReport.store(true);
+    }
+
+    void terminatingSignalHandler(int signum)
+    {
+        sigExitSigNum.store(signum, std::memory_order_relaxed);
     }
 
     void timedPrintLine(Stream stream, const char *fmt, ...)
@@ -95,6 +122,19 @@ namespace {
 
         puts(""); // newline
 
+        if (logFile) {
+            fprintf(logFile, "%" PRIu64 " %" PRIu64 " %s ",
+                    outCmdCounter,
+                    ns,
+                    streamNames[static_cast<size_t>(stream)]);
+            va_start(ap, fmt);
+            vfprintf(logFile, fmt, ap);
+            va_end(ap);
+            fputc('\n', logFile);
+            fflush(logFile);
+        }
+
+
         outCmdCounter++;
     }
 
@@ -102,7 +142,7 @@ namespace {
     {
         const char *error { strerror(errno) };
 
-        timedPrintLine(Stream::STATUS, "%s: %s", str, error);
+        timedPrintLine(Stream::STATUS, "ERROR %s: %s", str, error);
     }
 
     class FdLineBuffer
@@ -168,7 +208,7 @@ namespace {
                     streamError = ECONNRESET; // we'll use this to mark end of stream
                     return false;
                 } else {
-                    if (!(errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    if (!(errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
                         // real error, and not just "no more data at the moment"
                         streamError = errno;
                     }
@@ -177,6 +217,18 @@ namespace {
             }
         }
     };
+
+    void printStatus(uint64_t bestmoveDeadlineNs)
+    {
+        if (bestmoveDeadlineNs == 0) {
+            timedPrintLine(Stream::STATUS, "REPORT Runner alive");
+        }
+        else {
+            const int64_t nsLeft = bestmoveDeadlineNs - getClockNs();
+            timedPrintLine(Stream::STATUS, "REPORT Runner alive, bestmove deadline in %" PRId64 " ns",
+                           std::max<int64_t>(0, nsLeft));
+        }
+    }
 
     void runLoop(int childStdin, int childStdout, int childStderr)
     {
@@ -221,8 +273,27 @@ namespace {
             }
 
             if (poll(fdsToPoll, std::size(fdsToPoll), pollDeadlineMs) < 0) {
-                timedPerror("Poll failed, aborting");
-                abort();
+
+                if (errno != EINTR) {
+                    timedPerror("Poll failed, aborting");
+                    abort();
+                }
+            }
+
+            // exit signal occurred?
+            if (sigExitSigNum.load(std::memory_order_relaxed) != -1) {
+                const int signum = sigExitSigNum.load(std::memory_order_relaxed);
+
+                printStatus(bestmoveDeadlineNs);
+                timedPrintLine(Stream::STATUS, "INFO Runner received exit signal %d (%s), exitting...", signum, strsignal(signum));
+
+                break; // exit
+            }
+
+            // status report requested by signal?
+            if (sigStatusReport.load(std::memory_order_relaxed)) {
+                printStatus(bestmoveDeadlineNs);
+                sigStatusReport.store(false, std::memory_order_relaxed);
             }
 
             // go through the streams
@@ -271,13 +342,13 @@ namespace {
             // check the streams for errors
             for (size_t i = 0; i < std::size(flbs); ++i) {
                 if (flbs[i]->getError()) {
-                    timedPrintLine(Stream::STATUS, "Stream %s has terminated: %s", pollEntryNames[i], strerror(flbs[i]->getError()));
+                    timedPrintLine(Stream::STATUS, "INFO Stream %s has terminated: %s", pollEntryNames[i], strerror(flbs[i]->getError()));
                     allStreamsGood = false;
                     continue; // no need to spam the poll status
                 }
 
                 if (fdsToPoll[i].revents & (POLLHUP | POLLERR | POLLRDHUP)) {
-                    timedPrintLine(Stream::STATUS, "Stream %s has terminated, poll status=%hd", pollEntryNames[i], fdsToPoll[i].revents);
+                    timedPrintLine(Stream::STATUS, "INFO Stream %s has terminated, poll status=%hd", pollEntryNames[i], fdsToPoll[i].revents);
                     allStreamsGood = false;
                 }
             }
@@ -286,13 +357,47 @@ namespace {
         if (toChild) {
             fclose(toChild);
         }
+        close(childStdout);
+        close(childStderr);
     }
 
 } // anonymous namespace
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
+    // reset our relative clock
+    clockBaseNs = getClockNs();
+
+    // parse options
+    if (argc == 0) {
+        // shouldn't ever happen; this is reserved for ldd
+        print_usage();
+        return 127;
+    }
+    ++argv;
+    --argc;
+
+    while (argc > 0 && argv[0][0] == '-') {
+        if (strcmp(argv[0], "-l") == 0 && argc >= 2) {
+            logPath = argv[1];
+            argv += 2;
+            argc -= 2;
+            logAppend = false;
+        }
+        else if (strcmp(argv[0], "-la") == 0 && argc >= 2) {
+            logPath = argv[1];
+            argv += 2;
+            argc -= 2;
+            logAppend = true;
+        }
+        else {
+            print_usage();
+            return 127;
+        }
+    }
+
+    // engine specified after options?
+    if (argc < 1) {
         print_usage();
         return 127;
     }
@@ -300,8 +405,14 @@ int main(int argc, char **argv)
     // ensure we print in line-buffered mode
     setlinebuf(stdout);
 
-    // reset our relative clock
-    clockBaseNs = getClockNs();
+    // open log file if specified
+    if (!logPath.empty()) {
+        logFile = fopen(logPath.c_str(), logAppend ? "a" : "w");
+        if (!logFile) {
+            timedPerror("Failed to open log file");
+            return 126;
+        }
+    }
 
     // set up the pipes and launch the engine; [0]=read end; [1]=write end
     int childIn[2] { -1, -1 };
@@ -346,8 +457,12 @@ int main(int argc, char **argv)
             return 126;
         }
 
+        if (logFile) {
+            fclose(logFile);
+        }
+
         // launch the engine
-        execvp(argv[1], argv + 1);
+        execvp(argv[0], argv);
 
         // if we get here, something went wrong
         perror("Failed to launch the engine");
@@ -359,9 +474,24 @@ int main(int argc, char **argv)
     close(childOut[1]);
     close(childErr[1]);
 
-    timedPrintLine(Stream::STATUS, "Engine launched with pid %d with the following parameters", static_cast<int>(child));
-    for (int i = 1; i < argc; ++i) {
-        timedPrintLine(Stream::STATUS, "argv[%d]='%s'", (i - 1), argv[i]);
+    timedPrintLine(Stream::STATUS, "INFO Engine launched with pid %d with the following parameters", static_cast<int>(child));
+    for (int i = 0; i < argc; ++i) {
+        timedPrintLine(Stream::STATUS, "INFO argv[%d]='%s'", i, argv[i]);
+    }
+
+    // assign signal handlers
+    {
+        struct sigaction sigact { };
+
+        sigact.sa_flags = SA_RESTART;
+
+        sigact.sa_handler = &terminatingSignalHandler;
+        sigaction(SIGTERM, &sigact, NULL);
+        sigaction(SIGINT, &sigact, NULL);
+        sigaction(SIGHUP, &sigact, NULL);
+
+        sigact.sa_handler = &statusSignalHandler;
+        sigaction(SIGUSR1, &sigact, NULL);
     }
 
     runLoop(childIn[1], childOut[0], childErr[0]);
@@ -373,15 +503,20 @@ int main(int argc, char **argv)
     int wstatus { };
     if (waitpid(child, &wstatus, 0) == child) {
         if (WIFEXITED(wstatus)) {
-            timedPrintLine(Stream::STATUS, "Engine has terminated with exit code %d", WEXITSTATUS(wstatus));
+            timedPrintLine(Stream::STATUS, "INFO Engine has terminated with exit code %d", WEXITSTATUS(wstatus));
         } else if (WIFSIGNALED(wstatus)) {
-            timedPrintLine(Stream::STATUS, "Engine has terminated by signal %d (%s)", WTERMSIG(wstatus), strsignal(WTERMSIG(wstatus)));
+            timedPrintLine(Stream::STATUS, "INFO Engine has terminated by signal %d (%s)", WTERMSIG(wstatus), strsignal(WTERMSIG(wstatus)));
         } else {
-            timedPrintLine(Stream::STATUS, "Engine terminated for unknown reason, waitpid status=%d", wstatus);
+            timedPrintLine(Stream::STATUS, "INFO Engine terminated for unknown reason, waitpid status=%d", wstatus);
         }
     } else {
         timedPerror("Failed to wait for the child to terminate");
         return 126;
+    }
+
+    if (logFile) {
+        fclose(logFile);
+        logFile = nullptr;
     }
 
     return 0;
