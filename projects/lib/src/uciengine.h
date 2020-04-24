@@ -54,7 +54,7 @@ class LIB_EXPORT UciEngine : public ChessEngine
 		virtual void parseLine(const QString& line);
 		virtual void sendOption(const QString& name, const QVariant& value);
 		virtual bool isPondering() const;
-		virtual int getMaxNetLagMs() const { return isCuteseal() ? 30000 : 0; } // allow 30 secs on cuteseal
+		virtual int getMaxNetLagMs() const { return isCuteseal() ? 600000 : 0; } // allow 600 secs on cuteseal
 
 	private:
 		enum PonderState
