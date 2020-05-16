@@ -203,45 +203,45 @@ void KnockoutTournament::setTC(TournamentPlayer white, TournamentPlayer black, C
 
 	qWarning() << "ARUN: Holy:" << white.builder()->resumescore();
 
-	if ((firstScore + secondScore) >= 128)
+	if ((firstScore + secondScore) >= 32)
 	{
 		wTimeControl.setTimePerTc(60000);
 		wTimeControl.setTimeIncrement(1000);
 		bTimeControl.setTimePerTc(60000);
 		bTimeControl.setTimeIncrement(1000);
-		qWarning() << "ARUNN: reducing TC: 64" << white.timeControl().timePerTc();
+		qWarning() << "ARUNN: reducing TC: 16" << white.timeControl().timePerTc();
 	}
-	else if ((firstScore + secondScore) >= 112)
+	else if ((firstScore + secondScore) >= 28)
 	{
 		wTimeControl.setTimePerTc(120000);
 		wTimeControl.setTimeIncrement(1000);
 		bTimeControl.setTimePerTc(120000);
 		bTimeControl.setTimeIncrement(1000);
-		qWarning() << "ARUNN: reducing TC: 56" << white.timeControl().timePerTc();
+		qWarning() << "ARUNN: reducing TC: 14" << white.timeControl().timePerTc();
 	}
-	else if ((firstScore + secondScore) >= 96)
+	else if ((firstScore + secondScore) >= 24)
 	{
 		wTimeControl.setTimePerTc(240000);
 		wTimeControl.setTimeIncrement(2000);
 		bTimeControl.setTimePerTc(240000);
 		bTimeControl.setTimeIncrement(2000);
-		qWarning() << "ARUNN: reducing TC: 48" << white.timeControl().timePerTc();
+		qWarning() << "ARUNN: reducing TC: 12" << white.timeControl().timePerTc();
 	}
-	else if ((firstScore + secondScore) >= 80)
+	else if ((firstScore + secondScore) >= 20)
 	{
 		wTimeControl.setTimePerTc(480000);
 		wTimeControl.setTimeIncrement(3000);
 		bTimeControl.setTimePerTc(480000);
 		bTimeControl.setTimeIncrement(3000);
-		qWarning() << "ARUNN: reducing TC: 40" << white.timeControl().timePerTc();
+		qWarning() << "ARUNN: reducing TC: 10" << white.timeControl().timePerTc();
 	}
-	else if ((firstScore + secondScore) >= 64)
+	else if ((firstScore + secondScore) >= 16)
 	{
 		wTimeControl.setTimePerTc(960000);
 		bTimeControl.setTimePerTc(960000);
 		wTimeControl.setTimeIncrement(4000);
 		bTimeControl.setTimeIncrement(4000);
-		qWarning() << "ARUNN: reducing TC: 32" << white.timeControl().timePerTc();
+		qWarning() << "ARUNN: reducing TC: 8" << white.timeControl().timePerTc();
 	}
 	game->setTimeControl(wTimeControl, Chess::Side::White);
 	game->setTimeControl(bTimeControl, Chess::Side::Black);
