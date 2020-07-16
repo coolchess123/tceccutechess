@@ -353,7 +353,7 @@ QStringRef UciEngine::parseUciTokens(const QStringRef& first,
 			if (token == types[i])
 			{
 				if (type != -1)
-					returreset.old000022/event.pgn:n token;
+					return token;
 				type = i;
 				newType = true;
 				break;
@@ -768,12 +768,6 @@ void UciEngine::parseLine(const QString& line)
 			m_sendOpponentsName = true;
 		else if (option->name() == "Ponder")
 			m_canPonder = true;
-		//else if (option->name().startsWith("UCI_") &&
-		//	 option->name() != "UCI_LimitStrength" &&
-		//	 option->name() != "UCI_Elo")
-		//{
-		//	// TODO: Deal with UCI features
-		//}
 		else
 		{
 			addOption(option);
