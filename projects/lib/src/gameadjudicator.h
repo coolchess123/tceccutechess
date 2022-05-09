@@ -47,14 +47,17 @@ class LIB_EXPORT GameAdjudicator
 		 * least \a moveCount consecutive moves, and at least
 		 * \a moveNumber full moves have been played.
 		 */
-		void setDrawThreshold(int moveNumber, int moveCount, int score);
+		void setDrawThreshold(int moveNumber, int moveCount, int score, int maxPieces=0, int maxPawns=0, bool reset=true);
 		/*!
 		 * Sets the resign adjudication threshold for each game.
 		 *
 		 * A game will be adjudicated as a loss for the player that
 		 * made the last move if it reports a score that's at least
 		 * \a score centipawns below zero for at least \a moveCount
-		 * consecutive moves.
+		 * consecutive moves. If \a maxPieces>0, number of non-pawn pieces also needs to be no greater than \a maxPieces
+		 * for the consecutive moves. Ditto with \a maxPawns for pawns. If \a reset is true, any reversible moves resets the count
+		 * of consecutive moves to 0.
+		 *
 		 */
 		void setResignThreshold(int moveCount, int score);
 		/*!
@@ -79,7 +82,6 @@ class LIB_EXPORT GameAdjudicator
 		 * evaluations to be below the setResignThreshold score.
 		 */
 		void setTcecAdjudication(bool enable);
-
 		/*!
 		 * Adds a new move evaluation to the adjudicator.
 		 *
@@ -107,6 +109,10 @@ class LIB_EXPORT GameAdjudicator
 		 * Returns the number of plies left until resign rule adjudication.
 		 */
 		int resignClock(const Chess::Board* board, const MoveEvaluation& eval) const;
+		/*!
+		 * Returns true if the draw rules count resets on irreversible moves
+		 */
+		bool resets() const;
 
 	private:
 		int m_drawMoveNum;
@@ -122,6 +128,9 @@ class LIB_EXPORT GameAdjudicator
 		Chess::Result m_result;
 		int m_resignWinnerScoreCount[2];
 		bool m_tcecAdjudication;
+		int m_maxPawns;
+		int m_maxPieces;
+		bool m_reset;
 };
 
 #endif // GAMEADJUDICATOR_H

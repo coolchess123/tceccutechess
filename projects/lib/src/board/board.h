@@ -301,6 +301,15 @@ class LIB_EXPORT Board
 		 * The default implementation always returns a null result.
 		 */
 		virtual Result tablebaseResult(unsigned int* dtm = nullptr) const;
+		/*!
+		 * Counts the pieces of type 1 (pawns in Western Board)
+		 */
+		int pawnCount() const;
+		/*!
+		* Counts the pieces of type >= 2 (non-pawn pieces in Western Board)
+		*/
+		int pieceCount() const;
+
 
 	protected:
 		/*!
@@ -515,6 +524,7 @@ class LIB_EXPORT Board
 		void addToReserve(const Piece& piece, int count = 1);
 		/*! Removes a piece of type \a piece from the reserve. */
 		void removeFromReserve(const Piece& piece);
+
 
 	private:
 		struct PieceData

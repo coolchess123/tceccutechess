@@ -571,12 +571,18 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			QVariantMap dMap = tMap["drawAdjudication"].toMap();
 			if (dMap.contains("movenumber") &&
 				dMap.contains("movecount") &&
-				dMap.contains("score"))
+				dMap.contains("score") &&
+				dMap.contains("maxPieces") &&
+				dMap.contains("maxPawns") &&
+				dMap.contains("reset"))
 			{
 				adjudicator.setDrawThreshold(
 					dMap["movenumber"].toInt(),
 					dMap["movecount"].toInt(),
-					dMap["score"].toInt());
+					dMap["score"].toInt(),
+					dMap["maxPieces"].toInt(),
+					dMap["maxPawns"].toInt(),
+					dMap["reset"].toInt());
 			}
 		}
 		if (tMap.contains("resignAdjudication")) {
@@ -725,21 +731,30 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 			else if (name == "-draw")
 			{
 				QMap<QString, QString> params =
-					option.toMap("movenumber|movecount|score");
+					option.toMap("movenumber|movecount|score|maxpieces=32|maxpawns=16|reset=true");
 				bool numOk = false;
 				bool countOk = false;
 				bool scoreOk = false;
+				bool maxPiecesOk = false;
+				bool maxPawnsOk = false;
 				int moveNumber = params["movenumber"].toInt(&numOk);
 				int moveCount = params["movecount"].toInt(&countOk);
 				int score = params["score"].toInt(&scoreOk);
+				int maxPieces = params["maxpieces"].toInt(&maxPiecesOk);
+				int maxPawns = params["maxpawns"].toInt(&maxPawnsOk);
+				bool reset = params["reset"] == "true";
 
-				ok = (numOk && countOk && scoreOk);
+				ok = (numOk && countOk && scoreOk && maxPiecesOk && maxPawnsOk);
+
 				if (ok) {
-					adjudicator.setDrawThreshold(moveNumber, moveCount, score);
+					adjudicator.setDrawThreshold(moveNumber, moveCount, score, maxPieces, maxPawns, reset);
 					QVariantMap dMap;
 					dMap.insert("movenumber", moveNumber);
 					dMap.insert("movecount", moveCount);
 					dMap.insert("score", score);
+					dMap.insert("maxPieces", maxPieces);
+					dMap.insert("maxPawns", maxPawns);
+					dMap.insert("reset", reset);
 					tMap.insert("drawAdjudication", dMap);
 				}
 			}

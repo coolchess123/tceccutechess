@@ -474,6 +474,32 @@ QStringList Board::pieceList(Side side) const
 	return list;
 }
 
+int Board::pieceCount() const
+{
+	int count=0;
+	for (int file = 0; file < height(); file++)
+			for (int rank = 0; rank < width(); rank++)
+			{
+				Square sq = Chess::Square(file, rank);
+				const Piece piece = pieceAt(sq);
+				if (piece.type()>1) count++;
+			}
+	return count;
+}
+
+int Board::pawnCount() const
+{
+	int count=0;
+		for (int file = 0; file < height(); file++)
+				for (int rank = 0; rank < width(); rank++)
+				{
+					Square sq = Chess::Square(file, rank);
+					const Piece piece = pieceAt(sq);
+					if (piece.type()==1) count++;
+				}
+		return count;
+}
+
 QString Board::fenString(FenNotation notation) const
 {
 	QString fen;

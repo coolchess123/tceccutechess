@@ -29,7 +29,10 @@ GameAdjudicator::GameAdjudicator()
 	  m_resignScore(0),
 	  m_maxGameLength(0),
 	  m_tbEnabled(false),
-	  m_tcecAdjudication(false)
+	  m_tcecAdjudication(false),
+	  m_maxPawns(0),
+	  m_maxPieces(0),
+	  m_reset(true)
 {
 	m_resignScoreCount[0] = 0;
 	m_resignScoreCount[1] = 0;
@@ -37,7 +40,7 @@ GameAdjudicator::GameAdjudicator()
     m_resignWinnerScoreCount[1] = 0;
 }
 
-void GameAdjudicator::setDrawThreshold(int moveNumber, int moveCount, int score)
+void GameAdjudicator::setDrawThreshold(int moveNumber, int moveCount, int score, int maxPieces /*=0*/, int maxPawns /*=0*/, bool reset /*=true*/)
 {
 	Q_ASSERT(moveNumber >= 0);
 	Q_ASSERT(moveCount >= 0);
@@ -46,6 +49,11 @@ void GameAdjudicator::setDrawThreshold(int moveNumber, int moveCount, int score)
 	m_drawMoveCount = moveCount;
 	m_drawScore = score;
 	m_drawScoreCount = 0;
+	m_maxPieces=maxPieces;
+	m_maxPawns=maxPawns;
+	m_reset=reset;
+
+
 }
 
 void GameAdjudicator::setResignThreshold(int moveCount, int score)
@@ -71,6 +79,7 @@ void GameAdjudicator::setTablebaseAdjudication(bool enable, bool drawOnly)
 	m_tbEnabled = enable;
 	m_tbDrawOnly = drawOnly; 
 }
+
 
 void GameAdjudicator::setTcecAdjudication(bool enable)
 {
@@ -117,21 +126,28 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 	// Draw adjudication
 	if (m_drawMoveNum > 0)
 	{
-		if (m_tcecAdjudication && board->reversibleMoveCount() == 0)
+		if (m_tcecAdjudication && m_reset && board->reversibleMoveCount() == 0)
 		{} // m_drawScoreCount == 0;
 		else
 		{
-			if (qAbs(eval.score()) <= m_drawScore)
-				m_drawScoreCount++;
-			else
-				m_drawScoreCount = 0;
-
-			if (board->plyCount() / 2 >= m_drawMoveNum
-			&&  m_drawScoreCount >= m_drawMoveCount * 2)
+			if ((m_maxPawns==0 || board->pawnCount()<=m_maxPawns) && (m_maxPieces==0 || board->pieceCount()<=m_maxPieces))
 			{
-				m_result = Chess::Result(Chess::Result::Adjudication,
-							Chess::Side::NoSide, "TCEC draw rule");
-				return;
+				if (qAbs(eval.score()) <= m_drawScore)
+					m_drawScoreCount++;
+				else
+					m_drawScoreCount = 0;
+
+				if (board->plyCount() / 2 >= m_drawMoveNum
+				&&  m_drawScoreCount >= m_drawMoveCount * 2)
+				{
+					m_result = Chess::Result(Chess::Result::Adjudication,
+								Chess::Side::NoSide, "TCEC draw rule");
+					return;
+				}
+			}
+			else
+			{
+				m_drawScoreCount = 0;
 			}
 		}
 	}
@@ -194,6 +210,11 @@ void GameAdjudicator::addEval(const Chess::Board* board, const MoveEvaluation& e
 void GameAdjudicator::resetDrawMoveCount()
 {
 	m_drawScoreCount = 0;
+}
+
+bool GameAdjudicator::resets()const
+{
+	return m_reset;
 }
 
 Chess::Result GameAdjudicator::result() const

@@ -495,7 +495,7 @@ void ChessGame::onMoveMade(const Chess::Move& move)
 	m_result = m_board->result();
 	if (m_result.isNone())
 	{
-		if (m_board->reversibleMoveCount() == 0)
+		if (m_adjudicator.resets() && m_board->reversibleMoveCount() == 0)
 			m_adjudicator.resetDrawMoveCount();
 
 		m_adjudicator.addEval(m_board, sender->evaluation());
