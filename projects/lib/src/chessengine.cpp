@@ -271,8 +271,6 @@ void ChessEngine::onProtocolStart()
 
 void ChessEngine::go()
 {
-	if (state() == Observing && !isPondering())
-		ping();
 	ChessPlayer::go();
 }
 

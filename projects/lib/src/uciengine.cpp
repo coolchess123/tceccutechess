@@ -149,6 +149,8 @@ void UciEngine::startGame()
 
 	write("ucinewgame");
 
+
+
 	if (m_canPonder)
 		sendOption("Ponder", pondering());
 
@@ -167,6 +169,8 @@ void UciEngine::startGame()
 		if (opponent()->rating() && rating())
 			sendOption("UCI_RatingAdv", QString::number(rating() - opponent()->rating()));
 	}
+
+	ping();
 
 	sendPosition();
 }
@@ -307,7 +311,6 @@ void UciEngine::startPondering()
 
 	m_moveStrings += " " + board()->moveString(m_ponderMove, Chess::Board::LongAlgebraic);
 	sendPosition();
-	ping();
 	startThinking();
 }
 
